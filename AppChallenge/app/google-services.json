@@ -8,17 +8,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1049600612349:android:3210e24ce5ffe8ff",
+        "mobilesdk_app_id": "1:1049600612349:android:2717d335078807ef",
         "android_client_info": {
-          "package_name": "team.teamredundancy.appchallenge"
+          "package_name": "team.tr.permitlog"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1049600612349-i0up0a1d3bildt8nhcmn8mb47g5lto17.apps.googleusercontent.com",
+          "client_id": "1049600612349-01jd8amohj367kioil5elinurt5vcavn.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "team.teamredundancy.appchallenge",
+            "package_name": "team.tr.permitlog",
             "certificate_hash": "F2CB98BFC876614C1042F28B925F51ED054F34B6"
           }
         },
@@ -27,7 +27,11 @@
           "client_type": 3
         }
       ],
-      "api_key": [{"current_key": "AIzaSyAQ_9ZY8wX45FXm1taXwIU6Ti0Zogw603Q"}],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOR-lpcPdpELPM1Uks46z0emAsJp-POfY"
+        }
+      ],
       "services": {
         "analytics_service": {
           "status": 1

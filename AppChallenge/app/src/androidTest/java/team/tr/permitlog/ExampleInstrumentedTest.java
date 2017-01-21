@@ -1,4 +1,4 @@
-package team.teamredundancy.appchallenge;
+package team.tr.permitlog;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
