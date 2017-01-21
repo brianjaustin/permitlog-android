@@ -1,0 +1,51 @@
+{
+  "project_info": {
+    "project_number": "1049600612349",
+    "firebase_url": "https://permit-log.firebaseio.com",
+    "project_id": "permit-log",
+    "storage_bucket": "permit-log.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1049600612349:android:3210e24ce5ffe8ff",
+        "android_client_info": {
+          "package_name": "team.teamredundancy.appchallenge"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1049600612349-i0up0a1d3bildt8nhcmn8mb47g5lto17.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "team.teamredundancy.appchallenge",
+            "certificate_hash": "F2CB98BFC876614C1042F28B925F51ED054F34B6"
+          }
+        },
+        {
+          "client_id": "1049600612349-pi5qapcohar1h3srrgsjn0ff2ddnbdsr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [{"current_key": "AIzaSyAQ_9ZY8wX45FXm1taXwIU6Ti0Zogw603Q"}],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1049600612349-pi5qapcohar1h3srrgsjn0ff2ddnbdsr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
