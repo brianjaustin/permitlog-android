@@ -1,4 +1,4 @@
-package team.teamredundancy.appchallenge;
+package team.tr.permitlog;
 
 import org.junit.Test;
 

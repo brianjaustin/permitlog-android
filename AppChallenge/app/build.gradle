@@ -4,7 +4,7 @@ android {
     compileSdkVersion 22
     buildToolsVersion "25.0.2"
     defaultConfig {
-        applicationId "team.teamredundancy.appchallenge"
+        applicationId "team.tr.permitlog"
         minSdkVersion 21
         targetSdkVersion 22
         versionCode 1
