@@ -16,6 +16,9 @@ buildscript {
 allprojects {
     repositories {
         jcenter()
+
+        // Fabric repository (required for FirebaseUI Auth)
+        maven { url 'https://maven.fabric.io/public' }
     }
 }
 
