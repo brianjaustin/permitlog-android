@@ -18,6 +18,8 @@ public class MainActivity extends AppCompatActivity {
     // For logging
     private static final String TAG = "MainActivity";
 
+    // Firebase variables:
+    private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
 
     // Sign in request code
@@ -29,7 +31,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Get the current user from Firebase.
-        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        mAuth = FirebaseAuth.getInstance();
+        currentUser = mAuth.getCurrentUser();
         // Log whether currentUser is null or not:
         Log.d(TAG, "Is the user not signed in? "+Boolean.toString(currentUser == null));
         // If no user is logged in, show the FirebaseUI login screen.
@@ -54,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
             IdpResponse response = IdpResponse.fromResultIntent(data);
             if (resultCode == ResultCodes.OK) {
                 Log.d(TAG, "Login was successful");
+                // Now that the user is signed in, update currentUser:
+                currentUser = mAuth.getCurrentUser();
             } else {
                 // If there is not a success, try to figure out what went wrong:
                 if (response == null) Log.e(TAG, "User pressed back button");
@@ -61,6 +66,8 @@ public class MainActivity extends AppCompatActivity {
                 else if (response.getErrorCode() == ErrorCodes.UNKNOWN_ERROR) Log.e(TAG, "Unknown error");
                 else Log.e(TAG, "Unknown response");
             }
+            // Debug currentUser again:
+            Log.d(TAG, "Is the user not signed in? "+Boolean.toString(currentUser == null));
         }
     }
 }
