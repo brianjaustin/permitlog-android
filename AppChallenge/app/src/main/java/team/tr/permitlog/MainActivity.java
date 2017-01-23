@@ -1,14 +1,26 @@
 package team.tr.permitlog;
 
 import android.content.Intent;
+import android.support.annotation.NonNull;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.ErrorCodes;
 import com.firebase.ui.auth.IdpResponse;
 import com.firebase.ui.auth.ResultCodes;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -22,6 +34,12 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
 
+    // For menu
+    private String[] menuItems;
+    private DrawerLayout mDrawerLayout;
+    private ListView mDrawerList;
+    private ActionBarDrawerToggle mDrawerToggle;
+
     // Sign in request code
     private static final int RC_SIGN_IN = 123;
 
@@ -30,6 +48,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Setup menu
+        menuItems = getResources().getStringArray(R.array.menu_items);
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawerList = (ListView) findViewById(R.id.left_drawer);
+        mDrawerList.setAdapter(new ArrayAdapter<String>(this,
+                R.layout.drawer_list_item, menuItems));
+        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
+
         // Get the current user from Firebase.
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
@@ -37,19 +65,38 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Is the user not signed in? "+Boolean.toString(currentUser == null));
         // If no user is logged in, show the FirebaseUI login screen.
         if (currentUser == null) {
-            startActivityForResult(
-                    AuthUI.getInstance()
+            showSignIn();
+        }
+    }
+
+    // Show the sign in screen using Firebase UI
+    private void showSignIn() {
+        startActivityForResult(
+                AuthUI.getInstance()
                         .createSignInIntentBuilder()
                         .setProviders(Arrays.asList(
                                 new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build()
                         ))
                         .build(),
-                    RC_SIGN_IN
-            );
-        }
+                RC_SIGN_IN
+        );
     }
 
-    //This is for when we start an activity and then want a result from it back:
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // If the home button is clicked, open/close the menu
+        if (item.getItemId() == android.R.id.home) {
+            if(mDrawerLayout.isDrawerOpen(Gravity.LEFT)) {
+                mDrawerLayout.closeDrawer(Gravity.LEFT);
+            } else {
+                mDrawerLayout.openDrawer(Gravity.LEFT);
+            }
+
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    // This is for when we start an activity and then want a result from it back:
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         // If this is for the sign in activity:
@@ -68,6 +115,31 @@ public class MainActivity extends AppCompatActivity {
             }
             // Debug currentUser again:
             Log.d(TAG, "Is the user not signed in? "+Boolean.toString(currentUser == null));
+        }
+    }
+
+    // Handle menu item clicks
+    private class DrawerItemClickListener implements ListView.OnItemClickListener {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            // Specific behavior for different buttons
+            switch (position) {
+                case 3: // Sign out button clicked
+                    AuthUI.getInstance()
+                            .signOut(MainActivity.this)
+                            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    showSignIn();
+                                }
+                            });
+                    break;
+                default:
+                    mDrawerList.setItemChecked(position, true); // Highlight the clicked item
+            }
+
+            // Close the drawer
+            mDrawerLayout.closeDrawer(mDrawerList);
         }
     }
 }

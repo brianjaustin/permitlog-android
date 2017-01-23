@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Permit Log</string>
+    <string name="drawer_open">Open Drawer</string>
+    <string name="drawer_close">Close Drawer</string>
+    <array name="menu_items">
+        <item>Home</item>
+        <item>Drivers</item>
+        <item>Log</item>
+        <item>Sign Out</item>
+    </array>
 </resources>
