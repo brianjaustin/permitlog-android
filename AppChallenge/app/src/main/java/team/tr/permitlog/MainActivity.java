@@ -67,6 +67,20 @@ public class MainActivity extends AppCompatActivity {
         // Highlight the home menu item by default
         mDrawerList.setItemChecked(HOME_MENU_INDEX, true);
 
+        // Show the home fragment
+        if (findViewById(R.id.fragment_container) != null) {
+            /*if (savedInstanceState != null) {
+                return;
+            }*/
+            // Create a new Fragment to be placed in the activity layout
+            HomeFragment homeFragment = new HomeFragment();
+            //homeFragment.setArguments(getIntent().getExtras());
+            // Add the fragment to the 'fragment_container' FrameLayout
+            getSupportFragmentManager().beginTransaction()
+                    .add(R.id.fragment_container, homeFragment).commit();
+        }
+
+
         // Get the current user from Firebase.
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
