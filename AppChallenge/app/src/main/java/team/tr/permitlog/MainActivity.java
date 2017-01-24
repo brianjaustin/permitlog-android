@@ -3,6 +3,7 @@ package team.tr.permitlog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -145,8 +146,19 @@ public class MainActivity extends AppCompatActivity {
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            // Transaction for switching fragments
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+
             // Specific behavior for different buttons
             switch (position) {
+                case HOME_MENU_INDEX: // Home button clicked
+                    // Transition to the home fragment
+                    HomeFragment homeFragment = new HomeFragment();
+                    transaction.replace(R.id.fragment_container, homeFragment);
+                    transaction.addToBackStack(null);
+                    transaction.commit();
+                    break;
+
                 case SIGN_OUT_MENU_INDEX: // Sign out button clicked
                     AuthUI.getInstance()
                             .signOut(MainActivity.this)
@@ -158,6 +170,7 @@ public class MainActivity extends AppCompatActivity {
                                 }
                             });
                     break;
+
                 default:
                     mDrawerList.setItemChecked(position, true); // Highlight the clicked item
             }
