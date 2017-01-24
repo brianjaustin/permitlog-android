@@ -1,12 +1,10 @@
 package team.tr.permitlog;
 
 import android.content.Intent;
-import android.support.annotation.NonNull;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MenuItem;
@@ -38,7 +36,12 @@ public class MainActivity extends AppCompatActivity {
     private String[] menuItems;
     private DrawerLayout mDrawerLayout;
     private ListView mDrawerList;
-    private ActionBarDrawerToggle mDrawerToggle;
+    private static final int HOME_MENU_INDEX = 0;
+    private static final int LOG_MENU_INDEX = 1;
+    private static final int DRIVERS_MENU_INDEX = 2;
+    private static final int SETTINGS_MENU_INDEX = 3;
+    private static final int ABOUT_MENU_INDEX = 4;
+    private static final int SIGN_OUT_MENU_INDEX = 5;
 
     // Sign in request code
     private static final int RC_SIGN_IN = 123;
@@ -55,9 +58,14 @@ public class MainActivity extends AppCompatActivity {
         mDrawerList.setAdapter(new ArrayAdapter<String>(this,
                 R.layout.drawer_list_item, menuItems));
         mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+
+        // Show the menu button in the title bar
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_menu_white_24px);
         getSupportActionBar().setHomeButtonEnabled(true);
+
+        // Highlight the home menu item by default
+        mDrawerList.setItemChecked(HOME_MENU_INDEX, true);
 
         // Get the current user from Firebase.
         mAuth = FirebaseAuth.getInstance();
@@ -125,12 +133,13 @@ public class MainActivity extends AppCompatActivity {
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             // Specific behavior for different buttons
             switch (position) {
-                case 3: // Sign out button clicked
+                case SIGN_OUT_MENU_INDEX: // Sign out button clicked
                     AuthUI.getInstance()
                             .signOut(MainActivity.this)
                             .addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {
+                                    mDrawerList.setItemChecked(HOME_MENU_INDEX, true);
                                     showSignIn();
                                 }
                             });
