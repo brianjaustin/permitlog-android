@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
                 R.layout.drawer_list_item, menuItems));
         mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_menu_white_24px);
         getSupportActionBar().setHomeButtonEnabled(true);
 
         // Get the current user from Firebase.
