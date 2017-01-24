@@ -159,6 +159,14 @@ public class MainActivity extends AppCompatActivity {
                     transaction.commit();
                     break;
 
+                case DRIVERS_MENU_INDEX: // Drivers button clicked
+                    // Transition to the drivers fragment
+                    DriversFragment driversFragment = new DriversFragment();
+                    transaction.replace(R.id.fragment_container, driversFragment);
+                    transaction.addToBackStack(null);
+                    transaction.commit();
+                    break;
+
                 case SIGN_OUT_MENU_INDEX: // Sign out button clicked
                     AuthUI.getInstance()
                             .signOut(MainActivity.this)
