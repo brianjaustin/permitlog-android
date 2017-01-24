@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Permit Log</string>
+    <string name="drivers_title">Drivers</string>
     <string name="drawer_open">Open Drawer</string>
     <string name="drawer_close">Close Drawer</string>
     <array name="menu_items">

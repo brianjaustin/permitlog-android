@@ -157,6 +157,8 @@ public class MainActivity extends AppCompatActivity {
                     transaction.replace(R.id.fragment_container, homeFragment);
                     transaction.addToBackStack(null);
                     transaction.commit();
+                    // Change the title
+                    getSupportActionBar().setTitle(R.string.app_name);
                     break;
 
                 case DRIVERS_MENU_INDEX: // Drivers button clicked
@@ -165,6 +167,8 @@ public class MainActivity extends AppCompatActivity {
                     transaction.replace(R.id.fragment_container, driversFragment);
                     transaction.addToBackStack(null);
                     transaction.commit();
+                    // Change the title
+                    getSupportActionBar().setTitle(R.string.drivers_title);
                     break;
 
                 case SIGN_OUT_MENU_INDEX: // Sign out button clicked
