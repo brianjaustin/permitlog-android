@@ -149,14 +149,32 @@ public class MainActivity extends AppCompatActivity {
             // Transaction for switching fragments
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 
+            // Bundle for passing arguments
+            Bundle bundle = new Bundle();
+            bundle.putString("uid", currentUser.getUid());
+
             // Specific behavior for different buttons
             switch (position) {
                 case HOME_MENU_INDEX: // Home button clicked
                     // Transition to the home fragment
                     HomeFragment homeFragment = new HomeFragment();
+                    homeFragment.setArguments(bundle);
                     transaction.replace(R.id.fragment_container, homeFragment);
                     transaction.addToBackStack(null);
                     transaction.commit();
+                    // Change the title
+                    getSupportActionBar().setTitle(R.string.app_name);
+                    break;
+
+                case DRIVERS_MENU_INDEX: // Drivers button clicked
+                    // Transition to the drivers fragment
+                    DriversFragment driversFragment = new DriversFragment();
+                    driversFragment.setArguments(bundle);
+                    transaction.replace(R.id.fragment_container, driversFragment);
+                    transaction.addToBackStack(null);
+                    transaction.commit();
+                    // Change the title
+                    getSupportActionBar().setTitle(R.string.drivers_title);
                     break;
 
                 case SIGN_OUT_MENU_INDEX: // Sign out button clicked
