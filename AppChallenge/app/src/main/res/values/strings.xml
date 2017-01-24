@@ -4,8 +4,10 @@
     <string name="drawer_close">Close Drawer</string>
     <array name="menu_items">
         <item>Home</item>
-        <item>Drivers</item>
         <item>Log</item>
+        <item>Drivers</item>
+        <item>Settings</item>
+        <item>About</item>
         <item>Sign Out</item>
     </array>
 </resources>
