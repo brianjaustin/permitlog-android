@@ -3,6 +3,7 @@ package team.tr.permitlog;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import com.github.clans.fab.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -48,7 +49,7 @@ public class HomeFragment extends Fragment {
         });
 
         // Set add drive button click
-        Button addDrive = (Button) view.findViewById(R.id.add_drive);
+        FloatingActionButton addDrive = (FloatingActionButton) view.findViewById(R.id.add_drive);
         addDrive.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -57,7 +58,7 @@ public class HomeFragment extends Fragment {
         });
 
         // Set add driver button click
-        Button addDriver = (Button) view.findViewById(R.id.add_driver);
+        FloatingActionButton addDriver = (FloatingActionButton) view.findViewById(R.id.add_driver);
         addDriver.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
