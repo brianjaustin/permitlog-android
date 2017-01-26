@@ -27,8 +27,8 @@ public class HomeFragment extends Fragment {
         LayoutInflater lf = getActivity().getLayoutInflater();
         View view =  lf.inflate(R.layout.fragment_home, container, false); //pass the correct layout name for the fragment
 
-        TextView text = (TextView) view.findViewById(R.id.time_elapsed);
-        text.setText("test");
+        TextView text = (TextView) view.findViewById(R.id.drive_time);
+        text.setText("0:00:00");
         return view;
     }
 
