@@ -1,10 +1,14 @@
 package team.tr.permitlog;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import com.github.clans.fab.FloatingActionButton;
+import com.github.clans.fab.FloatingActionMenu;
+
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,10 +31,11 @@ public class HomeFragment extends Fragment {
                              Bundle savedInstanceState) {
 
         LayoutInflater lf = getActivity().getLayoutInflater();
-        View view =  lf.inflate(R.layout.fragment_home, container, false); //pass the correct layout name for the fragment
+        //pass the correct layout name for the fragment
+        final View rootView =  lf.inflate(R.layout.fragment_home, container, false);
 
         // Set start drive button click
-        Button startDrive = (Button) view.findViewById(R.id.start_drive);
+        Button startDrive = (Button) rootView.findViewById(R.id.start_drive);
         startDrive.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -40,7 +45,7 @@ public class HomeFragment extends Fragment {
 
 
         // Set stop drive button click
-        Button stopDrive = (Button) view.findViewById(R.id.stop_drive);
+        Button stopDrive = (Button) rootView.findViewById(R.id.stop_drive);
         stopDrive.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -49,7 +54,7 @@ public class HomeFragment extends Fragment {
         });
 
         // Set add drive button click
-        FloatingActionButton addDrive = (FloatingActionButton) view.findViewById(R.id.add_drive);
+        FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.add_drive);
         addDrive.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -58,17 +63,23 @@ public class HomeFragment extends Fragment {
         });
 
         // Set add driver button click
-        FloatingActionButton addDriver = (FloatingActionButton) view.findViewById(R.id.add_driver);
+        FloatingActionButton addDriver = (FloatingActionButton) rootView.findViewById(R.id.add_driver);
         addDriver.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // TODO: Launch fullscreen dialogue to add a driver
+                // Close the plus button menu
+                FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
+                floatingMenu.close(false);
+
+                // Open the activity (which masquerades as a dialog)
+                Intent intent = new Intent(view.getContext(), DriverDialog.class);
+                startActivity(intent);
             }
         });
 
-        TextView text = (TextView) view.findViewById(R.id.time_elapsed);
+        TextView text = (TextView) rootView.findViewById(R.id.time_elapsed);
         text.setText("test");
-        return view;
+        return rootView;
     }
 
     @Override
