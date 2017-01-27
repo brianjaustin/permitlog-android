@@ -73,6 +73,7 @@ public class HomeFragment extends Fragment {
 
                 // Open the activity (which masquerades as a dialog)
                 Intent intent = new Intent(view.getContext(), DriverDialog.class);
+                intent.putExtra("driverId", "");
                 startActivity(intent);
             }
         });

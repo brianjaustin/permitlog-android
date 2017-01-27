@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">Permit Log</string>
     <string name="drivers_title">Drivers</string>
+    <string name="driver_add_title">Add Driver</string>
+    <string name="driver_edit_title">Edit Driver</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="license_number">License Number</string>
     <string name="drawer_open">Open Drawer</string>
     <string name="drawer_close">Close Drawer</string>
     <array name="menu_items">
