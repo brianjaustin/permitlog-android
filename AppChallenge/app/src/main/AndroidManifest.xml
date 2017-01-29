@@ -18,7 +18,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".DriverDialog"></activity>
+        <activity android:name=".DriverDialog"
+            android:theme="@style/Theme.AppTheme.Light.NoActionBar"
+            android:parentActivityName=".MainActivity"> </activity>
     </application>
-
 </manifest>
