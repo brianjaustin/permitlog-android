@@ -7,7 +7,7 @@ import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
+import android.widget.EditText;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
@@ -73,11 +73,15 @@ public class DriverDialog extends AppCompatActivity {
         finish();
     }
 
-    public void onSaveClick(View view) { // TODO: actually call this function
+    public void onSaveClick(View view) {
         // Get values from the text fields
-        String firstName = ""; // TODO: Change this to get actual values
-        String lastName = "";
-        String licenseNumber = "";
+        EditText firstNameField = (EditText)findViewById(R.id.driver_firstname);
+        EditText lastNameField = (EditText)findViewById(R.id.driver_lastname);
+        EditText licenseField = (EditText)findViewById(R.id.driver_license);
+
+        String firstName = firstNameField.getText().toString();
+        String lastName = lastNameField.getText().toString();
+        String licenseNumber = licenseField.getText().toString();
 
         if (editing) {
             // Update existing values
