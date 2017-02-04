@@ -21,5 +21,9 @@
         <activity android:name=".DriverDialog"
             android:theme="@style/Theme.AppTheme.Light.NoActionBar"
             android:parentActivityName=".MainActivity"> </activity>
+        <activity android:name=".CustomDialog"
+            android:label="Custom Drive"
+            android:theme="@style/Theme.AppTheme.Light.NoActionBar"
+            android:parentActivityName=".MainActivity"> </activity>
     </application>
 </manifest>

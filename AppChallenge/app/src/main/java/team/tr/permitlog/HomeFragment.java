@@ -59,7 +59,14 @@ public class HomeFragment extends Fragment {
         addDrive.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // TODO: Launch fullscreen dialogue to manually log driving
+            // Close the plus button menu
+            FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
+            floatingMenu.close(false);
+
+            // Open the activity (which masquerades as a dialog)
+            Intent intent = new Intent(view.getContext(), CustomDialog.class);
+            intent.putExtra("driverId", "");
+            startActivity(intent);
             }
         });
 
