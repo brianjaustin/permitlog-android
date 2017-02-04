@@ -61,14 +61,16 @@ public class DriverDialog extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        //Code to handle X button in top right
         if (item.getItemId() == android.R.id.home ) {
-            Toast.makeText(getApplicationContext(), "Overroad", Toast.LENGTH_SHORT).show();
             finish();
             return true;
         }
-        // other menu select events may be present here
-
         return super.onOptionsItemSelected(item);
+    }
+
+    public void onCancel(View view){
+        finish();
     }
 
     public void onSaveClick(View view) { // TODO: actually call this function
