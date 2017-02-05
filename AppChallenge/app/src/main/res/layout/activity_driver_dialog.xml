@@ -32,7 +32,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/driver_firstname"
-            android:hint="First Name"/>
+            android:hint="First Name"
+            android:inputType="textCapWords|textPersonName" />
     </android.support.design.widget.TextInputLayout>
     <android.support.design.widget.TextInputLayout
         android:layout_width="match_parent"
@@ -41,7 +42,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/driver_lastname"
-            android:hint="Last Name"/>
+            android:hint="Last Name"
+            android:inputType="textCapWords|textPersonName" />
     </android.support.design.widget.TextInputLayout>
     <android.support.design.widget.TextInputLayout
         android:layout_width="match_parent"

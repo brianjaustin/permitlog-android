@@ -6,6 +6,8 @@
     <string name="first_name">First Name</string>
     <string name="last_name">Last Name</string>
     <string name="license_number">License Number</string>
+    <string name="driver_dialog_success">Driver successfully saved.</string>
+    <string name="driver_dialog_error">Please complete all fields.</string>
     <string name="drawer_open">Open Drawer</string>
     <string name="drawer_close">Close Drawer</string>
     <array name="menu_items">

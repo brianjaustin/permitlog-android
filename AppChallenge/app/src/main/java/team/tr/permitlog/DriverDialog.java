@@ -1,5 +1,6 @@
 package team.tr.permitlog;
 
+import android.content.Context;
 import android.content.Intent;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -7,7 +8,9 @@ import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
@@ -83,6 +86,12 @@ public class DriverDialog extends AppCompatActivity {
         String lastName = lastNameField.getText().toString();
         String licenseNumber = licenseField.getText().toString();
 
+        // Check if any value is empty
+        if (firstName.matches("") || lastName.matches("") || licenseNumber.matches("")) {
+            Toast.makeText(this, R.string.driver_dialog_error, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (editing) {
             // Update existing values
             DatabaseReference editRef = driverRef.child(driverId);
@@ -98,6 +107,7 @@ public class DriverDialog extends AppCompatActivity {
         }
 
         // Close the dialog
+        Toast.makeText(this, R.string.driver_dialog_success, Toast.LENGTH_SHORT).show();
         finish();
     }
 }
