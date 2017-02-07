@@ -1,8 +1,8 @@
 package team.tr.permitlog;
 
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,10 +16,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
-import java.util.List;
 
 
 public class DriversFragment extends ListFragment {
@@ -57,7 +55,13 @@ public class DriversFragment extends ListFragment {
 
         @Override
         public void onChildRemoved(DataSnapshot dataSnapshot) {
+            // Get the index of the item removed
+            int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
 
+            // Remove this value from _both_ ArrayLists
+            driverIds.remove(driverIndex);
+            driverNames.remove(driverIndex);
+            adapter.notifyDataSetChanged();
         }
 
         @Override
@@ -99,5 +103,24 @@ public class DriversFragment extends ListFragment {
 
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_drivers, container, false);
+    }
+
+    @Override
+    public void onListItemClick(ListView listView, View view, int position, long id) {
+        // Get the ID of the driver clicked
+        String driverId = driverIds.get(position);
+
+        // Open the dialog to edit
+        Intent intent = new Intent(view.getContext(), DriverDialog.class);
+        intent.putExtra("driverId", driverId);
+        startActivity(intent);
+    }
+
+    @Override
+    public void onDestroyView() {
+        // Detach the data listener
+        driversRef.removeEventListener(driversListener);
+
+        super.onDestroyView();
     }
 }

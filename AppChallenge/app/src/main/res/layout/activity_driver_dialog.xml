@@ -88,10 +88,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/driver_delete"
-                android:onClick="onCancel"
+                android:onClick="onDeleteClick"
                 android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored"
                 android:layout_alignParentTop="true"
-                android:layout_toStartOf="@+id/driver_cancel" />
+                android:layout_toStartOf="@+id/driver_cancel"
+                android:visibility="gone" />
         </RelativeLayout>
     </LinearLayout>
 </LinearLayout>
