@@ -6,6 +6,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -13,8 +14,11 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class DriverDialog extends AppCompatActivity {
 
@@ -51,7 +55,24 @@ public class DriverDialog extends AppCompatActivity {
             // Set title
             ab.setTitle(R.string.driver_edit_title);
 
-            // TODO: Add code to retrieve values
+            // Set the values
+            final EditText editFirst = (EditText) findViewById(R.id.driver_firstname);
+            final EditText editLast = (EditText) findViewById(R.id.driver_lastname);
+            final EditText editLicense = (EditText) findViewById(R.id.driver_license);
+            DatabaseReference editRef = driverRef.child(driverId);
+            editRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    editFirst.setText(dataSnapshot.child("name").child("first").getValue().toString());
+                    editLast.setText(dataSnapshot.child("name").child("last").getValue().toString());
+                    editLicense.setText(dataSnapshot.child("license_number").getValue().toString());
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.e("driver_dialog", databaseError.getMessage());
+                }
+            });
         }
         else {
             // A new driver is being added
@@ -87,7 +108,9 @@ public class DriverDialog extends AppCompatActivity {
         String licenseNumber = licenseField.getText().toString();
 
         // Check if any value is empty
-        if (firstName.matches("") || lastName.matches("") || licenseNumber.matches("")) {
+        if (firstName.matches("") || firstName.matches(" ") ||
+                lastName.matches("") || lastName.matches(" ") ||
+                licenseNumber.matches("") || licenseNumber.matches(" ")) {
             Toast.makeText(this, R.string.driver_dialog_error, Toast.LENGTH_SHORT).show();
             return;
         }
