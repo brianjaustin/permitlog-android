@@ -1,6 +1,5 @@
 package team.tr.permitlog;
 
-import android.content.Context;
 import android.content.Intent;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -9,7 +8,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -54,6 +53,10 @@ public class DriverDialog extends AppCompatActivity {
 
             // Set title
             ab.setTitle(R.string.driver_edit_title);
+
+            // Show the delete button
+            Button deleteButton = (Button) findViewById(R.id.driver_delete);
+            deleteButton.setVisibility(View.VISIBLE);
 
             // Set the values
             final EditText editFirst = (EditText) findViewById(R.id.driver_firstname);
@@ -131,6 +134,16 @@ public class DriverDialog extends AppCompatActivity {
 
         // Close the dialog
         Toast.makeText(this, R.string.driver_dialog_success, Toast.LENGTH_SHORT).show();
+        finish();
+    }
+
+    public void onDeleteClick(View view) {
+        // Delete the driver
+        DatabaseReference editRef = driverRef.child(driverId);
+        editRef.removeValue();
+
+        // Close the dialog
+        Toast.makeText(this, R.string.driver_dialog_deleted, Toast.LENGTH_SHORT).show();
         finish();
     }
 }
