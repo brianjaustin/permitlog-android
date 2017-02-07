@@ -81,6 +81,17 @@
                 android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored"
                 android:layout_alignParentTop="true"
                 android:layout_toStartOf="@+id/driver_ok" />
+
+            <Button
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:text="Delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/driver_delete"
+                android:onClick="onCancel"
+                android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored"
+                android:layout_alignParentTop="true"
+                android:layout_toStartOf="@+id/driver_cancel" />
         </RelativeLayout>
     </LinearLayout>
 </LinearLayout>
