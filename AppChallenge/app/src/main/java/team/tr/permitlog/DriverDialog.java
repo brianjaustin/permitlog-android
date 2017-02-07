@@ -43,10 +43,10 @@ public class DriverDialog extends AppCompatActivity {
         ActionBar ab = getSupportActionBar(); //Create action bar object
         ab.setDisplayHomeAsUpEnabled(true); //Enable back button
 
-        if (!intent.getStringExtra("driverId").toString().equals("")) {
+        if (!intent.getStringExtra("driverId").equals("")) {
             // A driver is being edited
             editing = true;
-            driverId = intent.getStringExtra("driverId").toString();
+            driverId = intent.getStringExtra("driverId");
 
             // Set title
             ab.setTitle(R.string.driver_edit_title);
