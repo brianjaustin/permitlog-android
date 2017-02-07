@@ -2,14 +2,12 @@ package team.tr.permitlog;
 
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -59,14 +57,13 @@ public class HomeFragment extends Fragment {
         addDrive.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-            // Close the plus button menu
-            FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
-            floatingMenu.close(false);
+                // Close the plus button menu
+                FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
+                floatingMenu.close(false);
 
-            // Open the activity (which masquerades as a dialog)
-            Intent intent = new Intent(view.getContext(), CustomDialog.class);
-            intent.putExtra("driverId", "");
-            startActivity(intent);
+                // Open the activity (which masquerades as a dialog)
+                Intent intent = new Intent(view.getContext(), CustomDriveDialog.class);
+                startActivity(intent);
             }
         });
 
