@@ -35,6 +35,42 @@ public class DriversFragment extends ListFragment {
     // ArrayLists for storing drivers
     private ArrayList<String> driverNames;
     private ArrayList<String> driverIds;
+    // Adapter for ListView
+    private ArrayAdapter adapter;
+
+    // Firebase listener
+    private ChildEventListener driversListener = new ChildEventListener() {
+        @Override
+        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+            // Add the new item to the ListView
+            String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
+                    + dataSnapshot.child("name").child("last").getValue().toString();
+            driverNames.add(name);
+            driverIds.add(dataSnapshot.getKey());
+            adapter.notifyDataSetChanged();
+        }
+
+        @Override
+        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+        }
+
+        @Override
+        public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+        }
+
+        @Override
+        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+            // Fetching drivers failed
+            Log.w(TAG, "Fetching drivers failed:", databaseError.toException());
+        }
+    };
 
     public DriversFragment() {
         // Required empty public constructor
@@ -55,45 +91,13 @@ public class DriversFragment extends ListFragment {
         // Add ArrayAdapter to the ListView
         driverNames = new ArrayList<>();
         driverIds = new ArrayList<>();
-        final ArrayAdapter adapter = new ArrayAdapter<>(lf.getContext(), android.R.layout.simple_list_item_1, driverNames);
+        adapter = new ArrayAdapter<>(lf.getContext(), android.R.layout.simple_list_item_1, driverNames);
         setListAdapter(adapter);
 
         // Add data to the list from Firebase
-        driversRef.addChildEventListener(new ChildEventListener() {
-            @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                // Add the new item to the ListView
-                String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
-                        + dataSnapshot.child("name").child("last").getValue().toString();
-                driverNames.add(name);
-                driverIds.add(dataSnapshot.getKey());
-                adapter.notifyDataSetChanged();
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                
-            }
-
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-            }
-
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                // Fetching drivers failed
-                Log.w(TAG, "Fetching drivers failed:", databaseError.toException());
-            }
-        });
+        driversRef.addChildEventListener(driversListener);
 
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_drivers, container, false);
     }
-
 }
