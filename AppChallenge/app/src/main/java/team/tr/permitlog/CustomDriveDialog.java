@@ -26,45 +26,15 @@ import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 
 public class CustomDriveDialog extends AppCompatActivity {
     //TAG for logging:
     public static String TAG = "CustomDriveDialog";
 
-    // Firebase reference, array adapter for holding items in spinner, and Firebase listener
-    private DatabaseReference timesRef, driversRef;
-    private ArrayAdapter<String> driversAdapter;
-    private ChildEventListener driversListener = new ChildEventListener() {
-        @Override
-        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-            //Figure out what the name is:
-            String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
-                    + dataSnapshot.child("name").child("last").getValue().toString();
-            //Add it to driverNames:
-            driverNames.add(name);
-            //Add the key of this snapshot to driverIds:
-            driverIds.add(dataSnapshot.getKey());
-            driversAdapter.notifyDataSetChanged();
-        }
-
-        // The following must be implemented in order to complete the abstract class:
-        @Override
-        public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
-        @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {}
-        @Override
-        public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
-
-        @Override
-        public void onCancelled(DatabaseError databaseError) {
-            // Fetching drivers failed
-            Log.w(TAG, "Fetching drivers failed:", databaseError.toException());
-        }
-    };
-    //Store the drivers and their IDs:
-    private ArrayList<String> driverNames;
-    private ArrayList<String> driverIds;
+    // Firebase listener
+    private DatabaseReference timesRef;
+    // Object that holds all data relevant to the driver spinner:
+    private DriverSpinner spinnerData;
 
     //This is true if and only if the user has chosen a date:
     private boolean hasUserChosenDate = false;
@@ -87,22 +57,11 @@ public class CustomDriveDialog extends AppCompatActivity {
         // Setup the firebase reference for times and drivers:
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
-        driversRef = FirebaseDatabase.getInstance().getReference().child(userId).child("drivers");
-        // Initialize driverNames and driverIds:
-        driverNames = new ArrayList<String>();
-        driverIds = new ArrayList<String>();
-        // Create the adapter for driverNames that will be used for the spinner:
-        driversAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, driverNames);
 
-        // Add the data from driversRef to driverNames and driverIds:
-        driversRef.addChildEventListener(driversListener);
-
-        // Get the spinner of drivers:
+        // Get the spinner:
         Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
-        // This sets the layout that will be used when all of the choices are shown:
-        driversAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        // Use driversAdapter for the spinner:
-        driversSpinner.setAdapter(driversAdapter);
+        // Add the items to the spinner:
+        spinnerData = new DriverSpinner(this, userId, driversSpinner);
 
         // Set the toolbar as the action bar
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
@@ -224,7 +183,7 @@ public class CustomDriveDialog extends AppCompatActivity {
             }
 
             //Otherwise, get the driver id from the selected position:
-            String driverId = driverIds.get(spinnerPosition);
+            String driverId = spinnerData.driverIds.get(spinnerPosition);
             //Get if this is at night or not:
             boolean isDriveAtNight = ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).isChecked();
             //If the ending time is before the start time, add the ending time by one day:
@@ -246,7 +205,7 @@ public class CustomDriveDialog extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         // Since this activity is being stopped, we don't need to listen to the drivers anymore:
-        driversRef.removeEventListener(driversListener);
+        spinnerData.stopListening();
         super.onDestroy();
     }
 }

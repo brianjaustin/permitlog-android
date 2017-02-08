@@ -6,15 +6,19 @@ import android.os.Bundle;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
+import com.google.firebase.auth.FirebaseAuth;
 
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 public class HomeFragment extends Fragment {
+    // Object that holds all data relevant to the driver spinner:
+    private DriverSpinner spinnerData;
 
     public HomeFragment() {
         // Required empty public constructor
@@ -28,7 +32,6 @@ public class HomeFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
         LayoutInflater lf = getActivity().getLayoutInflater();
         //pass the correct layout name for the fragment
         final View rootView =  lf.inflate(R.layout.fragment_home, container, false);
@@ -83,6 +86,13 @@ public class HomeFragment extends Fragment {
             }
         });
 
+        // Get the drivers spinner:
+        Spinner driversSpinner = (Spinner)rootView.findViewById(R.id.drivers_spinner);
+        // Get the UID:
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        // Add the items to the spinner:
+        spinnerData = new DriverSpinner(getActivity(), userId, driversSpinner);
+
         TextView text = (TextView) rootView.findViewById(R.id.time_elapsed);
         text.setText("test");
         return rootView;
@@ -96,5 +106,12 @@ public class HomeFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
+    }
+
+    @Override
+    public void onDestroyView() {
+        // Since this activity is being stopped, we don't need to listen to the drivers anymore:
+        spinnerData.stopListening();
+        super.onDestroy();
     }
 }
