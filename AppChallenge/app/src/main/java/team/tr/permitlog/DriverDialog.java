@@ -89,7 +89,7 @@ public class DriverDialog extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         //Code to handle X button in top right
-        if (item.getItemId() == android.R.id.home ) {
+        if (item.getItemId() == android.R.id.home) {
             finish();
             return true;
         }
@@ -111,9 +111,7 @@ public class DriverDialog extends AppCompatActivity {
         String licenseNumber = licenseField.getText().toString();
 
         // Check if any value is empty
-        if (firstName.matches("") || firstName.matches(" ") ||
-                lastName.matches("") || lastName.matches(" ") ||
-                licenseNumber.matches("") || licenseNumber.matches(" ")) {
+        if (firstName.trim().isEmpty() || lastName.trim().isEmpty() || licenseNumber.trim().isEmpty()) {
             Toast.makeText(this, R.string.driver_dialog_error, Toast.LENGTH_SHORT).show();
             return;
         }

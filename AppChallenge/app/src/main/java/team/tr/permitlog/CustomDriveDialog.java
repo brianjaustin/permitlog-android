@@ -186,7 +186,7 @@ public class CustomDriveDialog extends AppCompatActivity {
         driveTime.set(Calendar.HOUR_OF_DAY, hour);
         driveTime.set(Calendar.MINUTE, minute);
         //Display the time to the user:
-        SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a");
+        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
         timeFormat.setTimeZone(driveTime.getTimeZone());
         driveTimeView.setText(timeFormat.format(driveTime.getTime()));
         //Remember to log startingTime and endingTime for debugging:
@@ -217,9 +217,9 @@ public class CustomDriveDialog extends AppCompatActivity {
             //Get the position of the spinner:
             Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
             int spinnerPosition = driversSpinner.getSelectedItemPosition();
-            //If nothing is selected, show an error to the user and do not proceed:
-            if (spinnerPosition == driversSpinner.INVALID_POSITION) {
-                Toast.makeText(applicationCon, "Please select the driver that accompanied you.", Toast.LENGTH_SHORT).show();
+            //If nothing is selected, then the spinner must be empty, so show an error to the user and do not proceed:
+            if (spinnerPosition == Spinner.INVALID_POSITION) {
+                Toast.makeText(applicationCon, "Please add the driver that accompanied you by going to the \"Add Driver\" menu.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -238,7 +238,7 @@ public class CustomDriveDialog extends AppCompatActivity {
             newLogRef.child("driver_id").setValue(driverId);
 
             //Notify user and close the dialog
-            Toast.makeText(applicationCon, "Drive times saved successfully", Toast.LENGTH_SHORT).show();
+            Toast.makeText(applicationCon, "Custom drive saved successfully", Toast.LENGTH_SHORT).show();
             finish();
         }
     }
