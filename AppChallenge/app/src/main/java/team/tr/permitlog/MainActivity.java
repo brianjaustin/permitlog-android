@@ -107,13 +107,18 @@ public class MainActivity extends AppCompatActivity {
 
     private void transitionFragment(Fragment fragment, int position, String title) {
         /* This function switches the current fragment to the object passed in and sets the title. */
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.fragment_container, fragment);
-        transaction.addToBackStack(null);
-        transaction.commit();
-        // Change the title
-        getSupportActionBar().setTitle(R.string.app_name);
-        mDrawerList.setItemChecked(position, true);
+        // Assuming the user is signed in:
+        if (currentUser != null) {
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+            // Change the title
+            getSupportActionBar().setTitle(R.string.app_name);
+            mDrawerList.setItemChecked(position, true);
+        }
+        //Otherwise, force the user to sign in:
+        else showSignIn();
     }
 
     // Show the sign in screen using Firebase UI
@@ -193,6 +198,8 @@ public class MainActivity extends AppCompatActivity {
                             .addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {
+                                    // Set currentUser:
+                                    currentUser = null;
                                     // Show the sign in now that they are signed out:
                                     showSignIn();
                                 }
