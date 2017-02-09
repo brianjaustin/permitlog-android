@@ -102,26 +102,30 @@ public class MainActivity extends AppCompatActivity {
             goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
-                    // Check if there is a total goal set
+                    // If there is no total goal set, switch to the settings:
                     if (!dataSnapshot.hasChild("total")) {
-                        // Show the fragment
-                        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-                        transaction.replace(R.id.fragment_container, new SettingsFragment());
-                        transaction.addToBackStack(null);
-                        transaction.commit();
-
-                        // Change the title and menu item
-                        getSupportActionBar().setTitle(R.string.settings_title);
-                        mDrawerList.setItemChecked(SETTINGS_MENU_INDEX, true);
+                        transitionFragment(new SettingsFragment(), SETTINGS_MENU_INDEX, "Settings");
                     }
                 }
 
                 @Override
                 public void onCancelled(DatabaseError databaseError) {
-
+                    Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());
                 }
             });
         }
+    }
+
+
+    private void transitionFragment(Fragment fragment, int position, String title) {
+        /* This function switches the current fragment to the object passed in and sets the title. */
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, fragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
+        // Change the title
+        getSupportActionBar().setTitle(R.string.app_name);
+        mDrawerList.setItemChecked(position, true);
     }
 
     // Show the sign in screen using Firebase UI
@@ -175,35 +179,22 @@ public class MainActivity extends AppCompatActivity {
 
     // Handle menu item clicks
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
-        private void transitionFragment(FragmentTransaction transaction, Fragment fragment, String title) {
-            /* This function switches the current fragment to the object passed in and sets the title. */
-            transaction.replace(R.id.fragment_container, fragment);
-            transaction.addToBackStack(null);
-            transaction.commit();
-            // Change the title
-            getSupportActionBar().setTitle(R.string.app_name);
-        }
-
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            // Transaction for switching fragments
-            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-
-            // Specific behavior for different buttons
             switch (position) {
                 case HOME_MENU_INDEX: // Home button clicked
                     // Transition to the home fragment
-                    transitionFragment(transaction, new HomeFragment(), "Permit Log");
+                    transitionFragment(new HomeFragment(), position, "Permit Log");
                     break;
 
                 case DRIVERS_MENU_INDEX: // Drivers button clicked
                     // Transition to the drivers fragment
-                    transitionFragment(transaction, new DriversFragment(), "Drivers");
+                    transitionFragment(new DriversFragment(), position, "Drivers");
                     break;
 
                 case SETTINGS_MENU_INDEX: // Settings button clicked
                     // Transition to the settings fragment
-                    transitionFragment(transaction, new SettingsFragment(), "Settings");
+                    transitionFragment(new SettingsFragment(), position, "Settings");
                     break;
 
                 case SIGN_OUT_MENU_INDEX: // Sign out button clicked
