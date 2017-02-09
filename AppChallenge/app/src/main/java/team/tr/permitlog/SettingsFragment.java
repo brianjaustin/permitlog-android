@@ -27,11 +27,17 @@ import com.google.firebase.database.ValueEventListener;
  * A simple {@link Fragment} subclass.
  */
 public class SettingsFragment extends Fragment {
-
+    //For logging:
+    public static String TAG = "SettingsFragment";
     //The root view for this fragment, used to find elements by id:
-    View rootView;
+    private View rootView;
+    //Firebase Reference:
+    private DatabaseReference goalsRef;
+    //The TextEdits:
+    private EditText totalEdit;
+    private EditText dayEdit;
+    private EditText nightEdit;
 
-    DatabaseReference goalsRef;
 
     public SettingsFragment() {
         // Required empty public constructor
@@ -49,9 +55,9 @@ public class SettingsFragment extends Fragment {
         goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
 
         // Get the EditText views
-        final EditText totalEdit = (EditText) rootView.findViewById(R.id.goal_total);
-        final EditText dayEdit = (EditText) rootView.findViewById(R.id.goal_day);
-        final EditText nightEdit = (EditText) rootView.findViewById(R.id.goal_night);
+        totalEdit = (EditText) rootView.findViewById(R.id.goal_total);
+        dayEdit = (EditText) rootView.findViewById(R.id.goal_day);
+        nightEdit = (EditText) rootView.findViewById(R.id.goal_night);
 
         // Set the values
         goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -60,7 +66,7 @@ public class SettingsFragment extends Fragment {
                 if (dataSnapshot.hasChild("total")) {
                     totalEdit.setText(dataSnapshot.child("total").getValue().toString());
                 }
-                if (dataSnapshot.hasChild("today")) {
+                if (dataSnapshot.hasChild("day")) {
                     dayEdit.setText(dataSnapshot.child("day").getValue().toString());
                 }
                 if (dataSnapshot.hasChild("night")) {
@@ -70,46 +76,46 @@ public class SettingsFragment extends Fragment {
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                Log.e("SettingsFragment", databaseError.getMessage());
+                Log.e(TAG, databaseError.getMessage());
             }
         });
 
         // Save the goals when the button is clicked
         Button saveButton = (Button) rootView.findViewById(R.id.settings_save);
-        saveButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Get the values
-                String totalGoal = totalEdit.getText().toString();
-                String dayGoal = dayEdit.getText().toString();
-                String nightGoal = nightEdit.getText().toString();
-
-                // Check to see if any is empty; if so, set it to zero
-                if (totalGoal.trim().equals("")) {
-                    totalGoal = "0";
-                }
-                if (dayGoal.trim().equals("")) {
-                    dayGoal = "0";
-                }
-                if (nightGoal.trim().equals("")) {
-                    nightGoal = "0";
-                }
-
-                // Save the values
-                goalsRef.child("total").setValue(Integer.parseInt(totalGoal));
-                goalsRef.child("day").setValue(Integer.parseInt(dayGoal));
-                goalsRef.child("night").setValue(Integer.parseInt(nightGoal));
-
-                // Hide the keyboard
-                hideKeyboard(getContext(), rootView);
-
-                // Notify the user
-                Toast.makeText(getContext(), R.string.settings_success, Toast.LENGTH_SHORT).show();
-            }
-        });
+        saveButton.setOnClickListener(onSaveClick);
 
         return rootView;
     }
+
+    //This weird one-liner is done so that onSaveClick looks like a regular function:
+    private View.OnClickListener onSaveClick = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Get the values
+        String totalGoal = totalEdit.getText().toString();
+        String dayGoal = dayEdit.getText().toString();
+        String nightGoal = nightEdit.getText().toString();
+
+        // Check to see if any is empty; if so, set it to zero
+        if (totalGoal.trim().equals("")) {
+            totalGoal = "0";
+        }
+        if (dayGoal.trim().equals("")) {
+            dayGoal = "0";
+        }
+        if (nightGoal.trim().equals("")) {
+            nightGoal = "0";
+        }
+
+        // Save the values
+        goalsRef.child("total").setValue(Integer.parseInt(totalGoal));
+        goalsRef.child("day").setValue(Integer.parseInt(dayGoal));
+        goalsRef.child("night").setValue(Integer.parseInt(nightGoal));
+
+        // Hide the keyboard
+        hideKeyboard(getContext(), rootView);
+
+        // Notify the user
+        Toast.makeText(getContext(), R.string.settings_success, Toast.LENGTH_SHORT).show();
+    } };
 
     private static void hideKeyboard(Context context, View view) {
         InputMethodManager inputManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
