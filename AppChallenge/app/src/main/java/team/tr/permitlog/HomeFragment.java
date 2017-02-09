@@ -16,6 +16,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,15 +26,9 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 
 public class HomeFragment extends Fragment {
     //The root view for this fragment, used to find elements by id:
@@ -43,11 +38,11 @@ public class HomeFragment extends Fragment {
     private String userId;
 
     // Store drive start/stop times
-    private Calendar startingTime = Calendar.getInstance();
-    private Calendar endingTime = Calendar.getInstance();
+    private Date startingTime = new Date();
+    private Date endingTime = new Date();
 
     // Variables to update the drive_time label
-    String formattedTime;
+    private String formattedTime;
     private Timer timer;
 
     // Object that holds all data relevant to the driver spinner:
@@ -117,22 +112,19 @@ public class HomeFragment extends Fragment {
         stopButton.setEnabled(true);
 
         // Grab the start time
-        startingTime = Calendar.getInstance();
-        Log.d(TAG, "startingTime: " + startingTime.getTime().toString());
+        startingTime = new Date();
+        Log.d(TAG, "startingTime: " + startingTime);
 
         // Start updating the label
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                // Get the difference between the start and current time
-                long timeDiff = Calendar.getInstance().getTimeInMillis() - startingTime.getTimeInMillis();
-                // Format and set it
-                long hours = TimeUnit.MILLISECONDS.toHours(timeDiff);
-                long minutes = TimeUnit.MILLISECONDS.toMinutes(timeDiff) - TimeUnit.HOURS.toMinutes(hours);
-                long seconds = TimeUnit.MILLISECONDS.toSeconds(timeDiff) -
-                        (TimeUnit.HOURS.toSeconds(hours) + TimeUnit.MINUTES.toSeconds(minutes));
-                formattedTime = String.format("%d:%02d:%02d",
-                        hours, minutes, seconds);
+                // Get the difference between the start and current time in seconds
+                long timeDiff = ((new Date()).getTime()-startingTime.getTime())/1000;
+                // Format this time appropriately:
+                formattedTime = DateUtils.formatElapsedTime(timeDiff);
+                // Remember to add hours:
+                if (timeDiff < 3600) formattedTime = "0:"+formattedTime;
                 mHandler.obtainMessage(1).sendToTarget();
             }
         }, 0, 1000);
@@ -172,8 +164,8 @@ public class HomeFragment extends Fragment {
         final String driverId = spinnerData.driverIds.get(spinnerPosition);
 
         // Grab the stop time
-        endingTime = Calendar.getInstance();
-        Log.d(TAG, "endTime: " + endingTime.getTime().toString());
+        endingTime = new Date();
+        Log.d(TAG, "endTime: " + endingTime);
 
         // Ask if the driving took place at night
         new MaterialDialog.Builder(myContext)
@@ -245,8 +237,8 @@ public class HomeFragment extends Fragment {
     public void saveDrive(boolean night, String driverId) {
         // Connect to the database
         DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times").push();
-        driveRef.child("start").setValue(startingTime.getTimeInMillis());
-        driveRef.child("end").setValue(endingTime.getTimeInMillis());
+        driveRef.child("start").setValue(startingTime.getTime());
+        driveRef.child("end").setValue(endingTime.getTime());
         driveRef.child("night").setValue(night);
         driveRef.child("driver_id").setValue(driverId);
     }
