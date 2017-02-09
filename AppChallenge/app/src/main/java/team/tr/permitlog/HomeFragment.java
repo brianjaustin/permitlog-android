@@ -17,6 +17,9 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 public class HomeFragment extends Fragment {
+    //The root view for this fragment, used to find elements by id:
+    View rootView;
+
     // Object that holds all data relevant to the driver spinner:
     private DriverSpinner spinnerData;
 
@@ -34,57 +37,23 @@ public class HomeFragment extends Fragment {
                              Bundle savedInstanceState) {
         LayoutInflater lf = getActivity().getLayoutInflater();
         //pass the correct layout name for the fragment
-        final View rootView =  lf.inflate(R.layout.fragment_home, container, false);
+        rootView =  lf.inflate(R.layout.fragment_home, container, false);
 
         // Set start drive button click
         Button startDrive = (Button) rootView.findViewById(R.id.start_drive);
-        startDrive.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // TODO: add code to log the start time of driving, maybe in a separate method
-            }
-        });
-
+        startDrive.setOnClickListener(onStartDrive);
 
         // Set stop drive button click
         Button stopDrive = (Button) rootView.findViewById(R.id.stop_drive);
-        stopDrive.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // TODO: add code to log the stop time of driving, maybe in a separate method
-            }
-        });
+        stopDrive.setOnClickListener(onStopDrive);
 
         // Set add drive button click
         FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.add_drive);
-        addDrive.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Close the plus button menu
-                FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
-                floatingMenu.close(false);
-
-                // Open the activity (which masquerades as a dialog)
-                Intent intent = new Intent(view.getContext(), CustomDriveDialog.class);
-                startActivity(intent);
-            }
-        });
+        addDrive.setOnClickListener(onAddDrive);
 
         // Set add driver button click
         FloatingActionButton addDriver = (FloatingActionButton) rootView.findViewById(R.id.add_driver);
-        addDriver.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Close the plus button menu
-                FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
-                floatingMenu.close(false);
-
-                // Open the activity (which masquerades as a dialog)
-                Intent intent = new Intent(view.getContext(), DriverDialog.class);
-                intent.putExtra("driverId", "");
-                startActivity(intent);
-            }
-        });
+        addDriver.setOnClickListener(onAddDriver);
 
         // Get the drivers spinner:
         Spinner driversSpinner = (Spinner)rootView.findViewById(R.id.drivers_spinner);
@@ -97,6 +66,40 @@ public class HomeFragment extends Fragment {
         text.setText("test");
         return rootView;
     }
+
+    //This is the listener for the "Start Drive" button.
+    //The weird indentation is done like this in order to make the indentation like a regular function.
+    private View.OnClickListener onStartDrive = new View.OnClickListener() { @Override public void onClick(View view) {
+        // TODO: add code to log the start time of driving, maybe in a separate method
+    } };
+
+    //This is the listener for the "Stop Drive" button.
+    private View.OnClickListener onStopDrive = new View.OnClickListener() { @Override public void onClick(View view) {
+        // TODO: add code to log the stop time of driving, maybe in a separate method
+    } };
+
+    //This is the listener for the "Custom Drive" button.
+    private View.OnClickListener onAddDrive = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Close the plus button menu
+        FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
+        floatingMenu.close(false);
+
+        // Open the activity (which masquerades as a dialog)
+        Intent intent = new Intent(view.getContext(), CustomDriveDialog.class);
+        startActivity(intent);
+    } };
+
+    //This is the listener for the "Add Driver" button.
+    private View.OnClickListener onAddDriver = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Close the plus button menu
+        FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
+        floatingMenu.close(false);
+
+        // Open the activity (which masquerades as a dialog)
+        Intent intent = new Intent(view.getContext(), DriverDialog.class);
+        intent.putExtra("driverId", "");
+        startActivity(intent);
+    } };
 
     @Override
     public void onAttach(Context context) {
@@ -112,6 +115,6 @@ public class HomeFragment extends Fragment {
     public void onDestroyView() {
         // Since this activity is being stopped, we don't need to listen to the drivers anymore:
         spinnerData.stopListening();
-        super.onDestroy();
+        super.onDestroyView();
     }
 }
