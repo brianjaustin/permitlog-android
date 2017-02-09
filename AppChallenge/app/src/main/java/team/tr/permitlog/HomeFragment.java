@@ -1,23 +1,40 @@
 package team.tr.permitlog;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import java.util.Calendar;
 
 public class HomeFragment extends Fragment {
     //The root view for this fragment, used to find elements by id:
-    View rootView;
+    private View rootView;
+
+    private final String TAG = "HomeFragment";
+    private String userId;
+
+    // Store drive start/stop times
+    private Calendar startingTime = Calendar.getInstance();
+    private Calendar endingTime = Calendar.getInstance();
 
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
@@ -52,7 +69,7 @@ public class HomeFragment extends Fragment {
         // Get the drivers spinner:
         Spinner driversSpinner = (Spinner)rootView.findViewById(R.id.drivers_spinner);
         // Get the UID:
-        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         // Add the items to the spinner:
         spinnerData = new DriverAdapter(getActivity(), userId, android.R.layout.simple_spinner_item);
         driversSpinner.setAdapter(spinnerData.driversAdapter);
@@ -65,6 +82,15 @@ public class HomeFragment extends Fragment {
     //This is the listener for the "Start Drive" button.
     //The weird indentation is done like this in order to make the indentation like a regular function.
     private View.OnClickListener onStartDrive = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Check if the driver field is empty
+        Context myContext = rootView.getContext();
+        Spinner driversSpinner = (Spinner) rootView.findViewById(R.id.drivers_spinner);
+        int spinnerPosition = driversSpinner.getSelectedItemPosition();
+        if (spinnerPosition == Spinner.INVALID_POSITION) {
+            Toast.makeText(myContext, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
+            return;
+        }
+
         // Disable this button
         Button startButton = (Button) view;
         startButton.setEnabled(false);
@@ -73,7 +99,9 @@ public class HomeFragment extends Fragment {
         Button stopButton = (Button) rootView.findViewById(R.id.stop_drive);
         stopButton.setEnabled(true);
 
-        // TODO: save the start time
+        // Grab the start time
+        startingTime = Calendar.getInstance();
+        Log.d(TAG, "startingTime: " + startingTime.getTime().toString());
     } };
 
     //This is the listener for the "Stop Drive" button.
@@ -86,7 +114,45 @@ public class HomeFragment extends Fragment {
         Button startButton = (Button) rootView.findViewById(R.id.start_drive);
         startButton.setEnabled(true);
 
-        // TODO: handle the stop time
+        final Context myContext = rootView.getContext();
+
+        // Check if the driver field is empty
+        Spinner driversSpinner = (Spinner) rootView.findViewById(R.id.drivers_spinner);
+        int spinnerPosition = driversSpinner.getSelectedItemPosition();
+        if (spinnerPosition == Spinner.INVALID_POSITION) {
+            Toast.makeText(myContext, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
+            return;
+        }
+        // If it is not empty, get the driver
+        final String driverId = spinnerData.driverIds.get(spinnerPosition);
+
+        // Grab the stop time
+        endingTime = Calendar.getInstance();
+        Log.d(TAG, "endTime: " + endingTime.getTime().toString());
+
+        // Ask if the driving took place at night
+        new MaterialDialog.Builder(myContext)
+                .content(R.string.at_night_dialog_content)
+                .positiveText(R.string.yes)
+                .negativeText(R.string.no)
+                .neutralText(R.string.cancel)
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        // Save the drive (at night) and says success
+                        saveDrive(true, driverId);
+                        Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .onNegative(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        // Save the daytime drive and say success
+                        saveDrive(false, driverId);
+                        Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .show();
     } };
 
     //This is the listener for the "Custom Drive" button.
@@ -121,6 +187,15 @@ public class HomeFragment extends Fragment {
         intent.putExtra("driverId", "");
         startActivity(intent);
     } };
+
+    public void saveDrive(boolean night, String driverId) {
+        // Connect to the database
+        DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times").push();
+        driveRef.child("start").setValue(startingTime.getTimeInMillis());
+        driveRef.child("end").setValue(endingTime.getTimeInMillis());
+        driveRef.child("night").setValue(night);
+        driveRef.child("driver_id").setValue(driverId);
+    }
 
     @Override
     public void onResume() {
