@@ -65,12 +65,28 @@ public class HomeFragment extends Fragment {
     //This is the listener for the "Start Drive" button.
     //The weird indentation is done like this in order to make the indentation like a regular function.
     private View.OnClickListener onStartDrive = new View.OnClickListener() { @Override public void onClick(View view) {
-        // TODO: add code to log the start time of driving, maybe in a separate method
+        // Disable this button
+        Button startButton = (Button) view;
+        startButton.setEnabled(false);
+
+        // Enable the "Stop Drive" button
+        Button stopButton = (Button) rootView.findViewById(R.id.stop_drive);
+        stopButton.setEnabled(true);
+
+        // TODO: save the start time
     } };
 
     //This is the listener for the "Stop Drive" button.
     private View.OnClickListener onStopDrive = new View.OnClickListener() { @Override public void onClick(View view) {
-        // TODO: add code to log the stop time of driving, maybe in a separate method
+        // Disable this button
+        Button stopButton = (Button) view;
+        stopButton.setEnabled(false);
+
+        // Enable the "Start Drive" button
+        Button startButton = (Button) rootView.findViewById(R.id.start_drive);
+        startButton.setEnabled(true);
+
+        // TODO: handle the stop time
     } };
 
     //This is the listener for the "Custom Drive" button.

@@ -48,7 +48,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/stop_drive"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored" />
+                    android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored"
+                    android:enabled="false" />
                 </android.support.v7.widget.LinearLayoutCompat>
 
                 <Spinner
