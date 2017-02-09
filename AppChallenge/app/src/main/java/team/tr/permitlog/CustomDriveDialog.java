@@ -36,12 +36,6 @@ public class CustomDriveDialog extends AppCompatActivity {
     // Object that holds all data relevant to the driver spinner:
     private DriverSpinner spinnerData;
 
-    //This is true if and only if the user has chosen a date:
-    private boolean hasUserChosenDate = false;
-    //This is true if and only if the user has chosen a starting time:
-    private boolean hasUserChosenStartingTime = false;
-    //This is true if and only if the user has chosen a ending time:
-    private boolean hasUserChosenEndingTime = false;
     //This is true if and only if the user is currently choosing the ending time:
     private boolean isUserChoosingEndingTime = false;
     //This stores the time that the user said they started driving at:
@@ -69,6 +63,20 @@ public class CustomDriveDialog extends AppCompatActivity {
 
         ActionBar ab = getSupportActionBar(); //Create action bar object
         ab.setDisplayHomeAsUpEnabled(true); //Enable back button
+
+        //Sets default date
+        Calendar calendar = Calendar.getInstance();
+        setDate(calendar.get(Calendar.YEAR),calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH));
+
+        //Sets start and end times as the current time
+        setTime(calendar.get(Calendar.HOUR_OF_DAY),calendar.get(Calendar.MINUTE));
+        //Make sure setTime() sets the ending time:
+        isUserChoosingEndingTime = true;
+        //Set the ending time to the current time:
+        setTime(startingTime.get(Calendar.HOUR_OF_DAY), startingTime.get(Calendar.MINUTE));
+        //Set the Boolean back to the default value:
+        isUserChoosingEndingTime = false;
+
     }
 
     public void pickDate(View view) {
@@ -84,8 +92,6 @@ public class CustomDriveDialog extends AppCompatActivity {
         //Set startingTime and endingTime:
         startingTime.set(year, month, day);
         endingTime.set(year, month, day);
-        //Now that we have set the date, set hasUserChosenDate:
-        hasUserChosenDate = true;
         //Get the text of the month:
         String monthText = new DateFormatSymbols().getMonths()[month];
         //Display the date to the user:
@@ -129,8 +135,6 @@ public class CustomDriveDialog extends AppCompatActivity {
             driveTimeView = (TextView)findViewById(R.id.drive_end_time);
             //They are no longer choosing the ending time, so unset the boolean:
             isUserChoosingEndingTime = false;
-            //They have chosen the ending time:
-            hasUserChosenEndingTime = true;
         }
         //Otherwise, if they are choosing the start time:
         else {
@@ -138,8 +142,6 @@ public class CustomDriveDialog extends AppCompatActivity {
             driveTime = startingTime;
             //Get the view for the starting time:
             driveTimeView = (TextView)findViewById(R.id.drive_start_time);
-            //They have chosen the starting time:
-            hasUserChosenStartingTime = true;
         }
         //Set the drive time:
         driveTime.set(Calendar.HOUR_OF_DAY, hour);
@@ -168,38 +170,29 @@ public class CustomDriveDialog extends AppCompatActivity {
     public void onSaveClick(View view) {
         //For Toast:
         Context applicationCon = getApplicationContext();
-        //Show errors if the user has not filled in all fields:
-        if (!hasUserChosenDate) Toast.makeText(applicationCon, "Please fill in the date.", Toast.LENGTH_SHORT).show();
-        else if (!hasUserChosenStartingTime) Toast.makeText(applicationCon, "Please fill when you started driving.", Toast.LENGTH_SHORT).show();
-        else if (!hasUserChosenEndingTime) Toast.makeText(applicationCon, "Please fill when you stopped driving.", Toast.LENGTH_SHORT).show();
-        else {
-            //Get the position of the spinner:
-            Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
-            int spinnerPosition = driversSpinner.getSelectedItemPosition();
-            //If nothing is selected, then the spinner must be empty, so show an error to the user and do not proceed:
-            if (spinnerPosition == Spinner.INVALID_POSITION) {
-                Toast.makeText(applicationCon, "Please add the driver that accompanied you by going to the \"Add Driver\" menu.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            //Otherwise, get the driver id from the selected position:
-            String driverId = spinnerData.driverIds.get(spinnerPosition);
-            //Get if this is at night or not:
-            boolean isDriveAtNight = ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).isChecked();
-            //If the ending time is before the start time, add the ending time by one day:
-            if (endingTime.before(startingTime)) endingTime.add(Calendar.DATE, 1);
-
-            //Finally, push a new log:
-            DatabaseReference newLogRef = timesRef.push();
-            newLogRef.child("start").setValue(startingTime.getTimeInMillis());
-            newLogRef.child("end").setValue(endingTime.getTimeInMillis());
-            newLogRef.child("night").setValue(isDriveAtNight);
-            newLogRef.child("driver_id").setValue(driverId);
-
-            //Notify user and close the dialog
-            Toast.makeText(applicationCon, "Custom drive saved successfully", Toast.LENGTH_SHORT).show();
-            finish();
+        //Get the position of the spinner:
+        Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
+        int spinnerPosition = driversSpinner.getSelectedItemPosition();
+        //If nothing is selected, then the spinner must be empty, so show an error to the user and do not proceed:
+        if (spinnerPosition == Spinner.INVALID_POSITION) {
+            Toast.makeText(applicationCon, "Please add the driver that accompanied you by going to the \"Add Driver\" menu.", Toast.LENGTH_SHORT).show();
+            return;
         }
+        //Otherwise, get the driver id from the selected position:
+        String driverId = spinnerData.driverIds.get(spinnerPosition);
+        //Get if this is at night or not:
+        boolean isDriveAtNight = ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).isChecked();
+        //If the ending time is before the start time, add the ending time by one day:
+        if (endingTime.before(startingTime)) endingTime.add(Calendar.DATE, 1);
+        //Finally, push a new log:
+        DatabaseReference newLogRef = timesRef.push();
+        newLogRef.child("start").setValue(startingTime.getTimeInMillis());
+        newLogRef.child("end").setValue(endingTime.getTimeInMillis());
+        newLogRef.child("night").setValue(isDriveAtNight);
+        newLogRef.child("driver_id").setValue(driverId);
+        //Notify user and close the dialog
+        Toast.makeText(applicationCon, "Custom drive saved successfully", Toast.LENGTH_SHORT).show();
+        finish();
     }
 
     @Override
