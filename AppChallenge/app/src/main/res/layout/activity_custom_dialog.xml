@@ -41,7 +41,6 @@
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Pick the date that you drove on."
                 android:id="@+id/drive_date"
                 android:textAllCaps="false"
                 android:onClick="pickDate"
@@ -64,7 +63,6 @@
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Pick the time when you started driving."
                 android:id="@+id/drive_start_time"
                 android:textAllCaps="false"
                 android:onClick="pickStartTime"
@@ -87,7 +85,6 @@
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Pick the time when you stopped driving."
                 android:id="@+id/drive_end_time"
                 android:textAllCaps="false"
                 android:onClick="pickEndTime"
