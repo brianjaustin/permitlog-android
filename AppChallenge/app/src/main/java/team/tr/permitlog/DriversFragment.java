@@ -27,55 +27,8 @@ public class DriversFragment extends ListFragment {
 
     // Firebase uid
     private String userId;
-
-    // Firebase database reference
-    private DatabaseReference driversRef;
-
-    // ArrayLists for storing drivers
-    private ArrayList<String> driverNames;
-    private ArrayList<String> driverIds;
-    // Adapter for ListView
-    private ArrayAdapter adapter;
-
-    // Firebase listener
-    private ChildEventListener driversListener = new ChildEventListener() {
-        @Override
-        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-            // Add the new item to the ListView
-            String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
-                    + dataSnapshot.child("name").child("last").getValue().toString();
-            driverNames.add(name);
-            driverIds.add(dataSnapshot.getKey());
-            adapter.notifyDataSetChanged();
-        }
-
-        @Override
-        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-
-        }
-
-        @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {
-            // Get the index of the item removed
-            int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
-
-            // Remove this value from _both_ ArrayLists
-            driverIds.remove(driverIndex);
-            driverNames.remove(driverIndex);
-            adapter.notifyDataSetChanged();
-        }
-
-        @Override
-        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-        }
-
-        @Override
-        public void onCancelled(DatabaseError databaseError) {
-            // Fetching drivers failed
-            Log.w(TAG, "Fetching drivers failed:", databaseError.toException());
-        }
-    };
+    // Store data for the list:
+    private DriverAdapter listData;
 
     public DriversFragment() {
         // Required empty public constructor
@@ -89,17 +42,9 @@ public class DriversFragment extends ListFragment {
         // Get the uid from the main activity
         userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        // Get Firebase database reference
-        driversRef = FirebaseDatabase.getInstance().getReference().child(userId).child("drivers");
-
-        // Add ArrayAdapter to the ListView
-        driverNames = new ArrayList<>();
-        driverIds = new ArrayList<>();
-        adapter = new ArrayAdapter<>(lf.getContext(), android.R.layout.simple_list_item_1, driverNames);
-        setListAdapter(adapter);
-
-        // Add data to the list from Firebase
-        driversRef.addChildEventListener(driversListener);
+        // Create adapter and add it to the ListView
+        listData = new DriverAdapter(getActivity(), userId, android.R.layout.simple_list_item_1);
+        setListAdapter(listData.driversAdapter);
 
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_drivers, container, false);
@@ -108,8 +53,7 @@ public class DriversFragment extends ListFragment {
     @Override
     public void onListItemClick(ListView listView, View view, int position, long id) {
         // Get the ID of the driver clicked
-        String driverId = driverIds.get(position);
-
+        String driverId = listData.driverIds.get(position);
         // Open the dialog to edit
         Intent intent = new Intent(view.getContext(), DriverDialog.class);
         intent.putExtra("driverId", driverId);
@@ -119,8 +63,7 @@ public class DriversFragment extends ListFragment {
     @Override
     public void onDestroyView() {
         // Detach the data listener
-        driversRef.removeEventListener(driversListener);
-
+        listData.stopListening();
         super.onDestroyView();
     }
 }

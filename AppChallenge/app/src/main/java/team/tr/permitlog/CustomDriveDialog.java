@@ -29,7 +29,7 @@ public class CustomDriveDialog extends AppCompatActivity {
     // Firebase listener
     private DatabaseReference timesRef;
     // Object that holds all data relevant to the driver spinner:
-    private DriverSpinner spinnerData;
+    private DriverAdapter spinnerData;
 
     //This is true if and only if the user is currently choosing the ending time:
     private boolean isUserChoosingEndingTime = false;
@@ -50,7 +50,8 @@ public class CustomDriveDialog extends AppCompatActivity {
         // Get the spinner:
         Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
         // Add the items to the spinner:
-        spinnerData = new DriverSpinner(this, userId, driversSpinner);
+        spinnerData = new DriverAdapter(this, userId, android.R.layout.simple_spinner_item);
+        driversSpinner.setAdapter(spinnerData.driversAdapter);
 
         // Set the toolbar as the action bar
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
@@ -179,7 +180,7 @@ public class CustomDriveDialog extends AppCompatActivity {
         int spinnerPosition = driversSpinner.getSelectedItemPosition();
         //If nothing is selected, then the spinner must be empty, so show an error to the user and do not proceed:
         if (spinnerPosition == Spinner.INVALID_POSITION) {
-            Toast.makeText(applicationCon, "Please add the driver that accompanied you by going to the \"Add Driver\" menu.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(applicationCon, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
             return;
         }
         //Otherwise, get the driver id from the selected position:

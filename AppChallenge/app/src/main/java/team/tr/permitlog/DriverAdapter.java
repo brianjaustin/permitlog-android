@@ -13,9 +13,9 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
 
-public class DriverSpinner {
+public class DriverAdapter {
     //TAG for logging
-    public static String TAG = "DriverSpinner";
+    public static String TAG = "DriverAdapter";
     //Firebase reference
     public DatabaseReference driversRef;
     //Store the drivers and their IDs:
@@ -35,40 +35,65 @@ public class DriverSpinner {
             driverNames.add(name);
             //Add the key of this snapshot to driverIds:
             driverIds.add(dataSnapshot.getKey());
+            //Update adapter:
             driversAdapter.notifyDataSetChanged();
         }
-
+        @Override
+        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+            // Get the index of the item changed
+            int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
+            //Figure out what the name is:
+            String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
+                    + dataSnapshot.child("name").child("last").getValue().toString();
+            //Set it in driverNames:
+            driverNames.set(driverIndex, name);
+            //Update adapter:
+            driversAdapter.notifyDataSetChanged();
+        }
+        @Override
+        public void onChildRemoved(DataSnapshot dataSnapshot) {
+            // Get the index of the item removed
+            int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
+            // Remove this value from _both_ ArrayLists
+            driverIds.remove(driverIndex);
+            driverNames.remove(driverIndex);
+            // Update adapter:
+            driversAdapter.notifyDataSetChanged();
+        }
         // The following must be implemented in order to complete the abstract class:
         @Override
-        public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
-        @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {}
-        @Override
         public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
-
         @Override
         public void onCancelled(DatabaseError databaseError) {
             // Fetching drivers failed
             Log.w(TAG, "Fetching drivers failed:", databaseError.toException());
         }
     };
+    //Keeps track of if the spinner is listening:
+    public boolean isListening = false;
 
-    public DriverSpinner(Context context, String userId, Spinner driversSpinner) {
+    public DriverAdapter(Context context, String userId, int layout) {
         //Initialize driversRef
         driversRef = FirebaseDatabase.getInstance().getReference().child(userId).child("drivers");
         // Create the adapter for driverNames that will be used for the spinner:
-        driversAdapter = new ArrayAdapter<String>(context, android.R.layout.simple_spinner_item, driverNames);
+        driversAdapter = new ArrayAdapter<String>(context, layout, driverNames);
         // Add the data from driversRef to driverNames and driverIds:
-        driversRef.addChildEventListener(driversListener);
+        startListening();
         // This sets the layout that will be used when all of the choices are shown:
         driversAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        // Use driversAdapter for the spinner:
-        driversSpinner.setAdapter(driversAdapter);
     }
 
     public void stopListening() {
         /* This function should be called on the onDestroy() of an activity and onDestroyView() of a fragment
            to avoid the listener from picking up on incomplete changes to the database. */
-        driversRef.removeEventListener(driversListener);
+        if (isListening) driversRef.removeEventListener(driversListener);
+        isListening = false;
+    }
+
+    public void startListening() {
+        /* If stopListening() is put in the onPause() method, this should be put in the onResume() method
+           so that the listener can start up again when the activity/fragment is started up again. */
+        if (!isListening) driversRef.addChildEventListener(driversListener);
+        isListening = true;
     }
 }
