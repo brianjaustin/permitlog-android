@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Show the sign in screen using Firebase UI
-    private void showSignIn() {
+    public void showSignIn() {
         startActivityForResult(
                 AuthUI.getInstance()
                         .createSignInIntentBuilder()
