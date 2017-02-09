@@ -79,6 +79,27 @@ public class MainActivity extends AppCompatActivity {
         currentUser = mAuth.getCurrentUser();
         // Log whether currentUser is null or not:
         Log.d(TAG, "Is the user not signed in? "+Boolean.toString(currentUser == null));
+        navigateBasedOnUser();
+    }
+
+
+    private void transitionFragment(Fragment fragment, int position, String title) {
+        /* This function switches the current fragment to the object passed in and sets the title. */
+        // Assuming the user is signed in:
+        if (currentUser != null) {
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+            // Change the title
+            getSupportActionBar().setTitle(R.string.app_name);
+            mDrawerList.setItemChecked(position, true);
+        }
+        //Otherwise, force the user to sign in:
+        else showSignIn();
+    }
+
+    private void navigateBasedOnUser() {
         // If no user is logged in, show the FirebaseUI login screen.
         if (currentUser == null) {
             showSignIn();
@@ -102,23 +123,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
-    }
-
-
-    private void transitionFragment(Fragment fragment, int position, String title) {
-        /* This function switches the current fragment to the object passed in and sets the title. */
-        // Assuming the user is signed in:
-        if (currentUser != null) {
-            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            transaction.replace(R.id.fragment_container, fragment);
-            transaction.addToBackStack(null);
-            transaction.commit();
-            // Change the title
-            getSupportActionBar().setTitle(R.string.app_name);
-            mDrawerList.setItemChecked(position, true);
-        }
-        //Otherwise, force the user to sign in:
-        else showSignIn();
     }
 
     // Show the sign in screen using Firebase UI
@@ -156,8 +160,8 @@ public class MainActivity extends AppCompatActivity {
             IdpResponse response = IdpResponse.fromResultIntent(data);
             if (resultCode == ResultCodes.OK) {
                 Log.d(TAG, "Login was successful");
-                // Transition to the home fragment
-                transitionFragment(new HomeFragment(), HOME_MENU_INDEX, "Permit Log");
+                // Transition to the home/settings fragment based on what the user needs to do from here:
+                navigateBasedOnUser();
                 // Now that the user is signed in, update currentUser:
                 currentUser = mAuth.getCurrentUser();
             } else {
