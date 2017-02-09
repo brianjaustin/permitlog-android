@@ -1,6 +1,5 @@
 package team.tr.permitlog;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
@@ -21,15 +20,10 @@ public class HomeFragment extends Fragment {
     View rootView;
 
     // Object that holds all data relevant to the driver spinner:
-    private DriverSpinner spinnerData;
+    private DriverAdapter spinnerData;
 
     public HomeFragment() {
         // Required empty public constructor
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
     }
 
     @Override
@@ -60,7 +54,8 @@ public class HomeFragment extends Fragment {
         // Get the UID:
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         // Add the items to the spinner:
-        spinnerData = new DriverSpinner(getActivity(), userId, driversSpinner);
+        spinnerData = new DriverAdapter(getActivity(), userId, android.R.layout.simple_spinner_item);
+        driversSpinner.setAdapter(spinnerData.driversAdapter);
 
         TextView text = (TextView) rootView.findViewById(R.id.time_elapsed);
         text.setText("test");
@@ -102,19 +97,15 @@ public class HomeFragment extends Fragment {
     } };
 
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
+    public void onResume() {
+        spinnerData.startListening();
+        super.onResume();
     }
 
     @Override
-    public void onDetach() {
-        super.onDetach();
-    }
-
-    @Override
-    public void onStop() {
+    public void onPause() {
         // Since this activity is being stopped, we don't need to listen to the drivers anymore:
         spinnerData.stopListening();
-        super.onStop();
+        super.onPause();
     }
 }
