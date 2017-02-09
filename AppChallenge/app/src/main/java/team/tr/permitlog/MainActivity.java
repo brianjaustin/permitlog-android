@@ -74,8 +74,6 @@ public class MainActivity extends AppCompatActivity {
         // Highlight the home menu item by default
         mDrawerList.setItemChecked(HOME_MENU_INDEX, true);
 
-
-
         // Get the current user from Firebase.
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
@@ -85,6 +83,8 @@ public class MainActivity extends AppCompatActivity {
         if (currentUser == null) {
             showSignIn();
         } else {
+            // Transition to the home fragment
+            transitionFragment(new HomeFragment(), HOME_MENU_INDEX, "Permit Log");
             // Get the goal values; if none exist, show the settings page to set them 
             final DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals");
             goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -101,18 +101,6 @@ public class MainActivity extends AppCompatActivity {
                     Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());
                 }
             });
-        }
-        // Show the home fragment
-        if (findViewById(R.id.fragment_container) != null) {
-            /*if (savedInstanceState != null) {
-                return;
-            }*/
-            // Create a new Fragment to be placed in the activity layout
-            HomeFragment homeFragment = new HomeFragment();
-            //homeFragment.setArguments(getIntent().getExtras());
-            // Add the fragment to the 'fragment_container' FrameLayout
-            getSupportFragmentManager().beginTransaction()
-                    .add(R.id.fragment_container, homeFragment).commit();
         }
     }
 
@@ -163,6 +151,8 @@ public class MainActivity extends AppCompatActivity {
             IdpResponse response = IdpResponse.fromResultIntent(data);
             if (resultCode == ResultCodes.OK) {
                 Log.d(TAG, "Login was successful");
+                // Transition to the home fragment
+                transitionFragment(new HomeFragment(), HOME_MENU_INDEX, "Permit Log");
                 // Now that the user is signed in, update currentUser:
                 currentUser = mAuth.getCurrentUser();
             } else {
@@ -203,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
                             .addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {
-                                    mDrawerList.setItemChecked(HOME_MENU_INDEX, true);
+                                    // Show the sign in now that they are signed out:
                                     showSignIn();
                                 }
                             });
