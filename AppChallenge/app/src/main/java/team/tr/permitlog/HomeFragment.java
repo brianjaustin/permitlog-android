@@ -112,9 +112,9 @@ public class HomeFragment extends Fragment {
     }
 
     @Override
-    public void onDestroyView() {
+    public void onStop() {
         // Since this activity is being stopped, we don't need to listen to the drivers anymore:
         spinnerData.stopListening();
-        super.onDestroyView();
+        super.onStop();
     }
 }

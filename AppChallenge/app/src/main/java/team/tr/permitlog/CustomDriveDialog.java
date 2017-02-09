@@ -9,22 +9,17 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 
 public class CustomDriveDialog extends AppCompatActivity {
@@ -65,11 +60,9 @@ public class CustomDriveDialog extends AppCompatActivity {
         ab.setDisplayHomeAsUpEnabled(true); //Enable back button
 
         //Sets default date
-        Calendar calendar = Calendar.getInstance();
-        setDate(calendar.get(Calendar.YEAR),calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH));
-
-        //Sets start and end times as the current time
-        setTime(calendar.get(Calendar.HOUR_OF_DAY),calendar.get(Calendar.MINUTE));
+        setDate(startingTime.get(Calendar.YEAR), startingTime.get(Calendar.MONTH), startingTime.get(Calendar.DAY_OF_MONTH));
+        //Set start time to the current time
+        setTime(startingTime.get(Calendar.HOUR_OF_DAY), startingTime.get(Calendar.MINUTE));
         //Make sure setTime() sets the ending time:
         isUserChoosingEndingTime = true;
         //Set the ending time to the current time:
@@ -81,8 +74,14 @@ public class CustomDriveDialog extends AppCompatActivity {
 
     public void pickDate(View view) {
         /* This function is called when the user presses the "pick the date" button. */
-        //This fragment will allow the user to pick the date:
+        //Create the arguments for the fragment:
+        Bundle defaultDate = new Bundle();
+        defaultDate.putInt("year", startingTime.get(Calendar.YEAR));
+        defaultDate.putInt("month", startingTime.get(Calendar.MONTH));
+        defaultDate.putInt("day", startingTime.get(Calendar.DAY_OF_MONTH));
+        //This fragment will allow the user to pick the date, with the default being the date that was picked before:
         DialogFragment dateFragment = new DriveDateFragment();
+        dateFragment.setArguments(defaultDate);
         //Start the date fragment:
         dateFragment.show(getSupportFragmentManager(), "DriveDateFragment");
     }
@@ -103,8 +102,13 @@ public class CustomDriveDialog extends AppCompatActivity {
     }
 
     public void pickTime(Calendar driveTime) {
+        //Create the arguments for the fragment:
+        Bundle defaultTime = new Bundle();
+        defaultTime.putInt("hour", driveTime.get(Calendar.HOUR_OF_DAY));
+        defaultTime.putInt("minute", driveTime.get(Calendar.MINUTE));
         //This fragment will allow the user to pick the date:
-        DialogFragment timeFragment = new DriveTimeFragment(driveTime.get(Calendar.HOUR_OF_DAY), driveTime.get(Calendar.MINUTE));
+        DialogFragment timeFragment = new DriveTimeFragment();
+        timeFragment.setArguments(defaultTime);
         //Start the date fragment:
         timeFragment.show(getSupportFragmentManager(), "DriveTimeFragment");
     }

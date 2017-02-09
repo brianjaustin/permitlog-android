@@ -3,6 +3,7 @@ package team.tr.permitlog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -144,37 +145,30 @@ public class MainActivity extends AppCompatActivity {
 
     // Handle menu item clicks
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
+        private void transitionFragment(FragmentTransaction transaction, Fragment fragment, String title) {
+            /* This function switches the current fragment to the object passed in and sets the title. */
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+            // Change the title
+            getSupportActionBar().setTitle(R.string.app_name);
+        }
+
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             // Transaction for switching fragments
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 
-            // Bundle for passing arguments
-            Bundle bundle = new Bundle();
-            bundle.putString("uid", currentUser.getUid());
-
             // Specific behavior for different buttons
             switch (position) {
                 case HOME_MENU_INDEX: // Home button clicked
                     // Transition to the home fragment
-                    HomeFragment homeFragment = new HomeFragment();
-                    homeFragment.setArguments(bundle);
-                    transaction.replace(R.id.fragment_container, homeFragment);
-                    transaction.addToBackStack(null);
-                    transaction.commit();
-                    // Change the title
-                    getSupportActionBar().setTitle(R.string.app_name);
+                    transitionFragment(transaction, new HomeFragment(), "Permit Log");
                     break;
 
                 case DRIVERS_MENU_INDEX: // Drivers button clicked
                     // Transition to the drivers fragment
-                    DriversFragment driversFragment = new DriversFragment();
-                    driversFragment.setArguments(bundle);
-                    transaction.replace(R.id.fragment_container, driversFragment);
-                    transaction.addToBackStack(null);
-                    transaction.commit();
-                    // Change the title
-                    getSupportActionBar().setTitle(R.string.drivers_title);
+                    transitionFragment(transaction, new DriversFragment(), "Drivers");
                     break;
 
                 case SIGN_OUT_MENU_INDEX: // Sign out button clicked
