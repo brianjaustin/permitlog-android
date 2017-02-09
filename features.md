@@ -1,7 +1,7 @@
 ## Need
 * Start and stop time with a set of parent drivers
-* Add manual entries
-* Firebase integration
+* ~~Add manual entries~~
+* ~~Firebase integration~~
 * Total amount of hours with goal set
 * Export
 
