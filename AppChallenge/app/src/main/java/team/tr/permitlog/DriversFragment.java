@@ -12,6 +12,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -52,6 +53,10 @@ public class DriversFragment extends ListFragment {
 
     @Override
     public void onListItemClick(ListView listView, View view, int position, long id) {
+        // Check if the user is signed in:
+        boolean isSignedIn = FirebaseSignInHelper.signInIfNeeded((MainActivity)getActivity());
+        // Don't do anything if the user isn't signed in:
+        if (!isSignedIn) return;
         // Get the ID of the driver clicked
         String driverId = listData.driverIds.get(position);
         // Open the dialog to edit
