@@ -75,6 +75,11 @@ public class HomeFragment extends Fragment {
 
     //This is the listener for the "Custom Drive" button.
     private View.OnClickListener onAddDrive = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Check if the user is signed in:
+        boolean isSignedIn = FirebaseSignInHelper.signInIfNeeded((MainActivity)getActivity());
+        // Don't do anything if the user isn't signed in:
+        if (!isSignedIn) return;
+
         // Close the plus button menu
         FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
         floatingMenu.close(false);
@@ -86,6 +91,11 @@ public class HomeFragment extends Fragment {
 
     //This is the listener for the "Add Driver" button.
     private View.OnClickListener onAddDriver = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Check if the user is signed in:
+        boolean isSignedIn = FirebaseSignInHelper.signInIfNeeded((MainActivity)getActivity());
+        // Don't do anything if the user isn't signed in:
+        if (!isSignedIn) return;
+
         // Close the plus button menu
         FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
         floatingMenu.close(false);

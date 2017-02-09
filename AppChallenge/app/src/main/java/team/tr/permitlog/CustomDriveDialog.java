@@ -43,7 +43,7 @@ public class CustomDriveDialog extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_custom_dialog);
 
-        // Setup the firebase reference for times and drivers:
+        // Setup the Firebase reference
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
 

@@ -35,7 +35,7 @@ public class DriverDialog extends AppCompatActivity {
         setContentView(R.layout.activity_driver_dialog);
         Intent intent = getIntent();
 
-        // Setup the firebase reference
+        // Setup the Firebase reference
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         driverRef = FirebaseDatabase.getInstance().getReference().child(userId).child("drivers");
 
