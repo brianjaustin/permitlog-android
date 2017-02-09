@@ -70,7 +70,7 @@ public class DriverAdapter {
         }
     };
     //Keeps track of if the spinner is listening:
-    public boolean isListening = false;
+    private boolean isListening = false;
 
     public DriverAdapter(Context context, String userId, int layout) {
         //Initialize driversRef
@@ -93,7 +93,13 @@ public class DriverAdapter {
     public void startListening() {
         /* If stopListening() is put in the onPause() method, this should be put in the onResume() method
            so that the listener can start up again when the activity/fragment is started up again. */
-        if (!isListening) driversRef.addChildEventListener(driversListener);
+        if (!isListening) {
+            //Remember to reset the adapter so that things aren't added twice:
+            driverNames.clear();
+            driverIds.clear();
+            driversAdapter.notifyDataSetChanged();
+            driversRef.addChildEventListener(driversListener);
+        }
         isListening = true;
     }
 }
