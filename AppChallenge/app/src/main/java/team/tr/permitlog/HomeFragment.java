@@ -12,6 +12,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -23,7 +25,15 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.w3c.dom.Text;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 public class HomeFragment extends Fragment {
     //The root view for this fragment, used to find elements by id:
@@ -35,6 +45,10 @@ public class HomeFragment extends Fragment {
     // Store drive start/stop times
     private Calendar startingTime = Calendar.getInstance();
     private Calendar endingTime = Calendar.getInstance();
+
+    // Variables to update the drive_time label
+    String formattedTime;
+    private Timer timer;
 
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
@@ -74,6 +88,9 @@ public class HomeFragment extends Fragment {
         spinnerData = new DriverAdapter(getActivity(), userId, android.R.layout.simple_spinner_item);
         driversSpinner.setAdapter(spinnerData.driversAdapter);
 
+        // Initialize the timer for the drive_time label
+        timer = new Timer();
+
         TextView text = (TextView) rootView.findViewById(R.id.time_elapsed);
         text.setText("test");
         return rootView;
@@ -102,10 +119,38 @@ public class HomeFragment extends Fragment {
         // Grab the start time
         startingTime = Calendar.getInstance();
         Log.d(TAG, "startingTime: " + startingTime.getTime().toString());
+
+        // Start updating the label
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                // Get the difference between the start and current time
+                long timeDiff = Calendar.getInstance().getTimeInMillis() - startingTime.getTimeInMillis();
+                // Format and set it
+                long hours = TimeUnit.MILLISECONDS.toHours(timeDiff);
+                long minutes = TimeUnit.MILLISECONDS.toMinutes(timeDiff) - TimeUnit.HOURS.toMinutes(hours);
+                long seconds = TimeUnit.MILLISECONDS.toSeconds(timeDiff) -
+                        (TimeUnit.HOURS.toSeconds(hours) + TimeUnit.MINUTES.toSeconds(minutes));
+                formattedTime = String.format("%d:%02d:%02d",
+                        hours, minutes, seconds);
+                mHandler.obtainMessage(1).sendToTarget();
+            }
+        }, 0, 1000);
     } };
+
+    public Handler mHandler = new Handler() {
+        // Set the time
+        public void handleMessage(Message msg) {
+            TextView driveTime = (TextView) rootView.findViewById(R.id.drive_time);
+            driveTime.setText(formattedTime);
+        }
+    };
 
     //This is the listener for the "Stop Drive" button.
     private View.OnClickListener onStopDrive = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Stop the timer
+        timer.cancel();
+
         // Disable this button
         Button stopButton = (Button) view;
         stopButton.setEnabled(false);
@@ -142,6 +187,7 @@ public class HomeFragment extends Fragment {
                         // Save the drive (at night) and says success
                         saveDrive(true, driverId);
                         Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
+                        resetLabel();
                     }
                 })
                 .onNegative(new MaterialDialog.SingleButtonCallback() {
@@ -150,6 +196,14 @@ public class HomeFragment extends Fragment {
                         // Save the daytime drive and say success
                         saveDrive(false, driverId);
                         Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
+                        resetLabel();
+                    }
+                })
+                .onNeutral(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        // Set the timer label to zero
+                        resetLabel();
                     }
                 })
                 .show();
@@ -195,6 +249,11 @@ public class HomeFragment extends Fragment {
         driveRef.child("end").setValue(endingTime.getTimeInMillis());
         driveRef.child("night").setValue(night);
         driveRef.child("driver_id").setValue(driverId);
+    }
+
+    private void resetLabel() {
+        TextView driveTime = (TextView) rootView.findViewById(R.id.drive_time);
+        driveTime.setText("0:00:00");
     }
 
     @Override
