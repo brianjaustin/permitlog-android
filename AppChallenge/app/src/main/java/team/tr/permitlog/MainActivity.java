@@ -23,6 +23,11 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.Arrays;
 
@@ -91,6 +96,31 @@ public class MainActivity extends AppCompatActivity {
         // If no user is logged in, show the FirebaseUI login screen.
         if (currentUser == null) {
             showSignIn();
+        } else {
+            // Get the goal values; if none exist, show the settings page to set them 
+            final DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals");
+            goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    // Check if there is a total goal set
+                    if (!dataSnapshot.hasChild("total")) {
+                        // Show the fragment
+                        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+                        transaction.replace(R.id.fragment_container, new SettingsFragment());
+                        transaction.addToBackStack(null);
+                        transaction.commit();
+
+                        // Change the title and menu item
+                        getSupportActionBar().setTitle(R.string.settings_title);
+                        mDrawerList.setItemChecked(SETTINGS_MENU_INDEX, true);
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            });
         }
     }
 
@@ -169,6 +199,11 @@ public class MainActivity extends AppCompatActivity {
                 case DRIVERS_MENU_INDEX: // Drivers button clicked
                     // Transition to the drivers fragment
                     transitionFragment(transaction, new DriversFragment(), "Drivers");
+                    break;
+
+                case SETTINGS_MENU_INDEX: // Settings button clicked
+                    // Transition to the settings fragment
+                    transitionFragment(transaction, new SettingsFragment(), "Settings");
                     break;
 
                 case SIGN_OUT_MENU_INDEX: // Sign out button clicked
