@@ -9,6 +9,10 @@
     <string name="driver_dialog_success">Driver successfully saved.</string>
     <string name="driver_dialog_deleted">Driver successfully deleted.</string>
     <string name="driver_dialog_error">Please complete all fields.</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_descriptive">Enter goals for driving amounts (in hours).</string>
+    <string name="button_save">Save</string>
+    <string name="settings_success">Goals successfully saved.</string>
     <string name="drawer_open">Open Drawer</string>
     <string name="drawer_close">Close Drawer</string>
     <string name="go_to_add_driver_menu">Please add the driver that accompanied you by going to the "Add Driver" menu that can be found in the bottom-right corner of the home page.</string>

@@ -1,0 +1,122 @@
+package team.tr.permitlog;
+
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+
+/**
+ * A simple {@link Fragment} subclass.
+ */
+public class SettingsFragment extends Fragment {
+
+    //The root view for this fragment, used to find elements by id:
+    View rootView;
+
+    DatabaseReference goalsRef;
+
+    public SettingsFragment() {
+        // Required empty public constructor
+    }
+
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        LayoutInflater lf = getActivity().getLayoutInflater();
+        //pass the correct layout name for the fragment
+        rootView =  lf.inflate(R.layout.fragment_settings, container, false);
+
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
+
+        // Get the EditText views
+        final EditText totalEdit = (EditText) rootView.findViewById(R.id.goal_total);
+        final EditText dayEdit = (EditText) rootView.findViewById(R.id.goal_day);
+        final EditText nightEdit = (EditText) rootView.findViewById(R.id.goal_night);
+
+        // Set the values
+        goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.hasChild("total")) {
+                    totalEdit.setText(dataSnapshot.child("total").getValue().toString());
+                }
+                if (dataSnapshot.hasChild("today")) {
+                    dayEdit.setText(dataSnapshot.child("day").getValue().toString());
+                }
+                if (dataSnapshot.hasChild("night")) {
+                    nightEdit.setText(dataSnapshot.child("night").getValue().toString());
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e("SettingsFragment", databaseError.getMessage());
+            }
+        });
+
+        // Save the goals when the button is clicked
+        Button saveButton = (Button) rootView.findViewById(R.id.settings_save);
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Get the values
+                String totalGoal = totalEdit.getText().toString();
+                String dayGoal = dayEdit.getText().toString();
+                String nightGoal = nightEdit.getText().toString();
+
+                // Check to see if any is empty; if so, set it to zero
+                if (totalGoal.trim().equals("")) {
+                    totalGoal = "0";
+                }
+                if (dayGoal.trim().equals("")) {
+                    dayGoal = "0";
+                }
+                if (nightGoal.trim().equals("")) {
+                    nightGoal = "0";
+                }
+
+                // Save the values
+                goalsRef.child("total").setValue(Integer.parseInt(totalGoal));
+                goalsRef.child("day").setValue(Integer.parseInt(dayGoal));
+                goalsRef.child("night").setValue(Integer.parseInt(nightGoal));
+
+                // Hide the keyboard
+                hideKeyboard(getContext(), rootView);
+
+                // Notify the user
+                Toast.makeText(getContext(), R.string.settings_success, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        return rootView;
+    }
+
+    private static void hideKeyboard(Context context, View view) {
+        InputMethodManager inputManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (view == null) return;
+
+        // Hide the keyboard
+        inputManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+}
