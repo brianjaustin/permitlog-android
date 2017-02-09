@@ -122,4 +122,10 @@ public class SettingsFragment extends Fragment {
         inputManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
+    @Override
+    public void onPause() {
+        // Hide the keyboard when the fragment is paused:
+        hideKeyboard(getContext(), rootView);
+        super.onPause();
+    }
 }
