@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -80,14 +81,13 @@ public class DriversFragment extends ListFragment {
         // Required empty public constructor
     }
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         LayoutInflater lf = getActivity().getLayoutInflater();
 
         // Get the uid from the main activity
-        userId = getArguments().getString("uid");
+        userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         // Get Firebase database reference
         driversRef = FirebaseDatabase.getInstance().getReference().child(userId).child("drivers");
