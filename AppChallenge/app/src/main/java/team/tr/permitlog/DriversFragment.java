@@ -28,7 +28,7 @@ public class DriversFragment extends ListFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Get the uid from the main activity
+        // Get the uid
         userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         // Create adapter and add it to the ListView

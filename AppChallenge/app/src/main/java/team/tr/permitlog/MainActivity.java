@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
             transaction.addToBackStack(null);
             transaction.commit();
             // Change the title
-            getSupportActionBar().setTitle(R.string.app_name);
+            getSupportActionBar().setTitle(title);
             mDrawerList.setItemChecked(position, true);
         }
         //Otherwise, force the user to sign in:
@@ -184,6 +184,11 @@ public class MainActivity extends AppCompatActivity {
                 case HOME_MENU_INDEX: // Home button clicked
                     // Transition to the home fragment
                     transitionFragment(new HomeFragment(), position, "Permit Log");
+                    break;
+
+                case LOG_MENU_INDEX: // Log button clicked
+                    // Transition to the log fragment
+                    transitionFragment(new LogFragment(), position, "Driving Log");
                     break;
 
                 case DRIVERS_MENU_INDEX: // Drivers button clicked
