@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,6 +22,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 public class CustomDriveDialog extends AppCompatActivity {
     //TAG for logging:
@@ -37,6 +39,11 @@ public class CustomDriveDialog extends AppCompatActivity {
     private Calendar startingTime = Calendar.getInstance();
     //This stores the time that the user said they stopped driving at:
     private Calendar endingTime = Calendar.getInstance();
+
+    //The LinearLayout container for this dialog:
+    private LinearLayout timeNoticeContainer;
+    //The TextView containing the time notice:
+    private TextView timeNotice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +66,10 @@ public class CustomDriveDialog extends AppCompatActivity {
 
         ActionBar ab = getSupportActionBar(); //Create action bar object
         ab.setDisplayHomeAsUpEnabled(true); //Enable back button
+
+        //Set the container and time notice:
+        timeNoticeContainer = (LinearLayout)findViewById(R.id.time_notice_container);
+        timeNotice = (TextView)findViewById(R.id.time_notice);
 
         //Sets default date
         setDate(startingTime.get(Calendar.YEAR), startingTime.get(Calendar.MONTH), startingTime.get(Calendar.DAY_OF_MONTH));
@@ -152,9 +163,15 @@ public class CustomDriveDialog extends AppCompatActivity {
         driveTime.set(Calendar.HOUR_OF_DAY, hour);
         driveTime.set(Calendar.MINUTE, minute);
         //Display the time to the user:
-        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
+        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.US);
         timeFormat.setTimeZone(driveTime.getTimeZone());
         driveTimeView.setText(timeFormat.format(driveTime.getTime()));
+        //If endingTime is before startingTime, add the time notice if needed.
+        if (endingTime.before(startingTime)) {
+            if (timeNotice.getParent() == null) timeNoticeContainer.addView(timeNotice);
+        }
+        //Otherwise, remove the time notice if needed.
+        else if (timeNotice.getParent() == timeNoticeContainer) timeNoticeContainer.removeView(timeNotice);
         //Remember to log startingTime and endingTime for debugging:
         Log.d(TAG, "Started driving on: "+startingTime.getTime().toString());
         Log.d(TAG, "Stopped driving on: "+endingTime.getTime().toString());
