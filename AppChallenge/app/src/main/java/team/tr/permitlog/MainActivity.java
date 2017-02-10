@@ -74,6 +74,9 @@ public class MainActivity extends AppCompatActivity {
         // Highlight the home menu item by default
         mDrawerList.setItemChecked(HOME_MENU_INDEX, true);
 
+        // Setup Firebase offline database
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+
         // Get the current user from Firebase.
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
