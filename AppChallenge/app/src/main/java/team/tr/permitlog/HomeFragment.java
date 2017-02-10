@@ -48,10 +48,6 @@ public class HomeFragment extends Fragment {
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
 
-    public HomeFragment() {
-        // Required empty public constructor
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
