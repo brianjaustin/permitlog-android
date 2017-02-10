@@ -91,6 +91,16 @@
                 android:layout_toEndOf="@+id/drive_end_time_text"
                 style="@style/Widget.AppCompat.Spinner.Underlined"/>
         </RelativeLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/time_notice_container">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/time_notice"
+                android:text="Note that if the ending time is before the starting time, it will be assumed that the drive went into the next day." />
+        </LinearLayout>
         <CheckBox
             android:id="@+id/drive_at_night_checkbox"
             android:layout_width="wrap_content"
