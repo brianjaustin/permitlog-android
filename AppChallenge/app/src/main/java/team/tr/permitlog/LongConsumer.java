@@ -1,6 +1,6 @@
 package team.tr.permitlog;
 
-public interface IntToVoid {
+public interface LongConsumer {
     //A function that takes an integer and returns nothing:
-    public void func(int i);
+    void accept(long i);
 }

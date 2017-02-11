@@ -28,27 +28,39 @@ public class DriverAdapter {
     public ChildEventListener driversListener = new ChildEventListener() {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-            //Figure out what the name is:
-            String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
-                    + dataSnapshot.child("name").child("last").getValue().toString();
-            //Add it to driverNames:
-            driverNames.add(name);
-            //Add the key of this snapshot to driverIds:
-            driverIds.add(dataSnapshot.getKey());
-            //Update adapter:
-            driversAdapter.notifyDataSetChanged();
+            try {
+                //Figure out what the name is:
+                String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
+                        + dataSnapshot.child("name").child("last").getValue().toString();
+                //Add it to driverNames:
+                driverNames.add(name);
+                //Add the key of this snapshot to driverIds:
+                driverIds.add(dataSnapshot.getKey());
+                //Update adapter:
+                driversAdapter.notifyDataSetChanged();
+            }
+            //Log NullPointerExceptions from invalid drivers:
+            catch (NullPointerException e) {
+                Log.e(TAG, "The following is not a valid driver: "+dataSnapshot.getKey());
+            }
         }
         @Override
         public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-            // Get the index of the item changed
-            int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
-            //Figure out what the name is:
-            String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
-                    + dataSnapshot.child("name").child("last").getValue().toString();
-            //Set it in driverNames:
-            driverNames.set(driverIndex, name);
-            //Update adapter:
-            driversAdapter.notifyDataSetChanged();
+            try {
+                // Get the index of the item changed
+                int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
+                //Figure out what the name is:
+                String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
+                        + dataSnapshot.child("name").child("last").getValue().toString();
+                //Set it in driverNames:
+                driverNames.set(driverIndex, name);
+                //Update adapter:
+                driversAdapter.notifyDataSetChanged();
+            }
+            //Log NullPointerExceptions from invalid drivers:
+            catch (NullPointerException e) {
+                Log.e(TAG, "The following is not a valid driver: "+dataSnapshot.getKey());
+            }
         }
         @Override
         public void onChildRemoved(DataSnapshot dataSnapshot) {
@@ -74,7 +86,7 @@ public class DriverAdapter {
 
     public DriverAdapter(Context context, String userId, int layout) {
         //Initialize driversRef
-        driversRef = FirebaseDatabase.getInstance().getReference().child(userId).child("drivers");
+        driversRef = FirebaseHelper.getDatabase().getReference().child(userId).child("drivers");
         // Create the adapter for driverNames that will be used for the spinner:
         driversAdapter = new ArrayAdapter<String>(context, layout, driverNames);
         // Add the data from driversRef to driverNames and driverIds:

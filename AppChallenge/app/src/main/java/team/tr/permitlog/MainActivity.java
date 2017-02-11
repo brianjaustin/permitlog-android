@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     // Firebase variables:
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
+    private boolean isPersistenceEnabled = false;
 
     // For menu
     private String[] menuItems;
@@ -74,9 +75,6 @@ public class MainActivity extends AppCompatActivity {
         // Highlight the home menu item by default
         mDrawerList.setItemChecked(HOME_MENU_INDEX, true);
 
-        // Setup Firebase offline database
-        FirebaseDatabase.getInstance().setPersistenceEnabled(true);
-
         // Get the current user from Firebase.
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
@@ -110,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
             // Transition to the home fragment
             transitionFragment(new HomeFragment(), HOME_MENU_INDEX, "Permit Log");
             // Get the goal values; if none exist, show the settings page to set them 
-            final DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals");
+            DatabaseReference goalsRef = FirebaseHelper.getDatabase().getReference().child(currentUser.getUid()).child("goals");
             goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
