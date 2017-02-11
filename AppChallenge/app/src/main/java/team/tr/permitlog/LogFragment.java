@@ -31,9 +31,7 @@ public class LogFragment extends ListFragment {
             long driveTimeInSec =
                     ((long)(dataSnapshot.child("end").getValue())-(long)(dataSnapshot.child("start").getValue()))/1000;
             //Format the time appropriately:
-            String driveTimeString = DateUtils.formatElapsedTime(driveTimeInSec);
-            //If the time is less than an hour, then add "0:" to the beginning:
-            if (driveTimeInSec < 3600) driveTimeString = "0:"+driveTimeString;
+            String driveTimeString = ElapsedTime.formatSeconds(driveTimeInSec);
             //This is the summary of the log shown to the user:
             String logSummary = "Drove for "+driveTimeString;
             //Was the drive at night? Add "at night"/"during the day" appropriately.

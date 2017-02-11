@@ -9,8 +9,11 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import android.os.Handler;
 import android.os.Message;
@@ -48,19 +51,34 @@ public class HomeFragment extends Fragment {
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
 
+    // This holds the user's goals:
+    private long totalGoal, dayGoal, nightGoal;
+
     // TextViews:
     private TextView totalTimeView, dayTimeView, nightTimeView;
     // Callback for ElapsedTime.callWithTotal:
-    private IntToVoid totalTimeCallback = new IntToVoid() { @Override public void func(int totalTime) {
-            totalTimeView.setText("Total: "+totalTime+" hrs");
+    private LongConsumer totalTimeCallback = new LongConsumer() { @Override public void accept(long totalTime) {
+        // Convert the time to seconds and format appropriately:
+        String totalTimeStr = ElapsedTime.formatSeconds(totalTime/1000);
+        // Show the goal if it is nonzero:
+        if (totalGoal == 0) totalTimeView.setText("Total: "+totalTimeStr);
+        else totalTimeView.setText("Total: "+totalTimeStr+"/"+totalGoal+" hrs");
     } };
     // Callback for ElapsedTime.callWithDay:
-    private IntToVoid dayTimeCallback = new IntToVoid() { @Override public void func(int dayTime) {
-            dayTimeView.setText("Day: "+dayTime+" hrs");
+    private LongConsumer dayTimeCallback = new LongConsumer() { @Override public void accept(long dayTime) {
+        // Convert the time to seconds and format appropriately:
+        String dayTimeStr = ElapsedTime.formatSeconds(dayTime/1000);
+        // Show the goal if it is nonzero:
+        if (dayGoal == 0) dayTimeView.setText("Day: "+dayTimeStr);
+        else dayTimeView.setText("Day: "+dayTimeStr+"/"+dayGoal+" hrs");
     } };
     // Callback for ElapsedTime.callWithNight:
-    private IntToVoid nightTimeCallback = new IntToVoid() { @Override public void func(int nightTime) {
-            nightTimeView.setText("Night: "+nightTime+" hrs");
+    private LongConsumer nightTimeCallback = new LongConsumer() { @Override public void accept(long nightTime) {
+        // Convert the time to seconds and format appropriately:
+        String nightTimeStr = ElapsedTime.formatSeconds(nightTime/1000);
+        // Show the goal if it is nonzero:
+        if (nightGoal == 0) nightTimeView.setText("Night: "+nightTimeStr);
+        else nightTimeView.setText("Night: "+nightTimeStr+"/"+nightGoal+" hrs");
     } };
 
     @Override
@@ -109,9 +127,29 @@ public class HomeFragment extends Fragment {
 
     public void updateGoalTrackers() {
         /* This function updates totalTimeView, dayTimeView, and nightTimeView. */
-        ElapsedTime.callWithTotal(totalTimeCallback);
-        ElapsedTime.callWithDay(dayTimeCallback);
-        ElapsedTime.callWithNight(nightTimeCallback);
+        // Get the /goals data:
+        DatabaseReference goalsRef = FirebaseHelper.getDatabase().getReference().child(userId).child("goals");
+        goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // Set totalGoal, or set it to 0 if not present:
+                if (dataSnapshot.hasChild("total")) totalGoal = (long)dataSnapshot.child("total").getValue();
+                else totalGoal = 0;
+                // Do the same for day and night:
+                if (dataSnapshot.hasChild("day")) dayGoal = (long)dataSnapshot.child("day").getValue();
+                else dayGoal = 0;
+                if (dataSnapshot.hasChild("night")) nightGoal = (long)dataSnapshot.child("night").getValue();
+                else nightGoal = 0;
+                // Finally, call the ElapsedTime callbacks to update the goal trackers:
+                ElapsedTime.callWithTotal(totalTimeCallback);
+                ElapsedTime.callWithDay(dayTimeCallback);
+                ElapsedTime.callWithNight(nightTimeCallback);
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());
+            }
+        });
     }
 
     //This is the listener for the "Start Drive" button.
@@ -227,7 +265,7 @@ public class HomeFragment extends Fragment {
     //This is the listener for the "Custom Drive" button.
     private View.OnClickListener onAddDrive = new View.OnClickListener() { @Override public void onClick(View view) {
         // Check if the user is signed in:
-        boolean isSignedIn = FirebaseSignInHelper.signInIfNeeded((MainActivity)getActivity());
+        boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
         // Don't do anything if the user isn't signed in:
         if (!isSignedIn) return;
 
@@ -243,7 +281,7 @@ public class HomeFragment extends Fragment {
     //This is the listener for the "Add Driver" button.
     private View.OnClickListener onAddDriver = new View.OnClickListener() { @Override public void onClick(View view) {
         // Check if the user is signed in:
-        boolean isSignedIn = FirebaseSignInHelper.signInIfNeeded((MainActivity)getActivity());
+        boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
         // Don't do anything if the user isn't signed in:
         if (!isSignedIn) return;
 
@@ -259,11 +297,13 @@ public class HomeFragment extends Fragment {
 
     public void saveDrive(boolean night, String driverId) {
         // Connect to the database
-        DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times").push();
+        DatabaseReference driveRef = FirebaseHelper.getDatabase().getReference().child(userId).child("times").push();
         driveRef.child("start").setValue(startingTime.getTime());
         driveRef.child("end").setValue(endingTime.getTime());
         driveRef.child("night").setValue(night);
         driveRef.child("driver_id").setValue(driverId);
+        // Update the goal trackers because of the change:
+        updateGoalTrackers();
     }
 
     private void resetLabel() {
