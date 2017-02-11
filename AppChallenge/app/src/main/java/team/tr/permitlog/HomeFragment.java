@@ -48,12 +48,27 @@ public class HomeFragment extends Fragment {
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
 
+    // TextViews:
+    private TextView totalTimeView, dayTimeView, nightTimeView;
+    // Callback for ElapsedTime.callWithTotal:
+    private IntToVoid totalTimeCallback = new IntToVoid() { @Override public void func(int totalTime) {
+            totalTimeView.setText("Total: "+totalTime+" hrs");
+    } };
+    // Callback for ElapsedTime.callWithDay:
+    private IntToVoid dayTimeCallback = new IntToVoid() { @Override public void func(int dayTime) {
+            dayTimeView.setText("Day: "+dayTime+" hrs");
+    } };
+    // Callback for ElapsedTime.callWithNight:
+    private IntToVoid nightTimeCallback = new IntToVoid() { @Override public void func(int nightTime) {
+            nightTimeView.setText("Night: "+nightTime+" hrs");
+    } };
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         LayoutInflater lf = getActivity().getLayoutInflater();
         //pass the correct layout name for the fragment
-        rootView =  lf.inflate(R.layout.fragment_home, container, false);
+        rootView = lf.inflate(R.layout.fragment_home, container, false);
 
         // Set start drive button click
         Button startDrive = (Button) rootView.findViewById(R.id.start_drive);
@@ -72,7 +87,7 @@ public class HomeFragment extends Fragment {
         addDriver.setOnClickListener(onAddDriver);
 
         // Get the drivers spinner:
-        Spinner driversSpinner = (Spinner)rootView.findViewById(R.id.drivers_spinner);
+        Spinner driversSpinner = (Spinner) rootView.findViewById(R.id.drivers_spinner);
         // Get the UID:
         userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         // Add the items to the spinner:
@@ -82,9 +97,21 @@ public class HomeFragment extends Fragment {
         // Initialize the timer for the drive_time label
         timer = new Timer();
 
-        TextView text = (TextView) rootView.findViewById(R.id.time_elapsed);
-        text.setText("test");
+        // Initialize the TextViews:
+        totalTimeView=(TextView)rootView.findViewById(R.id.time_elapsed);
+        dayTimeView=(TextView)rootView.findViewById(R.id.day_elapsed);
+        nightTimeView=(TextView)rootView.findViewById(R.id.night_elapsed);
+        // Set the TextView's texts:
+        updateGoalTrackers();
         return rootView;
+    }
+
+
+    public void updateGoalTrackers() {
+        /* This function updates totalTimeView, dayTimeView, and nightTimeView. */
+        ElapsedTime.callWithTotal(totalTimeCallback);
+        ElapsedTime.callWithDay(dayTimeCallback);
+        ElapsedTime.callWithNight(nightTimeCallback);
     }
 
     //This is the listener for the "Start Drive" button.
@@ -246,7 +273,10 @@ public class HomeFragment extends Fragment {
 
     @Override
     public void onResume() {
+        // Start listening to the drivers again now that this activity is being resumed:
         spinnerData.startListening();
+        // Update the goal trackers as something might've changed:
+        updateGoalTrackers();
         super.onResume();
     }
 
