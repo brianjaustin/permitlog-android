@@ -52,7 +52,7 @@ public class CustomDriveDialog extends AppCompatActivity {
 
         // Setup the Firebase reference
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        timesRef = FirebaseHelper.getDatabase().getReference().child(userId).child("times");
+        timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
 
         // Get the spinner:
         Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);

@@ -128,7 +128,7 @@ public class HomeFragment extends Fragment {
     public void updateGoalTrackers() {
         /* This function updates totalTimeView, dayTimeView, and nightTimeView. */
         // Get the /goals data:
-        DatabaseReference goalsRef = FirebaseHelper.getDatabase().getReference().child(userId).child("goals");
+        DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
         goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -297,7 +297,7 @@ public class HomeFragment extends Fragment {
 
     public void saveDrive(boolean night, String driverId) {
         // Connect to the database
-        DatabaseReference driveRef = FirebaseHelper.getDatabase().getReference().child(userId).child("times").push();
+        DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times").push();
         driveRef.child("start").setValue(startingTime.getTime());
         driveRef.child("end").setValue(endingTime.getTime());
         driveRef.child("night").setValue(night);

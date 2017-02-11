@@ -49,7 +49,7 @@ public class SettingsFragment extends Fragment {
         rootView =  lf.inflate(R.layout.fragment_settings, container, false);
 
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        goalsRef = FirebaseHelper.getDatabase().getReference().child(userId).child("goals");
+        goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
 
         // Get the EditText views
         totalEdit = (EditText) rootView.findViewById(R.id.goal_total);
