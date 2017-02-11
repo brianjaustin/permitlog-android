@@ -17,7 +17,7 @@ public class ElapsedTime {
     //This function gets the /times reference from the user's Firebase data:
     private static DatabaseReference getTimesRef() {
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        return FirebaseHelper.getDatabase().getReference().child(userId).child("times");
+        return FirebaseDatabase.getInstance().getReference().child(userId).child("times");
     }
 
     public static String formatSeconds(long seconds) {

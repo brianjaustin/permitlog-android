@@ -86,7 +86,7 @@ public class DriverAdapter {
 
     public DriverAdapter(Context context, String userId, int layout) {
         //Initialize driversRef
-        driversRef = FirebaseHelper.getDatabase().getReference().child(userId).child("drivers");
+        driversRef = FirebaseDatabase.getInstance().getReference().child(userId).child("drivers");
         // Create the adapter for driverNames that will be used for the spinner:
         driversAdapter = new ArrayAdapter<String>(context, layout, driverNames);
         // Add the data from driversRef to driverNames and driverIds:

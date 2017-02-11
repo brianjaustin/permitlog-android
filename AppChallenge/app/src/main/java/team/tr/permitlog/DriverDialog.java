@@ -37,7 +37,7 @@ public class DriverDialog extends AppCompatActivity {
 
         // Setup the Firebase reference
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        driverRef = FirebaseHelper.getDatabase().getReference().child(userId).child("drivers");
+        driverRef = FirebaseDatabase.getInstance().getReference().child(userId).child("drivers");
 
         // Set the toolbar as the action bar
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);

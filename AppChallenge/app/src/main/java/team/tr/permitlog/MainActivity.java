@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
     // Firebase variables:
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
-    private boolean isPersistenceEnabled = false;
+    private static boolean isPersistenceEnabled = false;
 
     // For menu
     private String[] menuItems;
@@ -71,6 +71,14 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_menu_white_24px);
         getSupportActionBar().setHomeButtonEnabled(true);
+
+        // Set persistence if not set:
+        // isPersistenceEnabled stays after Instant Run, so Instant Run does not call setPersistenceEnabled() again
+        // as if it did, the app would crash.
+        if (!isPersistenceEnabled) {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+            isPersistenceEnabled = true;
+        }
 
         // Highlight the home menu item by default
         mDrawerList.setItemChecked(HOME_MENU_INDEX, true);
@@ -108,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
             // Transition to the home fragment
             transitionFragment(new HomeFragment(), HOME_MENU_INDEX, "Permit Log");
             // Get the goal values; if none exist, show the settings page to set them 
-            DatabaseReference goalsRef = FirebaseHelper.getDatabase().getReference().child(currentUser.getUid()).child("goals");
+            DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals");
             goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
