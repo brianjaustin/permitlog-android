@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
     // Firebase variables:
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
-    private boolean isPersistenceEnabled = false;
 
     // For menu
     private String[] menuItems;
