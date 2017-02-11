@@ -125,7 +125,6 @@ public class MainActivity extends AppCompatActivity {
                         transitionFragment(new SettingsFragment(), SETTINGS_MENU_INDEX, "Settings");
                     }
                 }
-
                 @Override
                 public void onCancelled(DatabaseError databaseError) {
                     Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());

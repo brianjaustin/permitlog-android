@@ -26,9 +26,14 @@ public class DriverAdapter {
 
     //Firebase listener
     public ChildEventListener driversListener = new ChildEventListener() {
+        public boolean hasCompleteName(DataSnapshot dataSnapshot) {
+            /* This function returns true if dataSnapshot has first name and last name. */
+            return dataSnapshot.child("name").hasChild("first") && dataSnapshot.child("name").hasChild("last");
+        }
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-            try {
+            //If this driver has a complete name:
+            if (hasCompleteName(dataSnapshot)) {
                 //Figure out what the name is:
                 String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
                         + dataSnapshot.child("name").child("last").getValue().toString();
@@ -39,38 +44,53 @@ public class DriverAdapter {
                 //Update adapter:
                 driversAdapter.notifyDataSetChanged();
             }
-            //Log NullPointerExceptions from invalid drivers:
-            catch (NullPointerException e) {
-                Log.e(TAG, "The following is not a valid driver: "+dataSnapshot.getKey());
+            //Otherwise, log them for being incomplete:
+            else {
+                Log.d(TAG, "The following is not a valid driver: "+dataSnapshot.getKey());
             }
         }
         @Override
         public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-            try {
-                // Get the index of the item changed
-                int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
-                //Figure out what the name is:
-                String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
-                        + dataSnapshot.child("name").child("last").getValue().toString();
-                //Set it in driverNames:
-                driverNames.set(driverIndex, name);
-                //Update adapter:
-                driversAdapter.notifyDataSetChanged();
+            if (hasCompleteName(dataSnapshot)) {
+                //If this driver is in driverIds:
+                if (driverIds.contains(dataSnapshot.getKey())) {
+                    // Get the index of the item changed
+                    int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
+                    //Figure out what the name is:
+                    String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
+                            + dataSnapshot.child("name").child("last").getValue().toString();
+                    //Set it in driverNames:
+                    driverNames.set(driverIndex, name);
+                    //Update adapter:
+                    driversAdapter.notifyDataSetChanged();
+                }
+                //Otherwise, log them for not being in driverIds and add them:
+                else {
+                    Log.d(TAG, "The following is being added to driverIds from onChildChanged(): "+dataSnapshot.getKey());
+                    onChildAdded(dataSnapshot, s);
+                }
             }
-            //Log NullPointerExceptions from invalid drivers:
-            catch (NullPointerException e) {
-                Log.e(TAG, "The following is not a valid driver: "+dataSnapshot.getKey());
+            //Otherwise, log them for being incomplete:
+            else {
+                Log.d(TAG, "The following is not a valid driver: "+dataSnapshot.getKey());
             }
         }
         @Override
         public void onChildRemoved(DataSnapshot dataSnapshot) {
-            // Get the index of the item removed
-            int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
-            // Remove this value from _both_ ArrayLists
-            driverIds.remove(driverIndex);
-            driverNames.remove(driverIndex);
-            // Update adapter:
-            driversAdapter.notifyDataSetChanged();
+            //If this driver is in driverIds:
+            if (driverIds.contains(dataSnapshot.getKey())) {
+                // Get the index of the item removed
+                int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
+                // Remove this value from _both_ ArrayLists
+                driverIds.remove(driverIndex);
+                driverNames.remove(driverIndex);
+                // Update adapter:
+                driversAdapter.notifyDataSetChanged();
+            }
+            //Otherwise, log them for not being in driverIds and add them:
+            else {
+                Log.d(TAG, "The following was not in driverIds: "+dataSnapshot.getKey());
+            }
         }
         // The following must be implemented in order to complete the abstract class:
         @Override
