@@ -85,8 +85,15 @@ public class CustomDriveDialog extends AppCompatActivity {
         logId = getIntent().getStringExtra("logId");
         //If logId is null, then we will create a new log, so set the date and times to the current time:
         if (logId == null) updateDateAndTime();
-        //Otherwise, we are creating an old log, so set the times according to the log:
-        else timesRef.child(logId).addListenerForSingleValueEvent(setLogData);
+        //Otherwise, we are editing: an old log:
+        else {
+            //Set the times according to the log:
+            timesRef.child(logId).addListenerForSingleValueEvent(setLogData);
+            //Show the Delete button:
+            findViewById(R.id.custom_drive_delete).setVisibility(View.VISIBLE);
+            //Change the title at the top:
+            ab.setTitle("Edit Drive Log");
+        }
     }
 
     private ValueEventListener setLogData = new ValueEventListener() {
@@ -267,9 +274,17 @@ public class CustomDriveDialog extends AppCompatActivity {
         logRef.child("night").setValue(isDriveAtNight);
         logRef.child("driver_id").setValue(driverId);
         //Notify user and close the dialog
-        String message = "Custom drive edited successfully";
+        String message = "Edits to drive log saved successfully";
         if (logId == null) message = "Custom drive saved successfully";
         Toast.makeText(applicationCon, message, Toast.LENGTH_SHORT).show();
+        finish();
+    }
+
+    public void onDeleteClick(View view) {
+        //Delete the log:
+        timesRef.child(logId).removeValue();
+        //Notify user and close the dialog
+        Toast.makeText(getApplicationContext(), "Drive log deleted successfully", Toast.LENGTH_SHORT).show();
         finish();
     }
 
@@ -280,4 +295,3 @@ public class CustomDriveDialog extends AppCompatActivity {
         super.onDestroy();
     }
 }
-
