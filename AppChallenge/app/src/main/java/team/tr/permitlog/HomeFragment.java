@@ -313,17 +313,15 @@ public class HomeFragment extends Fragment {
 
     @Override
     public void onResume() {
-        // Start listening to the drivers again now that this activity is being resumed:
-        spinnerData.startListening();
         // Update the goal trackers as something might've changed:
         updateGoalTrackers();
         super.onResume();
     }
 
     @Override
-    public void onPause() {
+    public void onDestroyView() {
         // Since this activity is being stopped, we don't need to listen to the drivers anymore:
         spinnerData.stopListening();
-        super.onPause();
+        super.onDestroyView();
     }
 }

@@ -20,15 +20,12 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 public class DriverDialog extends AppCompatActivity {
-
     // Whether or not this dialog is being used to edit an existing driver
     private boolean editing;
-
+    // If editing, holds the database key of the driver we are editing
+    private String driverId;
     // Firebase reference
     private DatabaseReference driverRef;
-
-    private String driverId;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
