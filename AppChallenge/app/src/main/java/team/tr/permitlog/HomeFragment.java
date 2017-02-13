@@ -51,35 +51,25 @@ public class HomeFragment extends Fragment {
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
 
+    // This holds the user's completed time:
+    private long totalTime, dayTime, nightTime;
     // This holds the user's goals:
     private long totalGoal, dayGoal, nightGoal;
-
     // TextViews:
     private TextView totalTimeView, dayTimeView, nightTimeView;
-    // Callback for ElapsedTime.callWithTotal:
-    private LongConsumer totalTimeCallback = new LongConsumer() { @Override public void accept(long totalTime) {
-        // Convert the time to seconds and format appropriately:
-        String totalTimeStr = ElapsedTime.formatSeconds(totalTime/1000);
-        // Show the goal if it is nonzero:
-        if (totalGoal == 0) totalTimeView.setText("Total: "+totalTimeStr);
-        else totalTimeView.setText("Total: "+totalTimeStr+"/"+totalGoal+" hrs");
-    } };
-    // Callback for ElapsedTime.callWithDay:
-    private LongConsumer dayTimeCallback = new LongConsumer() { @Override public void accept(long dayTime) {
-        // Convert the time to seconds and format appropriately:
-        String dayTimeStr = ElapsedTime.formatSeconds(dayTime/1000);
-        // Show the goal if it is nonzero:
-        if (dayGoal == 0) dayTimeView.setText("Day: "+dayTimeStr);
-        else dayTimeView.setText("Day: "+dayTimeStr+"/"+dayGoal+" hrs");
-    } };
-    // Callback for ElapsedTime.callWithNight:
-    private LongConsumer nightTimeCallback = new LongConsumer() { @Override public void accept(long nightTime) {
-        // Convert the time to seconds and format appropriately:
-        String nightTimeStr = ElapsedTime.formatSeconds(nightTime/1000);
-        // Show the goal if it is nonzero:
-        if (nightGoal == 0) nightTimeView.setText("Night: "+nightTimeStr);
-        else nightTimeView.setText("Night: "+nightTimeStr+"/"+nightGoal+" hrs");
-    } };
+    // Firebase listener to logs:
+    private ValueEventListener timesListener;
+    // Callback for timesListener:
+    private TriLongConsumer timeCallback = new TriLongConsumer() {
+        @Override public void accept(long totalTimeP, long dayTimeP, long nightTimeP) {
+            //Set the instance properties:
+            totalTime = totalTimeP;
+            dayTime = dayTimeP;
+            nightTime = nightTimeP;
+            //Update the "Time Completed" section:
+            updateGoalTextViews();
+        }
+    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -112,20 +102,19 @@ public class HomeFragment extends Fragment {
         spinnerData = new DriverAdapter(getActivity(), userId, android.R.layout.simple_spinner_item);
         driversSpinner.setAdapter(spinnerData.driversAdapter);
 
-        // Initialize the timer for the drive_time label
-        timer = new Timer();
-
         // Initialize the TextViews:
         totalTimeView=(TextView)rootView.findViewById(R.id.time_elapsed);
         dayTimeView=(TextView)rootView.findViewById(R.id.day_elapsed);
         nightTimeView=(TextView)rootView.findViewById(R.id.night_elapsed);
+        // Start listening to logs:
+        timesListener = ElapsedTime.startListening(userId, timeCallback);
         // Set the TextView's texts:
-        updateGoalTrackers();
+        updateGoals();
         return rootView;
     }
 
 
-    public void updateGoalTrackers() {
+    public void updateGoals() {
         /* This function updates totalTimeView, dayTimeView, and nightTimeView. */
         // Get the /goals data:
         DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
@@ -143,24 +132,29 @@ public class HomeFragment extends Fragment {
             else dayGoal = 0;
             if (dataSnapshot.hasChild("night")) nightGoal = (long)dataSnapshot.child("night").getValue();
             else nightGoal = 0;
-            // Finally, call the ElapsedTime callbacks to update the goal trackers:
-            try {
-                ElapsedTime.callWithTotal(totalTimeCallback);
-                ElapsedTime.callWithDay(dayTimeCallback);
-                ElapsedTime.callWithNight(nightTimeCallback);
-            }
-            //If getCurrentUser() returns null, then log it:
-            //One would expect that if getCurrentUser() is null, then onCancelled() would be triggered,
-            //but that only happens half the time.
-            catch (NullPointerException e) {
-                Log.e(TAG, "While trying to start settings: "+e.getMessage());
-            }
+            // Update the "Time Completed" section
+            updateGoalTextViews();
         }
         @Override
         public void onCancelled(DatabaseError databaseError) {
             Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());
         }
     };
+
+    public void updateGoalTextViews() {
+        // Convert the time to seconds and format appropriately:
+        String totalTimeStr = ElapsedTime.formatSeconds(totalTime/1000);
+        // Show the goal if it is nonzero:
+        if (totalGoal == 0) totalTimeView.setText("Total: "+totalTimeStr);
+        else totalTimeView.setText("Total: "+totalTimeStr+"/"+totalGoal+" hrs");
+        // Do the same for day and night:
+        String dayTimeStr = ElapsedTime.formatSeconds(dayTime/1000);
+        if (dayGoal == 0) dayTimeView.setText("Day: "+dayTimeStr);
+        else dayTimeView.setText("Day: "+dayTimeStr+"/"+dayGoal+" hrs");
+        String nightTimeStr = ElapsedTime.formatSeconds(nightTime/1000);
+        if (nightGoal == 0) nightTimeView.setText("Night: "+nightTimeStr);
+        else nightTimeView.setText("Night: "+nightTimeStr+"/"+nightGoal+" hrs");
+    }
 
     //This is the listener for the "Start Drive" button.
     //The weird indentation is done like this in order to make the indentation like a regular function.
@@ -187,6 +181,7 @@ public class HomeFragment extends Fragment {
         Log.d(TAG, "startingTime: " + startingTime);
 
         // Start updating the label
+        timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -250,7 +245,6 @@ public class HomeFragment extends Fragment {
                         // Save the drive (at night) and says success
                         saveDrive(true, driverId);
                         Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
-                        resetLabel();
                     }
                 })
                 .onNegative(new MaterialDialog.SingleButtonCallback() {
@@ -259,10 +253,9 @@ public class HomeFragment extends Fragment {
                         // Save the daytime drive and say success
                         saveDrive(false, driverId);
                         Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
-                        resetLabel();
                     }
                 })
-                .onNeutral(new MaterialDialog.SingleButtonCallback() {
+                .onAny(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                         // Set the timer label to zero
@@ -316,8 +309,6 @@ public class HomeFragment extends Fragment {
         driveRef.child("end").setValue(endingTime.getTime());
         driveRef.child("night").setValue(night);
         driveRef.child("driver_id").setValue(driverId);
-        // Update the goal trackers because of the change:
-        updateGoalTrackers();
     }
 
     private void resetLabel() {
@@ -328,14 +319,15 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         // Update the goal trackers as something might've changed:
-        updateGoalTrackers();
+        updateGoals();
         super.onResume();
     }
 
     @Override
     public void onDestroyView() {
-        // Since this activity is being stopped, we don't need to listen to the drivers anymore:
+        // Since this activity is being stopped, we don't need to listen to the drivers or logs anymore:
         spinnerData.stopListening();
+        ElapsedTime.stopListening(timesListener);
         super.onDestroyView();
     }
 }

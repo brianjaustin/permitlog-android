@@ -3,22 +3,17 @@ package team.tr.permitlog;
 import android.text.format.DateUtils;
 import android.util.Log;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
+
 public class ElapsedTime {
     //For logging:
     public static String TAG = "ElapsedTime";
-
-    //This function gets the /times reference from the user's Firebase data:
-    private static DatabaseReference getTimesRef() {
-        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        return FirebaseDatabase.getInstance().getReference().child(userId).child("times");
-    }
 
     public static String formatSeconds(long seconds) {
         /* Adds "0:" to DateUtils.formatElapsedTime() if seconds < 3600. */
@@ -28,84 +23,51 @@ public class ElapsedTime {
         return secondsString;
     }
 
-    public static void callWithTotal(final LongConsumer funcObj) {
-        /* Eventually calls funcObj.accept(totalTime) where totalTime is the number of milliseconds logged. */
-        //Get the data:
-        DatabaseReference timesRef = getTimesRef();
-        timesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+    public static boolean validLog(DataSnapshot dataSnapshot) {
+        /* Returns if dataSnapshot represents a valid log. */
+        return dataSnapshot.hasChild("start") && dataSnapshot.hasChild("end")
+                && dataSnapshot.hasChild("night") && dataSnapshot.hasChild("driver_id");
+    }
+
+    //Firebase reference:
+    private static DatabaseReference timesRef;
+
+    public static ValueEventListener startListening(String userId, final TriLongConsumer callback) {
+        //Get the DatabaseReference if it hasn't been initialized yet:
+        if (timesRef == null) timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
+        //Create the listener:
+        ValueEventListener timesListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                //This is the total:
-                long totalTime = 0;
-                //Loop through the children:
-                for (DataSnapshot logSnapshot : dataSnapshot.getChildren()) {
+                //This are the totals:
+                long totalTime = 0, dayTime = 0, nightTime = 0;
+                //Loop through the children that are valid logs:
+                for (DataSnapshot logSnapshot : dataSnapshot.getChildren()) if (validLog(logSnapshot)) {
                     //Find the time elapsed during the drive and add it to the total:
-                    totalTime += (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
+                    long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
+                    totalTime += timeElapsed;
+                    //If this was during the night, add it to the night total:
+                    if ((boolean) logSnapshot.child("night").getValue()) nightTime += timeElapsed;
+                        //Otherwise, add it to the day total:
+                    else dayTime += timeElapsed;
                 }
-                //Call the callback:
-                funcObj.accept(totalTime);
+                //Call the callbacks:
+                callback.accept(totalTime, dayTime, nightTime);
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 Log.e(TAG, "While trying to get logs: "+databaseError.getMessage());
             }
-        });
+        };
+        //Start listening:
+        timesRef.addValueEventListener(timesListener);
+        //Finally, return the timesListener:
+        return timesListener;
     }
 
-    public static void callWithDay(final LongConsumer funcObj) {
-        /* Eventually calls funcObj.accept(dayTime) where dayTime is the number of milliseconds logged during the day. */
-        //Get the data:
-        DatabaseReference timesRef = getTimesRef();
-        timesRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                //This is the total:
-                long dayTime = 0;
-                //Loop through the children:
-                for (DataSnapshot logSnapshot : dataSnapshot.getChildren()) {
-                    //If this was during the day:
-                    if (!((boolean) logSnapshot.child("night").getValue())) {
-                        //Find the time elapsed during the drive and add it to the total:
-                        dayTime += (long)(logSnapshot.child("end").getValue())-(long) (logSnapshot.child("start").getValue());
-                    }
-                }
-                //Call the callback:
-                funcObj.accept(dayTime);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.e(TAG, "While trying to get logs: "+databaseError.getMessage());
-            }
-        });
-    }
-
-    public static void callWithNight(final LongConsumer funcObj) {
-        /* Eventually calls funcObj.accept(nightTime) where nightTime is the number of milliseconds logged during the night. */
-        //Get the data:
-        DatabaseReference timesRef = getTimesRef();
-        timesRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                //This is the total:
-                long nightTime = 0;
-                //Loop through the children:
-                for (DataSnapshot logSnapshot : dataSnapshot.getChildren()) {
-                    //If this was during the night:
-                    if ((boolean) logSnapshot.child("night").getValue()) {
-                        //Find the time elapsed during the drive and add it to the total:
-                        nightTime += (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
-                    }
-                }
-                //Call the callback:
-                funcObj.accept(nightTime);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.e(TAG, "While trying to get logs: "+databaseError.getMessage());
-            }
-        });
+    public static void stopListening(ValueEventListener timesListener) {
+        //Stop listening if possible:
+        if (timesRef != null) timesRef.removeEventListener(timesListener);
     }
 }
