@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
@@ -18,8 +19,10 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
 public class LogFragment extends ListFragment {
     //For logging:
@@ -27,6 +30,11 @@ public class LogFragment extends ListFragment {
 
     // The root view for this fragment, used to find elements by id:
     private View rootView;
+
+    // Variables used in export
+    String userId;
+    String licenseId;
+    long logCount;
 
     //Firebase reference:
     DatabaseReference timesRef;
@@ -39,6 +47,9 @@ public class LogFragment extends ListFragment {
 
     //This is the ListView's adapter:
     private ArrayAdapter<String> listAdapter;
+
+    // This holds the CSV data for export
+    private String logAsCsv;
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
@@ -61,12 +72,48 @@ public class LogFragment extends ListFragment {
             //Finally return the summary:
             return logSummary;
         }
+        private void saveToCsv(final DataSnapshot itemSnapshot) {
+            DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child(userId)
+                    .child("drivers").child(itemSnapshot.child("driver_id").getValue().toString());
+
+            driverRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    // Add the start time
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.setTimeInMillis((long) itemSnapshot.child("start").getValue());
+                    logAsCsv += calendar.getTime().toString() + ", ";
+
+                    // Add the end time
+                    calendar.setTimeInMillis((long) itemSnapshot.child("end").getValue());
+                    logAsCsv += calendar.getTime().toString() + ", ";
+
+                    // Get night flag
+                    logAsCsv += itemSnapshot.child("night").getValue().toString() + ", ";
+
+                    // Get the license number
+                    licenseId = dataSnapshot.child("license_number").getValue().toString();
+
+                    // Add the license number and a newline
+                    logAsCsv += licenseId + ", ";
+                    logAsCsv += "\n";
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.d(TAG, databaseError.getMessage());
+                }
+            });
+        }
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
             //Set the data and update the adapter:
             logIds.add(dataSnapshot.getKey());
             logSummaries.add(genLogSummary(dataSnapshot));
             listAdapter.notifyDataSetChanged();
+
+            // Prepare for manual export
+            saveToCsv(dataSnapshot);
         }
 
         @Override
@@ -109,7 +156,11 @@ public class LogFragment extends ListFragment {
         rootView = inflater.inflate(R.layout.fragment_log, container, false);
 
         //Get the uid
-        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        // Setup the variable to hold the CSV file
+        logAsCsv = "";
+        logAsCsv += "start, stop, night, driver\n";
 
         //Initialize timesRef and start listening:
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
@@ -174,7 +225,16 @@ public class LogFragment extends ListFragment {
             boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
             if (!isSignedIn) return;
 
-            // TODO: manually export, to a format like CSV
+            // Send the CSV file to the user
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_TEXT, logAsCsv);
+            try {
+                startActivity(Intent.createChooser(intent, "Send Driving Log"));
+            } catch (android.content.ActivityNotFoundException exception) {
+                // There is no email client installed
+                Toast.makeText(rootView.getContext(), R.string.export_email_error, Toast.LENGTH_LONG).show();
+            }
         }
     };
 
