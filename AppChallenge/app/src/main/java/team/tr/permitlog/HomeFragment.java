@@ -129,28 +129,38 @@ public class HomeFragment extends Fragment {
         /* This function updates totalTimeView, dayTimeView, and nightTimeView. */
         // Get the /goals data:
         DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
-        goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                // Set totalGoal, or set it to 0 if not present:
-                if (dataSnapshot.hasChild("total")) totalGoal = (long)dataSnapshot.child("total").getValue();
-                else totalGoal = 0;
-                // Do the same for day and night:
-                if (dataSnapshot.hasChild("day")) dayGoal = (long)dataSnapshot.child("day").getValue();
-                else dayGoal = 0;
-                if (dataSnapshot.hasChild("night")) nightGoal = (long)dataSnapshot.child("night").getValue();
-                else nightGoal = 0;
-                // Finally, call the ElapsedTime callbacks to update the goal trackers:
+        goalsRef.addListenerForSingleValueEvent(goalsListener);
+    }
+
+    private ValueEventListener goalsListener = new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+            // Set totalGoal, or set it to 0 if not present:
+            if (dataSnapshot.hasChild("total")) totalGoal = (long)dataSnapshot.child("total").getValue();
+            else totalGoal = 0;
+            // Do the same for day and night:
+            if (dataSnapshot.hasChild("day")) dayGoal = (long)dataSnapshot.child("day").getValue();
+            else dayGoal = 0;
+            if (dataSnapshot.hasChild("night")) nightGoal = (long)dataSnapshot.child("night").getValue();
+            else nightGoal = 0;
+            // Finally, call the ElapsedTime callbacks to update the goal trackers:
+            try {
                 ElapsedTime.callWithTotal(totalTimeCallback);
                 ElapsedTime.callWithDay(dayTimeCallback);
                 ElapsedTime.callWithNight(nightTimeCallback);
             }
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());
+            //If getCurrentUser() returns null, then log it:
+            //One would expect that if getCurrentUser() is null, then onCancelled() would be triggered,
+            //but that only happens half the time.
+            catch (NullPointerException e) {
+                Log.e(TAG, "While trying to start settings: "+e.getMessage());
             }
-        });
-    }
+        }
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+            Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());
+        }
+    };
 
     //This is the listener for the "Start Drive" button.
     //The weird indentation is done like this in order to make the indentation like a regular function.
@@ -296,6 +306,10 @@ public class HomeFragment extends Fragment {
     } };
 
     public void saveDrive(boolean night, String driverId) {
+        // Check if the user is signed in:
+        boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
+        // Don't do anything if the user isn't signed in:
+        if (!isSignedIn) return;
         // Connect to the database
         DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times").push();
         driveRef.child("start").setValue(startingTime.getTime());

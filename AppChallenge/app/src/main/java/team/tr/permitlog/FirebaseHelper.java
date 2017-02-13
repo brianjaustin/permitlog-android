@@ -1,8 +1,9 @@
 package team.tr.permitlog;
 
+import android.widget.Toast;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.FirebaseDatabase;
 
 public class FirebaseHelper {
     public static boolean signInIfNeeded(MainActivity mainActivity) {
@@ -12,7 +13,10 @@ public class FirebaseHelper {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         boolean signedIn = (currentUser != null);
         //If the user is not signed in, then show the sign in screen:
-        if (!signedIn) mainActivity.showSignIn();
+        if (!signedIn) {
+            Toast.makeText(mainActivity, R.string.unknown_auth_error, Toast.LENGTH_SHORT).show();
+            mainActivity.showSignIn();
+        }
         //Finally, return the boolean:
         return signedIn;
     }
