@@ -21,10 +21,6 @@ public class DriversFragment extends ListFragment {
     // Store data for the list:
     private DriverAdapter listData;
 
-    public DriversFragment() {
-        // Required empty public constructor
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
