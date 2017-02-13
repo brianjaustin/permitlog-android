@@ -218,6 +218,10 @@ public class MainActivity extends AppCompatActivity {
                     transitionFragment(new SettingsFragment(), position, "Settings");
                     break;
 
+                case ABOUT_MENU_INDEX:
+                    transitionFragment(new AboutFragment(), position, "About");
+                    break;
+
                 case SIGN_OUT_MENU_INDEX: // Sign out button clicked
                     AuthUI.getInstance()
                             .signOut(MainActivity.this)
