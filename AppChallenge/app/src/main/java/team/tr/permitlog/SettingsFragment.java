@@ -35,12 +35,6 @@ public class SettingsFragment extends Fragment {
     private EditText dayEdit;
     private EditText nightEdit;
 
-
-    public SettingsFragment() {
-        // Required empty public constructor
-    }
-
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -86,6 +80,10 @@ public class SettingsFragment extends Fragment {
 
     //This weird one-liner is done so that onSaveClick looks like a regular function:
     private View.OnClickListener onSaveClick = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Check if the user is signed in:
+        boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
+        // Don't do anything if the user isn't signed in:
+        if (!isSignedIn) return;
         // Get the values
         String totalGoal = totalEdit.getText().toString();
         String dayGoal = dayEdit.getText().toString();
