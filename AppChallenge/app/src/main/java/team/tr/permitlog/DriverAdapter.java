@@ -15,7 +15,7 @@ import java.util.ArrayList;
 
 public class DriverAdapter {
     //TAG for logging
-    public static String TAG = "DriverAdapter";
+    private static String TAG = "DriverAdapter";
     //Firebase reference
     public DatabaseReference driversRef;
     //Store the drivers and their IDs:
