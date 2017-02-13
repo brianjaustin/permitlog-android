@@ -2,6 +2,7 @@ package team.tr.permitlog;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.renderscript.Sampler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
@@ -38,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     // Firebase variables:
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
+    private static boolean isPersistenceEnabled = false;
 
     // For menu
     private String[] menuItems;
@@ -71,6 +73,14 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_menu_white_24px);
         getSupportActionBar().setHomeButtonEnabled(true);
 
+        // Set persistence if not set:
+        // isPersistenceEnabled stays after Instant Run, so Instant Run does not call setPersistenceEnabled() again
+        // as if it did, the app would crash.
+        if (!isPersistenceEnabled) {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+            isPersistenceEnabled = true;
+        }
+
         // Highlight the home menu item by default
         mDrawerList.setItemChecked(HOME_MENU_INDEX, true);
 
@@ -79,29 +89,7 @@ public class MainActivity extends AppCompatActivity {
         currentUser = mAuth.getCurrentUser();
         // Log whether currentUser is null or not:
         Log.d(TAG, "Is the user not signed in? "+Boolean.toString(currentUser == null));
-        // If no user is logged in, show the FirebaseUI login screen.
-        if (currentUser == null) {
-            showSignIn();
-        } else {
-            // Transition to the home fragment
-            transitionFragment(new HomeFragment(), HOME_MENU_INDEX, "Permit Log");
-            // Get the goal values; if none exist, show the settings page to set them 
-            final DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals");
-            goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    // If there is no total goal set, switch to the settings:
-                    if (!dataSnapshot.hasChild("total")) {
-                        transitionFragment(new SettingsFragment(), SETTINGS_MENU_INDEX, "Settings");
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());
-                }
-            });
-        }
+        navigateBasedOnUser();
     }
 
 
@@ -114,12 +102,38 @@ public class MainActivity extends AppCompatActivity {
             transaction.addToBackStack(null);
             transaction.commit();
             // Change the title
-            getSupportActionBar().setTitle(R.string.app_name);
+            getSupportActionBar().setTitle(title);
             mDrawerList.setItemChecked(position, true);
         }
         //Otherwise, force the user to sign in:
         else showSignIn();
     }
+
+    private void navigateBasedOnUser() {
+        // If no user is logged in, show the FirebaseUI login screen.
+        if (currentUser == null) {
+            showSignIn();
+        } else {
+            // Transition to the home fragment
+            transitionFragment(new HomeFragment(), HOME_MENU_INDEX, "Permit Log");
+            // Get the goal values; if there is no total goal, show the settings page to set them 
+            DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals");
+            goalsRef.addListenerForSingleValueEvent(goalsListener);
+        }
+    }
+
+    // This listener is used to see if the user has set a total goal:
+    private ValueEventListener goalsListener = new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+            // If there is no total goal set, switch to the settings:
+            if (!dataSnapshot.hasChild("total")) transitionFragment(new SettingsFragment(), SETTINGS_MENU_INDEX, "Settings");
+        }
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+            Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());
+        }
+    };
 
     // Show the sign in screen using Firebase UI
     public void showSignIn() {
@@ -156,8 +170,8 @@ public class MainActivity extends AppCompatActivity {
             IdpResponse response = IdpResponse.fromResultIntent(data);
             if (resultCode == ResultCodes.OK) {
                 Log.d(TAG, "Login was successful");
-                // Transition to the home fragment
-                transitionFragment(new HomeFragment(), HOME_MENU_INDEX, "Permit Log");
+                // Transition to the home/settings fragment based on what the user needs to do from here:
+                navigateBasedOnUser();
                 // Now that the user is signed in, update currentUser:
                 currentUser = mAuth.getCurrentUser();
             } else {
@@ -180,6 +194,11 @@ public class MainActivity extends AppCompatActivity {
                 case HOME_MENU_INDEX: // Home button clicked
                     // Transition to the home fragment
                     transitionFragment(new HomeFragment(), position, "Permit Log");
+                    break;
+
+                case LOG_MENU_INDEX: // Log button clicked
+                    // Transition to the log fragment
+                    transitionFragment(new LogFragment(), position, "Driving Log");
                     break;
 
                 case DRIVERS_MENU_INDEX: // Drivers button clicked

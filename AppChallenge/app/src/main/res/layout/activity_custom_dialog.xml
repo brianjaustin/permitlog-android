@@ -41,7 +41,6 @@
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Pick the date that you drove on."
                 android:id="@+id/drive_date"
                 android:textAllCaps="false"
                 android:onClick="pickDate"
@@ -64,7 +63,6 @@
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Pick the time when you started driving."
                 android:id="@+id/drive_start_time"
                 android:textAllCaps="false"
                 android:onClick="pickStartTime"
@@ -87,13 +85,22 @@
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Pick the time when you stopped driving."
                 android:id="@+id/drive_end_time"
                 android:textAllCaps="false"
                 android:onClick="pickEndTime"
                 android:layout_toEndOf="@+id/drive_end_time_text"
                 style="@style/Widget.AppCompat.Spinner.Underlined"/>
         </RelativeLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/time_notice_container">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/time_notice"
+                android:text="Note that if the ending time is before the starting time, it will be assumed that the drive went into the next day." />
+        </LinearLayout>
         <CheckBox
             android:id="@+id/drive_at_night_checkbox"
             android:layout_width="wrap_content"
@@ -134,10 +141,22 @@
                 android:text="Cancel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:id="@+id/custom_drive_cancel"
                 android:onClick="onCancel"
                 android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored"
                 android:layout_alignParentTop="true"
                 android:layout_toStartOf="@+id/custom_drive_ok" />
+            <Button
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:text="Delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/custom_drive_delete"
+                android:onClick="onDeleteClick"
+                android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored"
+                android:layout_alignParentTop="true"
+                android:layout_toStartOf="@+id/custom_drive_cancel"
+                android:visibility="gone" />
         </RelativeLayout>
     </LinearLayout>
 </LinearLayout>
