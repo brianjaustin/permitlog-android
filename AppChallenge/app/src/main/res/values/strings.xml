@@ -17,7 +17,7 @@
     <string name="drawer_close">Close Drawer</string>
     <string name="go_to_add_driver_menu">Please add the driver that accompanied you by going to the "Add Driver" menu that can be found in the bottom-right corner of the home page.</string>
     <string name="at_night_dialog_content">Was this driving done at night?</string>
-    <string name="drive_saved">Drive successfully saved!</string>
+    <string name="drive_saved">Drive successfully saved.</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cancel">Cancel</string>
@@ -29,6 +29,8 @@
         <item>About</item>
         <item>Sign Out</item>
     </array>
+    <string name="network_connection_error">Please connect to the Internet and come back to this app to sign in.</string>
+    <string name="unknown_auth_error">For some reason, authentication failed. Please try again.</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

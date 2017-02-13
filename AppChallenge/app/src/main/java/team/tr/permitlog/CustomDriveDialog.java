@@ -248,14 +248,12 @@ public class CustomDriveDialog extends AppCompatActivity {
     public void onCancel(View view) { finish(); }
 
     public void onSaveClick(View view) {
-        //For Toast:
-        Context applicationCon = getApplicationContext();
         //Get the position of the spinner:
         Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
         int spinnerPosition = driversSpinner.getSelectedItemPosition();
         //If nothing is selected, then the spinner must be empty, so show an error to the user and do not proceed:
         if (spinnerPosition == Spinner.INVALID_POSITION) {
-            Toast.makeText(applicationCon, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
             return;
         }
         //Otherwise, get the driver id from the selected position:
@@ -273,10 +271,8 @@ public class CustomDriveDialog extends AppCompatActivity {
         logRef.child("end").setValue(endingTime.getTimeInMillis());
         logRef.child("night").setValue(isDriveAtNight);
         logRef.child("driver_id").setValue(driverId);
-        //Notify user and close the dialog
-        String message = "Edits to drive log saved successfully";
-        if (logId == null) message = "Custom drive saved successfully";
-        Toast.makeText(applicationCon, message, Toast.LENGTH_SHORT).show();
+        //Notify user of new log/edits and close the dialog
+        Toast.makeText(this, (logId == null) ? "Custom drive saved successfully." : "Edits to drive log saved successfully.", Toast.LENGTH_SHORT).show();
         finish();
     }
 
@@ -284,7 +280,7 @@ public class CustomDriveDialog extends AppCompatActivity {
         //Delete the log:
         timesRef.child(logId).removeValue();
         //Notify user and close the dialog
-        Toast.makeText(getApplicationContext(), "Drive log deleted successfully", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(), "Drive log deleted successfully.", Toast.LENGTH_SHORT).show();
         finish();
     }
 

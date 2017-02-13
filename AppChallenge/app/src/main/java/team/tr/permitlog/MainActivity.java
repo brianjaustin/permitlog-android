@@ -2,7 +2,6 @@ package team.tr.permitlog;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.renderscript.Sampler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
@@ -15,6 +14,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.ErrorCodes;
@@ -177,8 +177,15 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 // If there is not a success, try to figure out what went wrong:
                 if (response == null) Log.e(TAG, "User pressed back button");
-                else if (response.getErrorCode() == ErrorCodes.NO_NETWORK) Log.e(TAG, "Network connection error");
-                else if (response.getErrorCode() == ErrorCodes.UNKNOWN_ERROR) Log.e(TAG, "Unknown error");
+                else if (response.getErrorCode() == ErrorCodes.NO_NETWORK) {
+                    Log.e(TAG, "Network connection error");
+                    Toast.makeText(this, R.string.network_connection_error, Toast.LENGTH_SHORT).show();
+                }
+                else if (response.getErrorCode() == ErrorCodes.UNKNOWN_ERROR) {
+                    Log.e(TAG, "Unknown error");
+                    Toast.makeText(this, R.string.unknown_auth_error, Toast.LENGTH_SHORT).show();
+                    showSignIn();
+                }
                 else Log.e(TAG, "Unknown response");
             }
             // Debug currentUser again:
