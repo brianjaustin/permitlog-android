@@ -1,6 +1,7 @@
 package team.tr.permitlog;
 
 import android.content.Context;
+import android.database.DataSetObserver;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -10,17 +11,22 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 
 public class CustomDriveDialog extends AppCompatActivity {
     //TAG for logging:
@@ -28,8 +34,14 @@ public class CustomDriveDialog extends AppCompatActivity {
 
     // Firebase listener
     private DatabaseReference timesRef;
+    // The spinner for selecting drivers:
+    private Spinner driversSpinner;
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
+    // If we are editing a log, the database key of the log; otherwise, null
+    private String logId;
+    // If we are editing a log, the database key of the driver in the log; otherwise null
+    private String driverIdFromLog;
 
     //This is true if and only if the user is currently choosing the ending time:
     private boolean isUserChoosingEndingTime = false;
@@ -37,6 +49,11 @@ public class CustomDriveDialog extends AppCompatActivity {
     private Calendar startingTime = Calendar.getInstance();
     //This stores the time that the user said they stopped driving at:
     private Calendar endingTime = Calendar.getInstance();
+
+    //The LinearLayout container for this dialog:
+    private LinearLayout timeNoticeContainer;
+    //The TextView containing the time notice:
+    private TextView timeNotice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +65,7 @@ public class CustomDriveDialog extends AppCompatActivity {
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
 
         // Get the spinner:
-        Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
+        driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
         // Add the items to the spinner:
         spinnerData = new DriverAdapter(this, userId, android.R.layout.simple_spinner_item);
         driversSpinner.setAdapter(spinnerData.driversAdapter);
@@ -60,17 +77,69 @@ public class CustomDriveDialog extends AppCompatActivity {
         ActionBar ab = getSupportActionBar(); //Create action bar object
         ab.setDisplayHomeAsUpEnabled(true); //Enable back button
 
-        //Sets default date
+        //Set the container and time notice:
+        timeNoticeContainer = (LinearLayout)findViewById(R.id.time_notice_container);
+        timeNotice = (TextView)findViewById(R.id.time_notice);
+
+        //Get logId from the intent:
+        logId = getIntent().getStringExtra("logId");
+        //If logId is null, then we will create a new log, so set the date and times to the current time:
+        if (logId == null) updateDateAndTime();
+        //Otherwise, we are editing: an old log:
+        else {
+            //Set the times according to the log:
+            timesRef.child(logId).addListenerForSingleValueEvent(setLogData);
+            //Show the Delete button:
+            findViewById(R.id.custom_drive_delete).setVisibility(View.VISIBLE);
+            //Change the title at the top:
+            ab.setTitle("Edit Drive Log");
+        }
+    }
+
+    private ValueEventListener setLogData = new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+            //Set startingTime and endingTime using the data from the database:
+            startingTime.setTimeInMillis((long)dataSnapshot.child("start").getValue());
+            endingTime.setTimeInMillis((long)dataSnapshot.child("end").getValue());
+            //Set the data and times according to the above:
+            updateDateAndTime();
+            //Set the night checkbox to whatever the log says:
+            ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).setChecked(
+                    (boolean)dataSnapshot.child("night").getValue()
+            );
+            //Store the driver from the log:
+            driverIdFromLog = dataSnapshot.child("driver_id").getValue().toString();
+            //If the driver from the log has been found, then select it:
+            if (spinnerData.driverIds.contains(driverIdFromLog)) driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverIdFromLog));
+            //Otherwise, listen to data changes and select the driver from the log when it comes up:
+            else spinnerData.driversAdapter.registerDataSetObserver(observeDrivers);
+        }
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+            Log.e(TAG, "While trying to get data from /times/"+logId+"/: "+databaseError.getMessage());
+        }
+    };
+
+    private DataSetObserver observeDrivers = new DataSetObserver() { @Override public void onChanged() {
+        //If the driver from the log has been found, select it and stop listening to data changes:
+        if (spinnerData.driverIds.contains(driverIdFromLog)) {
+            driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverIdFromLog));
+            spinnerData.driversAdapter.unregisterDataSetObserver(observeDrivers);
+        }
+    } };
+
+    public void updateDateAndTime() {
+        //Set the date from startingTime:
         setDate(startingTime.get(Calendar.YEAR), startingTime.get(Calendar.MONTH), startingTime.get(Calendar.DAY_OF_MONTH));
-        //Set start time to the current time
+        //Set the starting time:
         setTime(startingTime.get(Calendar.HOUR_OF_DAY), startingTime.get(Calendar.MINUTE));
         //Make sure setTime() sets the ending time:
         isUserChoosingEndingTime = true;
-        //Set the ending time to the current time:
-        setTime(startingTime.get(Calendar.HOUR_OF_DAY), startingTime.get(Calendar.MINUTE));
+        //Set the ending time:
+        setTime(endingTime.get(Calendar.HOUR_OF_DAY), endingTime.get(Calendar.MINUTE));
         //Set the Boolean back to the default value:
         isUserChoosingEndingTime = false;
-
     }
 
     public void pickDate(View view) {
@@ -152,9 +221,15 @@ public class CustomDriveDialog extends AppCompatActivity {
         driveTime.set(Calendar.HOUR_OF_DAY, hour);
         driveTime.set(Calendar.MINUTE, minute);
         //Display the time to the user:
-        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
+        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.US);
         timeFormat.setTimeZone(driveTime.getTimeZone());
         driveTimeView.setText(timeFormat.format(driveTime.getTime()));
+        //If endingTime is before startingTime, add the time notice if needed.
+        if (endingTime.before(startingTime)) {
+            if (timeNotice.getParent() == null) timeNoticeContainer.addView(timeNotice);
+        }
+        //Otherwise, remove the time notice if needed.
+        else if (timeNotice.getParent() == timeNoticeContainer) timeNoticeContainer.removeView(timeNotice);
         //Remember to log startingTime and endingTime for debugging:
         Log.d(TAG, "Started driving on: "+startingTime.getTime().toString());
         Log.d(TAG, "Stopped driving on: "+endingTime.getTime().toString());
@@ -189,14 +264,27 @@ public class CustomDriveDialog extends AppCompatActivity {
         boolean isDriveAtNight = ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).isChecked();
         //If the ending time is before the start time, add the ending time by one day:
         if (endingTime.before(startingTime)) endingTime.add(Calendar.DATE, 1);
-        //Finally, push a new log:
-        DatabaseReference newLogRef = timesRef.push();
-        newLogRef.child("start").setValue(startingTime.getTimeInMillis());
-        newLogRef.child("end").setValue(endingTime.getTimeInMillis());
-        newLogRef.child("night").setValue(isDriveAtNight);
-        newLogRef.child("driver_id").setValue(driverId);
+        //Get the logRef from logId, or from push() if logId is null:
+        DatabaseReference logRef;
+        if (logId == null) logRef = timesRef.push();
+        else logRef = timesRef.child(logId);
+        //Finally, set the log:
+        logRef.child("start").setValue(startingTime.getTimeInMillis());
+        logRef.child("end").setValue(endingTime.getTimeInMillis());
+        logRef.child("night").setValue(isDriveAtNight);
+        logRef.child("driver_id").setValue(driverId);
         //Notify user and close the dialog
-        Toast.makeText(applicationCon, "Custom drive saved successfully", Toast.LENGTH_SHORT).show();
+        String message = "Edits to drive log saved successfully";
+        if (logId == null) message = "Custom drive saved successfully";
+        Toast.makeText(applicationCon, message, Toast.LENGTH_SHORT).show();
+        finish();
+    }
+
+    public void onDeleteClick(View view) {
+        //Delete the log:
+        timesRef.child(logId).removeValue();
+        //Notify user and close the dialog
+        Toast.makeText(getApplicationContext(), "Drive log deleted successfully", Toast.LENGTH_SHORT).show();
         finish();
     }
 
@@ -207,4 +295,3 @@ public class CustomDriveDialog extends AppCompatActivity {
         super.onDestroy();
     }
 }
-

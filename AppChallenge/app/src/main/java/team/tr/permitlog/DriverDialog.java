@@ -20,15 +20,14 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 public class DriverDialog extends AppCompatActivity {
-
+    // For logging:
+    private static String TAG = "DriverDialog";
     // Whether or not this dialog is being used to edit an existing driver
     private boolean editing;
-
+    // If editing, holds the database key of the driver we are editing
+    private String driverId;
     // Firebase reference
     private DatabaseReference driverRef;
-
-    private String driverId;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,10 +69,9 @@ public class DriverDialog extends AppCompatActivity {
                     editLast.setText(dataSnapshot.child("name").child("last").getValue().toString());
                     editLicense.setText(dataSnapshot.child("license_number").getValue().toString());
                 }
-
                 @Override
                 public void onCancelled(DatabaseError databaseError) {
-                    Log.e("driver_dialog", databaseError.getMessage());
+                    Log.e(TAG, "While trying to get /drivers/"+driverId+"/: "+databaseError.getMessage());
                 }
             });
         }
