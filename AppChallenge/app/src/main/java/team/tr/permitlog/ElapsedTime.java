@@ -21,11 +21,11 @@ public class ElapsedTime {
         return secondsString;
     }
 
-    public static boolean validLog(DataSnapshot dataSnapshot) {
-        /* Returns if dataSnapshot represents a valid log. */
+    public static DataSnapshotPredicate validLog = new DataSnapshotPredicate() { @Override public boolean accept(DataSnapshot dataSnapshot) {
+        /* Returns true iff there is the start, end, night, and driver_id children. */
         return dataSnapshot.hasChild("start") && dataSnapshot.hasChild("end")
                 && dataSnapshot.hasChild("night") && dataSnapshot.hasChild("driver_id");
-    }
+    } };
 
     //Firebase reference:
     private static DatabaseReference timesRef;
@@ -40,7 +40,7 @@ public class ElapsedTime {
                 //This are the totals:
                 long totalTime = 0, dayTime = 0, nightTime = 0;
                 //Loop through the children that are valid logs:
-                for (DataSnapshot logSnapshot : dataSnapshot.getChildren()) if (validLog(logSnapshot)) {
+                for (DataSnapshot logSnapshot : dataSnapshot.getChildren()) if (validLog.accept(logSnapshot)) {
                     //Find the time elapsed during the drive and add it to the total:
                     long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
                     totalTime += timeElapsed;
