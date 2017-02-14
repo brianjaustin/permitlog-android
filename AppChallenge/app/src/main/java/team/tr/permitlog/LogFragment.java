@@ -31,13 +31,11 @@ public class LogFragment extends ListFragment {
     // The root view for this fragment, used to find elements by id:
     private View rootView;
 
-    // Variables used in export
-    String userId;
-    String licenseId;
-    long logCount;
+    // User ID from Firebase:
+    private String userId;
 
     //Firebase reference:
-    DatabaseReference timesRef;
+    private DatabaseReference timesRef;
 
     //This holds all of the keys of the logs in the database:
     private ArrayList<String> logIds = new ArrayList<>();
@@ -50,6 +48,41 @@ public class LogFragment extends ListFragment {
 
     // This holds the CSV data for export
     private String logAsCsv;
+
+    private void saveToCsv(final DataSnapshot itemSnapshot) {
+        DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child(userId)
+                .child("drivers").child(itemSnapshot.child("driver_id").getValue().toString());
+
+        driverRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // Add the start time
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis((long) itemSnapshot.child("start").getValue());
+                logAsCsv += calendar.getTime().toString() + ", ";
+
+                // Add the end time
+                calendar.setTimeInMillis((long) itemSnapshot.child("end").getValue());
+                logAsCsv += calendar.getTime().toString() + ", ";
+
+                // Get night flag
+                logAsCsv += itemSnapshot.child("night").getValue().toString() + ", ";
+
+                // Get the license number if available.
+                String licenseId;
+                if (dataSnapshot.hasChild("license_number")) licenseId = dataSnapshot.child("license_number").getValue().toString();
+                // If the license number is not available, just say the driver is unknown:
+                else licenseId = "UNKNOWN DRIVER";
+                // Add the license number and a newline
+                logAsCsv += licenseId+"\n";
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.d(TAG, databaseError.getMessage());
+            }
+        });
+    }
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
@@ -71,39 +104,6 @@ public class LogFragment extends ListFragment {
 
             //Finally return the summary:
             return logSummary;
-        }
-        private void saveToCsv(final DataSnapshot itemSnapshot) {
-            DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child(userId)
-                    .child("drivers").child(itemSnapshot.child("driver_id").getValue().toString());
-
-            driverRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    // Add the start time
-                    Calendar calendar = Calendar.getInstance();
-                    calendar.setTimeInMillis((long) itemSnapshot.child("start").getValue());
-                    logAsCsv += calendar.getTime().toString() + ", ";
-
-                    // Add the end time
-                    calendar.setTimeInMillis((long) itemSnapshot.child("end").getValue());
-                    logAsCsv += calendar.getTime().toString() + ", ";
-
-                    // Get night flag
-                    logAsCsv += itemSnapshot.child("night").getValue().toString() + ", ";
-
-                    // Get the license number
-                    licenseId = dataSnapshot.child("license_number").getValue().toString();
-
-                    // Add the license number and a newline
-                    logAsCsv += licenseId + ", ";
-                    logAsCsv += "\n";
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    Log.d(TAG, databaseError.getMessage());
-                }
-            });
         }
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
@@ -159,8 +159,7 @@ public class LogFragment extends ListFragment {
         userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         // Setup the variable to hold the CSV file
-        logAsCsv = "";
-        logAsCsv += "start, stop, night, driver\n";
+        logAsCsv = "start, stop, night, driver\n";
 
         //Initialize timesRef and start listening:
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
