@@ -20,6 +20,7 @@ public class DriverAdapter {
     public DatabaseReference driversRef;
     //Store the drivers and their IDs:
     public ArrayList<String> driverNames = new ArrayList<>();
+    public ArrayList<DataSnapshot> driverSnapshots = new ArrayList<>();
     public ArrayList<String> driverIds = new ArrayList<>();
     //Array adapter for holding items in spinner
     public ArrayAdapter<String> driversAdapter;
@@ -29,10 +30,10 @@ public class DriverAdapter {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
             //Figure out what the name is:
-            String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
-                    + dataSnapshot.child("name").child("last").getValue().toString();
-            //Add it to driverNames:
+            String name = createDriverName(dataSnapshot);
+            //Add it to driverNames and driverSnapshots:
             driverNames.add(name);
+            driverSnapshots.add(dataSnapshot);
             //Update adapter:
             driversAdapter.notifyDataSetChanged();
         }
@@ -41,10 +42,10 @@ public class DriverAdapter {
             // Get the index of the item changed
             int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
             //Figure out what the name is:
-            String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
-                    + dataSnapshot.child("name").child("last").getValue().toString();
-            //Set it in driverNames:
+            String name = createDriverName(dataSnapshot);
+            //Set it in driverNames and driverSnapshots:
             driverNames.set(driverIndex, name);
+            driverSnapshots.set(driverIndex, dataSnapshot);
             //Update adapter:
             driversAdapter.notifyDataSetChanged();
         }
@@ -54,6 +55,7 @@ public class DriverAdapter {
             int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
             // Remove the item:
             driverNames.remove(driverIndex);
+            driverSnapshots.remove(driverIndex);
             // Update adapter:
             driversAdapter.notifyDataSetChanged();
         }
@@ -66,8 +68,13 @@ public class DriverAdapter {
             Log.w(TAG, "Fetching drivers failed:", databaseError.toException());
         }
     };
+    //Generates name for driver:
+    public static String createDriverName(DataSnapshot dataSnapshot) {
+        return dataSnapshot.child("name").child("first").getValue().toString() + " "
+                + dataSnapshot.child("name").child("last").getValue().toString();
+    }
     //This tells us if a driver has a complete name:
-    private DataSnapshotPredicate hasCompleteName = new DataSnapshotPredicate() { @Override public boolean accept(DataSnapshot dataSnapshot) {
+    public static DataSnapshotPredicate hasCompleteName = new DataSnapshotPredicate() { @Override public boolean accept(DataSnapshot dataSnapshot) {
         return dataSnapshot.child("name").hasChild("first") && dataSnapshot.child("name").hasChild("last");
     } };
     //Keeps track of if the spinner is listening:
