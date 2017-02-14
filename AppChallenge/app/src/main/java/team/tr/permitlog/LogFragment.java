@@ -23,7 +23,6 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 
 public class LogFragment extends ListFragment {
     //For logging:
@@ -55,7 +54,6 @@ public class LogFragment extends ListFragment {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
             //Set the data and update the adapter:
-            logIds.add(dataSnapshot.getKey());
             logSummaries.add(genLogSummary(dataSnapshot));
             listAdapter.notifyDataSetChanged();
 
@@ -69,7 +67,6 @@ public class LogFragment extends ListFragment {
             int logIndex = logIds.indexOf(dataSnapshot.getKey());
 
             //Update the data and adapter:
-            logIds.set(logIndex, dataSnapshot.getKey());
             logSummaries.set(logIndex, genLogSummary(dataSnapshot));
             listAdapter.notifyDataSetChanged();
         }
@@ -80,7 +77,6 @@ public class LogFragment extends ListFragment {
             int logIndex = logIds.indexOf(dataSnapshot.getKey());
 
             //Remove the data and update the adapter:
-            logIds.remove(logIndex);
             logSummaries.remove(logIndex);
             listAdapter.notifyDataSetChanged();
         }
@@ -184,6 +180,7 @@ public class LogFragment extends ListFragment {
 
         //Initialize timesRef and start listening:
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
+        timesListener = FirebaseHelper.transformListener(timesListener, ElapsedTime.validLog, logIds);
         timesRef.addChildEventListener(timesListener);
 
         //Set the adapter:
