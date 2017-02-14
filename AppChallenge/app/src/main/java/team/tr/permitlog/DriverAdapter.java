@@ -19,78 +19,43 @@ public class DriverAdapter {
     //Firebase reference
     public DatabaseReference driversRef;
     //Store the drivers and their IDs:
-    public ArrayList<String> driverNames = new ArrayList<String>();
-    public ArrayList<String> driverIds = new ArrayList<String>();
+    public ArrayList<String> driverNames = new ArrayList<>();
+    public ArrayList<String> driverIds = new ArrayList<>();
     //Array adapter for holding items in spinner
     public ArrayAdapter<String> driversAdapter;
 
     //Firebase listener
     public ChildEventListener driversListener = new ChildEventListener() {
-        public boolean hasCompleteName(DataSnapshot dataSnapshot) {
-            /* This function returns true if dataSnapshot has first name and last name. */
-            return dataSnapshot.child("name").hasChild("first") && dataSnapshot.child("name").hasChild("last");
-        }
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-            //If this driver has a complete name:
-            if (hasCompleteName(dataSnapshot)) {
-                //Figure out what the name is:
-                String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
-                        + dataSnapshot.child("name").child("last").getValue().toString();
-                //Add it to driverNames:
-                driverNames.add(name);
-                //Add the key of this snapshot to driverIds:
-                driverIds.add(dataSnapshot.getKey());
-                //Update adapter:
-                driversAdapter.notifyDataSetChanged();
-            }
-            //Otherwise, log them for being incomplete:
-            else {
-                Log.d(TAG, "The following is not a valid driver: "+dataSnapshot.getKey());
-            }
+            //Figure out what the name is:
+            String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
+                    + dataSnapshot.child("name").child("last").getValue().toString();
+            //Add it to driverNames:
+            driverNames.add(name);
+            //Update adapter:
+            driversAdapter.notifyDataSetChanged();
         }
         @Override
         public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-            if (hasCompleteName(dataSnapshot)) {
-                //If this driver is in driverIds:
-                if (driverIds.contains(dataSnapshot.getKey())) {
-                    // Get the index of the item changed
-                    int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
-                    //Figure out what the name is:
-                    String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
-                            + dataSnapshot.child("name").child("last").getValue().toString();
-                    //Set it in driverNames:
-                    driverNames.set(driverIndex, name);
-                    //Update adapter:
-                    driversAdapter.notifyDataSetChanged();
-                }
-                //Otherwise, log them for not being in driverIds and add them:
-                else {
-                    Log.d(TAG, "The following is being added to driverIds from onChildChanged(): "+dataSnapshot.getKey());
-                    onChildAdded(dataSnapshot, s);
-                }
-            }
-            //Otherwise, log them for being incomplete:
-            else {
-                Log.d(TAG, "The following is not a valid driver: "+dataSnapshot.getKey());
-            }
+            // Get the index of the item changed
+            int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
+            //Figure out what the name is:
+            String name = dataSnapshot.child("name").child("first").getValue().toString() + " "
+                    + dataSnapshot.child("name").child("last").getValue().toString();
+            //Set it in driverNames:
+            driverNames.set(driverIndex, name);
+            //Update adapter:
+            driversAdapter.notifyDataSetChanged();
         }
         @Override
         public void onChildRemoved(DataSnapshot dataSnapshot) {
-            //If this driver is in driverIds:
-            if (driverIds.contains(dataSnapshot.getKey())) {
-                // Get the index of the item removed
-                int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
-                // Remove this value from _both_ ArrayLists
-                driverIds.remove(driverIndex);
-                driverNames.remove(driverIndex);
-                // Update adapter:
-                driversAdapter.notifyDataSetChanged();
-            }
-            //Otherwise, log them for not being in driverIds and add them:
-            else {
-                Log.d(TAG, "The following was not in driverIds: "+dataSnapshot.getKey());
-            }
+            // Get the index of the item removed
+            int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
+            // Remove the item:
+            driverNames.remove(driverIndex);
+            // Update adapter:
+            driversAdapter.notifyDataSetChanged();
         }
         // The following must be implemented in order to complete the abstract class:
         @Override
@@ -101,12 +66,18 @@ public class DriverAdapter {
             Log.w(TAG, "Fetching drivers failed:", databaseError.toException());
         }
     };
+    //This tells us if a driver has a complete name:
+    private DataSnapshotPredicate hasCompleteName = new DataSnapshotPredicate() { @Override public boolean accept(DataSnapshot dataSnapshot) {
+        return dataSnapshot.child("name").hasChild("first") && dataSnapshot.child("name").hasChild("last");
+    } };
     //Keeps track of if the spinner is listening:
     private boolean isListening = false;
 
     public DriverAdapter(Context context, String userId, int layout) {
-        //Initialize driversRef
+        // Initialize driversRef
         driversRef = FirebaseDatabase.getInstance().getReference().child(userId).child("drivers");
+        // Modify driversListener
+        driversListener = FirebaseHelper.transformListener(driversListener, hasCompleteName, driverIds);
         // Create the adapter for driverNames that will be used for the spinner:
         driversAdapter = new ArrayAdapter<String>(context, layout, driverNames);
         // Add the data from driversRef to driverNames and driverIds:
