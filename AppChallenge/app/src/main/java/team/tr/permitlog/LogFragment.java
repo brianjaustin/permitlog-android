@@ -19,7 +19,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -46,19 +45,20 @@ public class LogFragment extends ListFragment {
     //This is the ListView's adapter:
     private ArrayAdapter<String> listAdapter;
 
-    // This holds the CSV data for export
-    private String logAsCsv;
+    //This holds the log information:
+    private ArrayList<DataSnapshot> logSnapshots = new ArrayList<>();
+
+    //This holds the driver information:
+    private DriverAdapter driversInfo;
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-            //Set the data and update the adapter:
+            //Set the data, start listening to get data for this driver, and update the adapter:
+            logSnapshots.add(dataSnapshot);
             logSummaries.add(genLogSummary(dataSnapshot));
             listAdapter.notifyDataSetChanged();
-
-            // Prepare for manual export
-            saveToCsv(dataSnapshot);
         }
 
         @Override
@@ -67,6 +67,7 @@ public class LogFragment extends ListFragment {
             int logIndex = logIds.indexOf(dataSnapshot.getKey());
 
             //Update the data and adapter:
+            logSnapshots.set(logIndex, dataSnapshot);
             logSummaries.set(logIndex, genLogSummary(dataSnapshot));
             listAdapter.notifyDataSetChanged();
         }
@@ -76,7 +77,8 @@ public class LogFragment extends ListFragment {
             //Find the location of the log:
             int logIndex = logIds.indexOf(dataSnapshot.getKey());
 
-            //Remove the data and update the adapter:
+            //Remove the data, stop listening to the driver, and update the adapter:
+            logSnapshots.remove(logIndex);
             logSummaries.remove(logIndex);
             listAdapter.notifyDataSetChanged();
         }
@@ -91,6 +93,12 @@ public class LogFragment extends ListFragment {
             Log.w(TAG, "Fetching driving logs failed:", databaseError.toException());
         }
     };
+
+    public static DataSnapshotPredicate validLog = new DataSnapshotPredicate() { @Override public boolean accept(DataSnapshot dataSnapshot) {
+        /* Returns true iff there is the start, end, night, and driver_id children. */
+        return dataSnapshot.hasChild("start") && dataSnapshot.hasChild("end")
+                && dataSnapshot.hasChild("night") && dataSnapshot.hasChild("driver_id");
+    } };
 
     private String genLogSummary(DataSnapshot dataSnapshot) {
         //Find the time elapsed during the drive:
@@ -112,60 +120,6 @@ public class LogFragment extends ListFragment {
         return logSummary;
     }
 
-    private void saveToCsv(final DataSnapshot itemSnapshot) {
-        // Get the driver data:
-        DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child(userId)
-                .child("drivers").child(itemSnapshot.child("driver_id").getValue().toString());
-        driverRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                // Add the month
-                Calendar startDate = Calendar.getInstance();
-                startDate.setTimeInMillis((long) itemSnapshot.child("start").getValue());
-                logAsCsv += startDate.get(Calendar.MONTH) + ", ";
-
-                // Add the day
-                logAsCsv += startDate.get(Calendar.DAY_OF_MONTH) + ", ";
-
-                // Add the year
-                logAsCsv += startDate.get(Calendar.YEAR) + ", ";
-
-                // Add the duration
-                long timeElapsed = (long)(itemSnapshot.child("end").getValue())-(long)(itemSnapshot.child("start").getValue());
-                logAsCsv += ElapsedTime.formatSeconds(timeElapsed/1000) + ", ";
-
-                // Get night flag
-                if ((boolean) itemSnapshot.child("night").getValue()) {
-                    // During the night
-                    logAsCsv += "night, ";
-                } else {
-                    // During the day
-                    logAsCsv += "day, ";
-                }
-
-                // Get the license name if available
-                String licenseName;
-                if (dataSnapshot.hasChild("name")) licenseName = dataSnapshot.child("name").child("first").getValue().toString() + " " +
-                        dataSnapshot.child("name").child("last").getValue().toString();
-                else licenseName = "UNKNOWN DRIVER";
-                logAsCsv += licenseName + ", ";
-
-                // Get the license number if available.
-                String licenseId;
-                if (dataSnapshot.hasChild("license_number")) licenseId = dataSnapshot.child("license_number").getValue().toString();
-                // If the license number is not available, just say the driver is unknown:
-                else licenseId = "UNKNOWN DRIVER";
-                // Add the license number and a newline
-                logAsCsv += licenseId+"\n";
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.d(TAG, databaseError.getMessage());
-            }
-        });
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -175,13 +129,13 @@ public class LogFragment extends ListFragment {
         //Get the uid
         userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        // Setup the variable to hold the CSV file
-        logAsCsv = "month, day, year, duration, day/night, driver, license_number\n";
-
         //Initialize timesRef and start listening:
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
-        timesListener = FirebaseHelper.transformListener(timesListener, ElapsedTime.validLog, logIds);
+        timesListener = FirebaseHelper.transformListener(timesListener, validLog, logIds);
         timesRef.addChildEventListener(timesListener);
+
+        //Initialize driversInfo to start listening to drivers:
+        driversInfo = new DriverAdapter(getActivity(), userId, android.R.layout.simple_dropdown_item_1line);
 
         //Set the adapter:
         listAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, logSummaries);
@@ -242,6 +196,64 @@ public class LogFragment extends ListFragment {
             boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
             if (!isSignedIn) return;
 
+            // Setup the variable to hold the CSV file
+            String logAsCsv = "month, day, year, duration, day/night, driver, license_number\n";
+            // Loop through the logs:
+            for (int i = 0; i < logSnapshots.size(); i++) {
+                // Get the log info:
+                DataSnapshot logSnapshot = logSnapshots.get(i);
+                // Get the driver database key:
+                String driverId = logSnapshot.child("driver_id").getValue().toString();
+                // If possible, get driver index and info:
+                int driverIndex = -1;
+                DataSnapshot driverSnapshot = null;
+                if (driversInfo.driverIds.contains(driverId)) {
+                    driverIndex = driversInfo.driverIds.indexOf(driverId);
+                    driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
+                }
+                // Add the month
+                Calendar startDate = Calendar.getInstance();
+                startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
+                logAsCsv += startDate.get(Calendar.MONTH) + ", ";
+
+                // Add the day
+                logAsCsv += startDate.get(Calendar.DAY_OF_MONTH) + ", ";
+
+                // Add the year
+                logAsCsv += startDate.get(Calendar.YEAR) + ", ";
+
+                // Add the duration
+                long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
+                logAsCsv += ElapsedTime.formatSeconds(timeElapsed/1000) + ", ";
+
+                // Get night flag
+                if ((boolean) logSnapshot.child("night").getValue()) {
+                    // During the night
+                    logAsCsv += "night, ";
+                } else {
+                    // During the day
+                    logAsCsv += "day, ";
+                }
+
+                // Get the license name if available
+                String driverName;
+                if (driverSnapshot != null && DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
+                    driverName = driversInfo.driverNames.get(driverIndex);
+                }
+                else driverName = "UNKNOWN DRIVER";
+                logAsCsv += driverName + ", ";
+
+                // Get the license number if available.
+                String licenseId;
+                if (driverSnapshot != null && driverSnapshot.hasChild("license_number")) {
+                    licenseId = driverSnapshot.child("license_number").getValue().toString();
+                }
+                // If the license number is not available, just say the driver is unknown:
+                else licenseId = "UNKNOWN DRIVER";
+                // Add the license number and a newline
+                logAsCsv += licenseId+"\n";
+            }
+
             // Send the CSV file to the user
             Intent intent = new Intent(Intent.ACTION_SEND);
             intent.setType("text/plain");
@@ -259,6 +271,7 @@ public class LogFragment extends ListFragment {
     public void onDestroyView() {
         //When we are done here, stop listening:
         timesRef.removeEventListener(timesListener);
+        driversInfo.stopListening();
         super.onDestroyView();
     }
 }
