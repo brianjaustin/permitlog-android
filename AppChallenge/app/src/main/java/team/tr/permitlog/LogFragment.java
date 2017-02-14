@@ -129,7 +129,13 @@ public class LogFragment extends ListFragment {
                 logAsCsv += new Date((long) itemSnapshot.child("end").getValue()).toString() + ", ";
 
                 // Get night flag
-                logAsCsv += itemSnapshot.child("night").getValue().toString() + ", ";
+                if ((boolean) itemSnapshot.child("night").getValue()) {
+                    // During the night
+                    logAsCsv += "night, ";
+                } else {
+                    // During the day
+                    logAsCsv += "day, ";
+                }
 
                 // Get the license number if available.
                 String licenseId;
@@ -157,7 +163,7 @@ public class LogFragment extends ListFragment {
         userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         // Setup the variable to hold the CSV file
-        logAsCsv = "start, stop, night, driver\n";
+        logAsCsv = "start, stop, day/night, driver\n";
 
         //Initialize timesRef and start listening:
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
