@@ -22,6 +22,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 
 public class LogFragment extends ListFragment {
@@ -122,11 +123,20 @@ public class LogFragment extends ListFragment {
         driverRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                // Add the start time
-                logAsCsv += new Date((long) itemSnapshot.child("start").getValue()).toString() + ", ";
+                // Add the month
+                Calendar startDate = Calendar.getInstance();
+                startDate.setTimeInMillis((long) itemSnapshot.child("start").getValue());
+                logAsCsv += startDate.get(Calendar.MONTH) + ", ";
 
-                // Add the end time
-                logAsCsv += new Date((long) itemSnapshot.child("end").getValue()).toString() + ", ";
+                // Add the day
+                logAsCsv += startDate.get(Calendar.DAY_OF_MONTH) + ", ";
+
+                // Add the year
+                logAsCsv += startDate.get(Calendar.YEAR) + ", ";
+
+                // Add the duration
+                long timeElapsed = (long)(itemSnapshot.child("end").getValue())-(long)(itemSnapshot.child("start").getValue());
+                logAsCsv += ElapsedTime.formatSeconds(timeElapsed/1000) + ", ";
 
                 // Get night flag
                 if ((boolean) itemSnapshot.child("night").getValue()) {
@@ -136,6 +146,13 @@ public class LogFragment extends ListFragment {
                     // During the day
                     logAsCsv += "day, ";
                 }
+
+                // Get the license name if available
+                String licenseName;
+                if (dataSnapshot.hasChild("name")) licenseName = dataSnapshot.child("name").child("first").getValue().toString() + " " +
+                        dataSnapshot.child("name").child("last").getValue().toString();
+                else licenseName = "UNKNOWN DRIVER";
+                logAsCsv += licenseName + ", ";
 
                 // Get the license number if available.
                 String licenseId;
@@ -163,7 +180,7 @@ public class LogFragment extends ListFragment {
         userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         // Setup the variable to hold the CSV file
-        logAsCsv = "start, stop, day/night, driver\n";
+        logAsCsv = "month, day, year, duration, day/night, driver, license_number\n";
 
         //Initialize timesRef and start listening:
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
