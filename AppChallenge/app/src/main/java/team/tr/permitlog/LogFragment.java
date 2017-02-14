@@ -23,6 +23,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 
 public class LogFragment extends ListFragment {
     //For logging:
@@ -49,62 +50,8 @@ public class LogFragment extends ListFragment {
     // This holds the CSV data for export
     private String logAsCsv;
 
-    private void saveToCsv(final DataSnapshot itemSnapshot) {
-        DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child(userId)
-                .child("drivers").child(itemSnapshot.child("driver_id").getValue().toString());
-
-        driverRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                // Add the start time
-                Calendar calendar = Calendar.getInstance();
-                calendar.setTimeInMillis((long) itemSnapshot.child("start").getValue());
-                logAsCsv += calendar.getTime().toString() + ", ";
-
-                // Add the end time
-                calendar.setTimeInMillis((long) itemSnapshot.child("end").getValue());
-                logAsCsv += calendar.getTime().toString() + ", ";
-
-                // Get night flag
-                logAsCsv += itemSnapshot.child("night").getValue().toString() + ", ";
-
-                // Get the license number if available.
-                String licenseId;
-                if (dataSnapshot.hasChild("license_number")) licenseId = dataSnapshot.child("license_number").getValue().toString();
-                // If the license number is not available, just say the driver is unknown:
-                else licenseId = "UNKNOWN DRIVER";
-                // Add the license number and a newline
-                logAsCsv += licenseId+"\n";
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.d(TAG, databaseError.getMessage());
-            }
-        });
-    }
-
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
-        private String genLogSummary(DataSnapshot dataSnapshot) {
-            //Find the time elapsed during the drive:
-            long driveTimeInSec =
-                    ((long)(dataSnapshot.child("end").getValue())-(long)(dataSnapshot.child("start").getValue()))/1000;
-
-            //Format the time appropriately:
-            String driveTimeString = ElapsedTime.formatSeconds(driveTimeInSec);
-
-            //This is the summary of the log shown to the user:
-            String logSummary = "Drove for "+driveTimeString;
-
-            //Was the drive at night? Add "at night"/"during the day" appropriately.
-            boolean isDriveAtNight = (boolean)(dataSnapshot.child("night").getValue());
-            if (isDriveAtNight) logSummary += " at night";
-            else logSummary += " during the day";
-
-            //Finally return the summary:
-            return logSummary;
-        }
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
             //Set the data and update the adapter:
@@ -148,6 +95,58 @@ public class LogFragment extends ListFragment {
             Log.w(TAG, "Fetching driving logs failed:", databaseError.toException());
         }
     };
+
+    private String genLogSummary(DataSnapshot dataSnapshot) {
+        //Find the time elapsed during the drive:
+        long driveTimeInSec =
+                ((long)(dataSnapshot.child("end").getValue())-(long)(dataSnapshot.child("start").getValue()))/1000;
+
+        //Format the time appropriately:
+        String driveTimeString = ElapsedTime.formatSeconds(driveTimeInSec);
+
+        //This is the summary of the log shown to the user:
+        String logSummary = "Drove for "+driveTimeString;
+
+        //Was the drive at night? Add "at night"/"during the day" appropriately.
+        boolean isDriveAtNight = (boolean)(dataSnapshot.child("night").getValue());
+        if (isDriveAtNight) logSummary += " at night";
+        else logSummary += " during the day";
+
+        //Finally return the summary:
+        return logSummary;
+    }
+
+    private void saveToCsv(final DataSnapshot itemSnapshot) {
+        // Get the driver data:
+        DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child(userId)
+                .child("drivers").child(itemSnapshot.child("driver_id").getValue().toString());
+        driverRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // Add the start time
+                logAsCsv += new Date((long) itemSnapshot.child("start").getValue()).toString() + ", ";
+
+                // Add the end time
+                logAsCsv += new Date((long) itemSnapshot.child("end").getValue()).toString() + ", ";
+
+                // Get night flag
+                logAsCsv += itemSnapshot.child("night").getValue().toString() + ", ";
+
+                // Get the license number if available.
+                String licenseId;
+                if (dataSnapshot.hasChild("license_number")) licenseId = dataSnapshot.child("license_number").getValue().toString();
+                // If the license number is not available, just say the driver is unknown:
+                else licenseId = "UNKNOWN DRIVER";
+                // Add the license number and a newline
+                logAsCsv += licenseId+"\n";
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.d(TAG, databaseError.getMessage());
+            }
+        });
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
