@@ -148,6 +148,9 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
+    // Disable back button:
+    @Override public void onBackPressed() {}
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // If the home button is clicked, open/close the menu
