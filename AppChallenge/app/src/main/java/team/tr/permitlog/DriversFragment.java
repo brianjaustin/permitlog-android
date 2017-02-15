@@ -37,6 +37,8 @@ public class DriversFragment extends ListFragment {
 
     @Override
     public void onListItemClick(ListView listView, View view, int position, long id) {
+        // Don't do anything if there are no drivers and the user clicks on "No drivers":
+        if (listData.driverIds.isEmpty()) return;
         // Check if the user is signed in:
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
         // Don't do anything if the user isn't signed in:

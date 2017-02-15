@@ -122,6 +122,7 @@ public class CustomDriveDialog extends AppCompatActivity {
     };
 
     private DataSetObserver observeDrivers = new DataSetObserver() { @Override public void onChanged() {
+        Log.d(TAG, "Have we found "+driverIdFromLog+" yet? "+spinnerData.driverIds.contains(driverIdFromLog));
         //If the driver from the log has been found, select it and stop listening to data changes:
         if (spinnerData.driverIds.contains(driverIdFromLog)) {
             driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverIdFromLog));
@@ -251,8 +252,8 @@ public class CustomDriveDialog extends AppCompatActivity {
         //Get the position of the spinner:
         Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
         int spinnerPosition = driversSpinner.getSelectedItemPosition();
-        //If nothing is selected, then the spinner must be empty, so show an error to the user and do not proceed:
-        if (spinnerPosition == Spinner.INVALID_POSITION) {
+        //If there are no driver ids, then show an error to the user and do not proceed:
+        if (spinnerData.driverIds.isEmpty()) {
             Toast.makeText(this, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
             return;
         }
