@@ -112,7 +112,7 @@ public class SettingsFragment extends Fragment {
         Toast.makeText(getContext(), R.string.settings_success, Toast.LENGTH_SHORT).show();
         // Go to HomeFragment:
         MainActivity mainActivity = (MainActivity)getActivity();
-        mainActivity.transitionFragment(new HomeFragment(), mainActivity.HOME_MENU_INDEX, "Permit Log");
+        mainActivity.transitionFragment(mainActivity.HOME_MENU_INDEX);
     } };
 
     private static void hideKeyboard(Context context, View view) {
