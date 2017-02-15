@@ -31,6 +31,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 
 public class MainActivity extends AppCompatActivity {
     // For logging
@@ -51,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
     public static final int SETTINGS_MENU_INDEX = 3;
     public static final int ABOUT_MENU_INDEX = 4;
     public static final int SIGN_OUT_MENU_INDEX = 5;
+    // Keeps track of previous menus:
+    private LinkedList<Integer> fragmentsStack = new LinkedList<>();
 
     // Sign in request code
     private static final int RC_SIGN_IN = 123;
@@ -93,21 +96,75 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void transitionFragment(Fragment fragment, int position, String title) {
-        /* This function switches the current fragment to the object passed in and sets the title. */
+    public void transitionFragment(int position, boolean pushFragmentOnStack) {
+        /* This function switches the current fragment according to the menu position passed in. */
         // Assuming the user is signed in:
         if (currentUser != null) {
+            // We need to instantiate the fragment and get the title based off position:
+            Fragment fragment;
+            String title;
+            switch (position) {
+                case HOME_MENU_INDEX:
+                    fragment = new HomeFragment();
+                    title = "Permit Log";
+                    break;
+
+                case LOG_MENU_INDEX:
+                    fragment = new LogFragment();
+                    title = "Driving Log";
+                    break;
+
+                case DRIVERS_MENU_INDEX:
+                    fragment = new DriversFragment();
+                    title = "Drivers";
+                    break;
+
+                case SETTINGS_MENU_INDEX:
+                    fragment = new SettingsFragment();
+                    title = "Settings";
+                    break;
+
+                case ABOUT_MENU_INDEX:
+                    fragment = new AboutFragment();
+                    title = "About";
+                    break;
+
+                case SIGN_OUT_MENU_INDEX: // Sign out button clicked -> Sign out and return
+                    AuthUI.getInstance()
+                            .signOut(MainActivity.this)
+                            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    // Set currentUser:
+                                    currentUser = null;
+                                    // Show the sign in now that they are signed out:
+                                    showSignIn();
+                                }
+                            });
+                    return;
+
+                // If it's something unexpected, simply highlight the menu item and return:
+                default:
+                    mDrawerList.setItemChecked(position, true);
+                    return;
+            }
+            // Transition fragments:
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             transaction.replace(R.id.fragment_container, fragment);
             transaction.addToBackStack(null);
             transaction.commit();
             // Change the title
             getSupportActionBar().setTitle(title);
+            // Highlight the menu item:
             mDrawerList.setItemChecked(position, true);
+            // Add this fragment to the stack if we should:
+            if (pushFragmentOnStack) fragmentsStack.push(position);
         }
         //Otherwise, force the user to sign in:
         else showSignIn();
     }
+    // By default, push fragments onto the stack:
+    public void transitionFragment(int position) { transitionFragment(position, true); }
 
     private void navigateBasedOnUser() {
         // If no user is logged in, show the FirebaseUI login screen.
@@ -115,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
             showSignIn();
         } else {
             // Transition to the home fragment
-            transitionFragment(new HomeFragment(), HOME_MENU_INDEX, "Permit Log");
+            transitionFragment(HOME_MENU_INDEX);
             // Get the goal values; if there is no total goal, show the settings page to set them 
             DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals");
             goalsRef.addListenerForSingleValueEvent(goalsListener);
@@ -127,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
             // If there is no total goal set, switch to the settings:
-            if (!dataSnapshot.hasChild("total")) transitionFragment(new SettingsFragment(), SETTINGS_MENU_INDEX, "Settings");
+            if (!dataSnapshot.hasChild("total")) transitionFragment(SETTINGS_MENU_INDEX);
         }
         @Override
         public void onCancelled(DatabaseError databaseError) {
@@ -148,8 +205,14 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
-    // Disable back button:
-    @Override public void onBackPressed() {}
+    // When back button is pressed, go back to previous fragment if possible:
+    @Override
+    public void onBackPressed() {
+        if (fragmentsStack.size() > 1) {
+            fragmentsStack.pop();
+            transitionFragment(fragmentsStack.peek(), false);
+        }
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -200,49 +263,8 @@ public class MainActivity extends AppCompatActivity {
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            switch (position) {
-                case HOME_MENU_INDEX: // Home button clicked
-                    // Transition to the home fragment
-                    transitionFragment(new HomeFragment(), position, "Permit Log");
-                    break;
-
-                case LOG_MENU_INDEX: // Log button clicked
-                    // Transition to the log fragment
-                    transitionFragment(new LogFragment(), position, "Driving Log");
-                    break;
-
-                case DRIVERS_MENU_INDEX: // Drivers button clicked
-                    // Transition to the drivers fragment
-                    transitionFragment(new DriversFragment(), position, "Drivers");
-                    break;
-
-                case SETTINGS_MENU_INDEX: // Settings button clicked
-                    // Transition to the settings fragment
-                    transitionFragment(new SettingsFragment(), position, "Settings");
-                    break;
-
-                case ABOUT_MENU_INDEX:
-                    transitionFragment(new AboutFragment(), position, "About");
-                    break;
-
-                case SIGN_OUT_MENU_INDEX: // Sign out button clicked
-                    AuthUI.getInstance()
-                            .signOut(MainActivity.this)
-                            .addOnCompleteListener(new OnCompleteListener<Void>() {
-                                @Override
-                                public void onComplete(@NonNull Task<Void> task) {
-                                    // Set currentUser:
-                                    currentUser = null;
-                                    // Show the sign in now that they are signed out:
-                                    showSignIn();
-                                }
-                            });
-                    break;
-
-                default:
-                    mDrawerList.setItemChecked(position, true); // Highlight the clicked item
-            }
-
+            // Transition based off of position:
+            transitionFragment(position);
             // Close the drawer
             mDrawerLayout.closeDrawer(mDrawerList);
         }
