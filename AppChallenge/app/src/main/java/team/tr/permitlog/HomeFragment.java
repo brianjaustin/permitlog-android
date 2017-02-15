@@ -161,9 +161,7 @@ public class HomeFragment extends Fragment {
     private View.OnClickListener onStartDrive = new View.OnClickListener() { @Override public void onClick(View view) {
         // Check if the driver field is empty
         Context myContext = rootView.getContext();
-        Spinner driversSpinner = (Spinner) rootView.findViewById(R.id.drivers_spinner);
-        int spinnerPosition = driversSpinner.getSelectedItemPosition();
-        if (spinnerPosition == Spinner.INVALID_POSITION) {
+        if (spinnerData.driverIds.isEmpty()) {
             Toast.makeText(myContext, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
             return;
         }
@@ -222,7 +220,7 @@ public class HomeFragment extends Fragment {
         // Check if the driver field is empty
         Spinner driversSpinner = (Spinner) rootView.findViewById(R.id.drivers_spinner);
         int spinnerPosition = driversSpinner.getSelectedItemPosition();
-        if (spinnerPosition == Spinner.INVALID_POSITION) {
+        if (spinnerData.driverIds.isEmpty()) {
             Toast.makeText(myContext, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
             return;
         }

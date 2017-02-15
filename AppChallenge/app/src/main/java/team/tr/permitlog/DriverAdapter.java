@@ -31,6 +31,9 @@ public class DriverAdapter {
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
             //Figure out what the name is:
             String name = createDriverName(dataSnapshot);
+            //If driverSnapshots is empty, then there were no drivers previously.
+            //Thus clear the "No drivers" from driverNames:
+            if (driverSnapshots.isEmpty()) driverNames.clear();
             //Add it to driverNames and driverSnapshots:
             driverNames.add(name);
             driverSnapshots.add(dataSnapshot);
@@ -39,7 +42,7 @@ public class DriverAdapter {
         }
         @Override
         public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-            // Get the index of the item changed
+            //Get the index of the item changed
             int driverIndex = driverIds.indexOf(dataSnapshot.getKey());
             //Figure out what the name is:
             String name = createDriverName(dataSnapshot);
@@ -56,6 +59,8 @@ public class DriverAdapter {
             // Remove the item:
             driverNames.remove(driverIndex);
             driverSnapshots.remove(driverIndex);
+            // Add "No drivers" if driverNames is empty:
+            if (driverNames.isEmpty()) driverNames.add("No drivers");
             // Update adapter:
             driversAdapter.notifyDataSetChanged();
         }
@@ -106,6 +111,7 @@ public class DriverAdapter {
         if (!isListening) {
             //Remember to reset the adapter so that things aren't added twice:
             driverNames.clear();
+            driverNames.add("No drivers");
             driverIds.clear();
             driversAdapter.notifyDataSetChanged();
             driversRef.addChildEventListener(driversListener);
