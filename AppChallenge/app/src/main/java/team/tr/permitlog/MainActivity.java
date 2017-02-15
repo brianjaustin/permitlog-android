@@ -45,12 +45,12 @@ public class MainActivity extends AppCompatActivity {
     private String[] menuItems;
     private DrawerLayout mDrawerLayout;
     private ListView mDrawerList;
-    private static final int HOME_MENU_INDEX = 0;
-    private static final int LOG_MENU_INDEX = 1;
-    private static final int DRIVERS_MENU_INDEX = 2;
-    private static final int SETTINGS_MENU_INDEX = 3;
-    private static final int ABOUT_MENU_INDEX = 4;
-    private static final int SIGN_OUT_MENU_INDEX = 5;
+    public static final int HOME_MENU_INDEX = 0;
+    public static final int LOG_MENU_INDEX = 1;
+    public static final int DRIVERS_MENU_INDEX = 2;
+    public static final int SETTINGS_MENU_INDEX = 3;
+    public static final int ABOUT_MENU_INDEX = 4;
+    public static final int SIGN_OUT_MENU_INDEX = 5;
 
     // Sign in request code
     private static final int RC_SIGN_IN = 123;
@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void transitionFragment(Fragment fragment, int position, String title) {
+    public void transitionFragment(Fragment fragment, int position, String title) {
         /* This function switches the current fragment to the object passed in and sets the title. */
         // Assuming the user is signed in:
         if (currentUser != null) {
