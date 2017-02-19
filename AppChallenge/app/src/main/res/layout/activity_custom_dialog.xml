@@ -112,6 +112,16 @@
                 android:textSize="20sp"
                 android:paddingTop="10dp"
                 android:paddingBottom="10dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/dd_notice_container">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/dd_notice"
+                    android:text="It seems that the driver that you originally set for this log has been deleted. Please set a new driver." />
+            </LinearLayout>
             <TextView
                 style="@style/Base.TextAppearance.AppCompat.Headline"
                 android:layout_width="match_parent"
