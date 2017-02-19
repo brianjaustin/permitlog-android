@@ -10,7 +10,9 @@
     <string name="driver_dialog_deleted">Driver successfully deleted.</string>
     <string name="driver_dialog_error">Please complete all fields.</string>
     <string name="settings_title">Settings</string>
-    <string name="settings_descriptive">Enter goals for driving amounts (in hours).</string>
+    <string name="settings_total_desc">Enter the number of total driving hours that your state requires to take the driver license test:</string>
+    <string name="settings_day_desc">Enter the number of day driving hours that your state requires: (Enter 0 if there is no requirement.)</string>
+    <string name="settings_night_desc">Enter the number of night driving hours that your state requires: (Enter 0 if there is no requirement.)</string>
     <string name="button_save">Save</string>
     <string name="settings_success">Goals successfully saved.</string>
     <string name="drawer_open">Open Drawer</string>
@@ -21,6 +23,8 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cancel">Cancel</string>
+    <string name="save_pdf_error">Unable to export using the Maine format: could not save the PDF.</string>
+    <string name="export_pdf_error">Unable to export log using the Maine format: an app that can handle PDFs is required.</string>
     <string name="export_email_error">Unable to export log manually: an email client is required.</string>
     <array name="menu_items">
         <item>Home</item>

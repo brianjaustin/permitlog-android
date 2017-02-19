@@ -1,6 +1,5 @@
 package team.tr.permitlog;
 
-import android.content.Context;
 import android.database.DataSetObserver;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.ActionBar;
@@ -50,10 +49,10 @@ public class CustomDriveDialog extends AppCompatActivity {
     //This stores the time that the user said they stopped driving at:
     private Calendar endingTime = Calendar.getInstance();
 
-    //The LinearLayout container for this dialog:
-    private LinearLayout timeNoticeContainer;
-    //The TextView containing the time notice:
-    private TextView timeNotice;
+    //The LinearLayout containers of the notices:
+    private LinearLayout timeNoticeContainer, ddNoticeContainer;
+    //The TextViews that are the notices:
+    private TextView timeNotice, ddNotice;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,14 +76,20 @@ public class CustomDriveDialog extends AppCompatActivity {
         ActionBar ab = getSupportActionBar(); //Create action bar object
         ab.setDisplayHomeAsUpEnabled(true); //Enable back button
 
-        //Set the container and time notice:
+        //Set the containers and notices:
         timeNoticeContainer = (LinearLayout)findViewById(R.id.time_notice_container);
         timeNotice = (TextView)findViewById(R.id.time_notice);
+        ddNoticeContainer = (LinearLayout)findViewById(R.id.dd_notice_container);
+        ddNotice = (TextView)findViewById(R.id.dd_notice);
 
         //Get logId from the intent:
         logId = getIntent().getStringExtra("logId");
         //If logId is null, then we will create a new log, so set the date and times to the current time:
-        if (logId == null) updateDateAndTime();
+        if (logId == null) {
+            updateDateAndTime();
+            //Since this is a new log, there is no possibility of a deleted driver, so remove the notice:
+            ddNoticeContainer.removeView(ddNotice);
+        }
         //Otherwise, we are editing: an old log:
         else {
             //Set the times according to the log:
@@ -110,8 +115,11 @@ public class CustomDriveDialog extends AppCompatActivity {
             );
             //Store the driver from the log:
             driverIdFromLog = dataSnapshot.child("driver_id").getValue().toString();
-            //If the driver from the log has been found, then select it:
-            if (spinnerData.driverIds.contains(driverIdFromLog)) driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverIdFromLog));
+            //If the driver from the log has been found, then select it and remove the deleted driver notice:
+            if (spinnerData.driverIds.contains(driverIdFromLog)) {
+                driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverIdFromLog));
+                ddNoticeContainer.removeView(ddNotice);
+            }
             //Otherwise, listen to data changes and select the driver from the log when it comes up:
             else spinnerData.driversAdapter.registerDataSetObserver(observeDrivers);
         }
@@ -123,9 +131,10 @@ public class CustomDriveDialog extends AppCompatActivity {
 
     private DataSetObserver observeDrivers = new DataSetObserver() { @Override public void onChanged() {
         Log.d(TAG, "Have we found "+driverIdFromLog+" yet? "+spinnerData.driverIds.contains(driverIdFromLog));
-        //If the driver from the log has been found, select it and stop listening to data changes:
+        //If the driver from the log has been found, select it, remove the deleted driver notice, and stop listening to data changes:
         if (spinnerData.driverIds.contains(driverIdFromLog)) {
             driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverIdFromLog));
+            ddNoticeContainer.removeView(ddNotice);
             spinnerData.driversAdapter.unregisterDataSetObserver(observeDrivers);
         }
     } };
