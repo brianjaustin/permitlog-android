@@ -1,6 +1,7 @@
 package team.tr.permitlog;
 
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
@@ -19,9 +20,20 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.tom_roush.pdfbox.pdmodel.PDDocument;
+import com.tom_roush.pdfbox.pdmodel.PDPage;
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDField;
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDFieldTreeNode;
+import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
+import java.util.Locale;
 
 public class LogFragment extends ListFragment {
     //For logging:
@@ -50,6 +62,11 @@ public class LogFragment extends ListFragment {
 
     //This holds the driver information:
     private DriverAdapter driversInfo;
+
+    // These get / hold the total times
+    private ValueEventListener totalListener;
+    private long totalTime;
+    private long totalNight;
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
@@ -100,6 +117,15 @@ public class LogFragment extends ListFragment {
                 && dataSnapshot.hasChild("night") && dataSnapshot.hasChild("driver_id");
     } };
 
+    private TriLongConsumer totalCallback = new TriLongConsumer() {
+        @Override
+        public void accept(long totalTimeP, long dayTimeP, long nightTimeP) {
+            //Set the instance properties:
+            totalTime = totalTimeP;
+            totalNight = nightTimeP;
+        }
+    };
+
     private String genLogSummary(DataSnapshot dataSnapshot) {
         //Find the time elapsed during the drive:
         long driveTimeInSec =
@@ -134,6 +160,9 @@ public class LogFragment extends ListFragment {
         timesListener = FirebaseHelper.transformListener(timesListener, validLog, logIds);
         timesRef.addChildEventListener(timesListener);
 
+        // Get the totals
+        totalListener = ElapsedTime.startListening(userId, totalCallback);
+
         //Initialize driversInfo to start listening to drivers:
         driversInfo = new DriverAdapter(getActivity(), userId, android.R.layout.simple_dropdown_item_1line);
 
@@ -148,6 +177,9 @@ public class LogFragment extends ListFragment {
         // Set add driver button click
         FloatingActionButton addDriver = (FloatingActionButton) rootView.findViewById(R.id.export_manual);
         addDriver.setOnClickListener(onManualExport);
+
+        // Load PDF export resources
+        PDFBoxResourceLoader.init(getContext());
 
         //Inflate the layout for this fragment
         return rootView;
@@ -181,9 +213,116 @@ public class LogFragment extends ListFragment {
             boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
             if (!isSignedIn) return;
 
-            // TODO: export to Maine Permitee Log PDF
+            // Export to Maine Log PDF
+            createPdfLog();
+
         }
     };
+
+    private void createPdfLog() {
+        // Get the PDF template
+        AssetManager assetManager = getActivity().getAssets();
+        PDDocument pdfDocument;
+        try {
+            pdfDocument = PDDocument.load(assetManager.open("maine_log.pdf"));
+        } catch (IOException e) {
+            Log.d(TAG, e.getMessage());
+            return;
+        }
+
+        // Get the PDF form
+        PDAcroForm acroForm = pdfDocument.getDocumentCatalog().getAcroForm();
+
+        // Check if the form was found
+        if (acroForm == null) {
+            Log.e(TAG, "FORM NOT FOUND");
+            return;
+        }
+
+        // Fill the fields
+        for (int i=0; i < logSnapshots.size(); i++) {
+            // Get the log info:
+            DataSnapshot logSnapshot = logSnapshots.get(i);
+            Calendar startDate = Calendar.getInstance();
+            Calendar endDate = Calendar.getInstance();
+            startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
+            endDate.setTimeInMillis((long) logSnapshot.child("end").getValue());
+
+            // Format the Date/time field
+            String dateTimeString = startDate.get(Calendar.MONTH) + "/" + startDate.get(Calendar.DAY_OF_MONTH) + "/" + startDate.get(Calendar.YEAR) + " ";
+            dateTimeString += String.format(Locale.ENGLISH, "%02d:%02d", startDate.get(Calendar.HOUR), startDate.get(Calendar.MINUTE)) + "-";
+            dateTimeString += String.format(Locale.ENGLISH, "%02d:%02d", endDate.get(Calendar.HOUR), endDate.get(Calendar.MINUTE));
+
+            // Get the elapsed time
+            long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
+            String stringElapsed = ElapsedTime.formatSeconds(timeElapsed/1000);
+
+            String driverId = logSnapshot.child("driver_id").getValue().toString();
+            // If possible, get driver index and info:
+            int driverIndex = -1;
+            DataSnapshot driverSnapshot = null;
+            if (driversInfo.driverIds.contains(driverId)) {
+                driverIndex = driversInfo.driverIds.indexOf(driverId);
+                driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
+            }
+
+            // Get the driver's name and age
+            // TODO: fetch age
+            String driverInfo = "";
+            if (driverSnapshot != null && DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
+                driverInfo = driversInfo.driverNames.get(driverIndex);
+            }
+
+            // Get the driver's license number
+            String driverLicense = "";
+            if (driverSnapshot != null && driverSnapshot.hasChild("license_number")) {
+                driverLicense = driverSnapshot.child("license_number").getValue().toString();
+            }
+
+            try {
+                // Add the values to the PDF
+                PDFieldTreeNode dateTimeField = acroForm.getField("Date and TimeRow" + Integer.toString(i));
+                PDFieldTreeNode hoursField = acroForm.getField("Number of Driving HoursRow" + Integer.toString(i));
+                PDFieldTreeNode nightField = acroForm.getField("Number of After Dark Driving HoursRow" + Integer.toString(i));
+                PDFieldTreeNode driverField = acroForm.getField("Supervising Drivers Name and AgeRow" + Integer.toString(i));
+                PDFieldTreeNode licenseField = acroForm.getField("License Number of Supervising DriverRow" + Integer.toString(i));
+                if (dateTimeField != null) dateTimeField.setValue(dateTimeString);
+                if (hoursField != null) hoursField.setValue(stringElapsed);
+                if (nightField != null && (boolean) logSnapshot.child("night").getValue()) {
+                    nightField.setValue(stringElapsed);
+                } else if (nightField != null) {
+                    nightField.setValue("0");
+                }
+                if (driverField != null) driverField.setValue(driverInfo);
+                if (licenseField != null) licenseField.setValue(driverLicense);
+            } catch (IOException e) {
+                Log.e(TAG, e.getMessage());
+            }
+        }
+
+        // Add the totals
+        List<PDFieldTreeNode> fields = acroForm.getFields();
+        for (PDFieldTreeNode field : fields) {
+            Log.d(TAG, field.getPartialName());
+        }
+        try {
+            PDFieldTreeNode totalHoursField = acroForm.getField("TOTAL HOURS OF PRACTICE DRIVING");
+            PDFieldTreeNode totalNightField = acroForm.getField("TOTAL HOURS OF NIGHT DRIVING");
+            if (totalHoursField != null) totalHoursField.setValue(ElapsedTime.formatSeconds(totalTime / 1000));
+            if (totalNightField != null) totalNightField.setValue(ElapsedTime.formatSeconds(totalNight / 1000));
+        } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
+        }
+
+        // Save the PDF
+        File file = new File(getContext().getFilesDir(), "log.pdf");
+        try {
+            pdfDocument.save(file);
+            pdfDocument.close();
+        } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
+        }
+    }
 
     private View.OnClickListener onManualExport = new View.OnClickListener() {
         @Override
@@ -261,7 +400,7 @@ public class LogFragment extends ListFragment {
             try {
                 startActivity(Intent.createChooser(intent, "Send Driving Log"));
             } catch (android.content.ActivityNotFoundException exception) {
-                // There is no email client installed
+                // There app installed that can send this
                 Toast.makeText(rootView.getContext(), R.string.export_email_error, Toast.LENGTH_LONG).show();
             }
         }
@@ -272,6 +411,7 @@ public class LogFragment extends ListFragment {
         //When we are done here, stop listening:
         timesRef.removeEventListener(timesListener);
         driversInfo.stopListening();
+        ElapsedTime.stopListening(totalListener);
         super.onDestroyView();
     }
 }
