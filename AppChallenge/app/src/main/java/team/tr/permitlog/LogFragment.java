@@ -22,9 +22,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
-import com.tom_roush.pdfbox.pdmodel.PDPage;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
-import com.tom_roush.pdfbox.pdmodel.interactive.form.PDField;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDFieldTreeNode;
 import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
@@ -63,10 +61,11 @@ public class LogFragment extends ListFragment {
     //This holds the driver information:
     private DriverAdapter driversInfo;
 
-    // These get / hold the total times
-    private ValueEventListener totalListener;
+    // Holds total time drove overall and during night:
     private long totalTime;
     private long totalNight;
+    // Firebase listener that updates totalTime and totalNight:
+    private ValueEventListener totalListener;
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
@@ -300,11 +299,11 @@ public class LogFragment extends ListFragment {
             }
         }
 
-        // Add the totals
-        List<PDFieldTreeNode> fields = acroForm.getFields();
+        /*List<PDFieldTreeNode> fields = acroForm.getFields();
         for (PDFieldTreeNode field : fields) {
             Log.d(TAG, field.getPartialName());
-        }
+        }*/
+        // Add the totals
         try {
             PDFieldTreeNode totalHoursField = acroForm.getField("TOTAL HOURS OF PRACTICE DRIVING");
             PDFieldTreeNode totalNightField = acroForm.getField("TOTAL HOURS OF NIGHT DRIVING");
@@ -338,9 +337,7 @@ public class LogFragment extends ListFragment {
             // Setup the variable to hold the CSV file
             String logAsCsv = "month, day, year, duration, day/night, driver, license_number\n";
             // Loop through the logs:
-            for (int i = 0; i < logSnapshots.size(); i++) {
-                // Get the log info:
-                DataSnapshot logSnapshot = logSnapshots.get(i);
+            for (DataSnapshot logSnapshot : logSnapshots) {
                 // Get the driver database key:
                 String driverId = logSnapshot.child("driver_id").getValue().toString();
                 // If possible, get driver index and info:
@@ -400,7 +397,7 @@ public class LogFragment extends ListFragment {
             try {
                 startActivity(Intent.createChooser(intent, "Send Driving Log"));
             } catch (android.content.ActivityNotFoundException exception) {
-                // There app installed that can send this
+                // There is no app installed that can send this, so show an error:
                 Toast.makeText(rootView.getContext(), R.string.export_email_error, Toast.LENGTH_LONG).show();
             }
         }
