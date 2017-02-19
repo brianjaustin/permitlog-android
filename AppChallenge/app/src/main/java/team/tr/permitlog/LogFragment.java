@@ -241,6 +241,11 @@ public class LogFragment extends ListFragment {
 
         // Fill the fields
         for (int i=0; i < logSnapshots.size(); i++) {
+            if (i % 25 == 0 && i != 0) {
+                // Save the PDF
+
+            }
+
             // Get the log info:
             DataSnapshot logSnapshot = logSnapshots.get(i);
             Calendar startDate = Calendar.getInstance();
@@ -301,10 +306,6 @@ public class LogFragment extends ListFragment {
         }
 
         // Add the totals
-        List<PDFieldTreeNode> fields = acroForm.getFields();
-        for (PDFieldTreeNode field : fields) {
-            Log.d(TAG, field.getPartialName());
-        }
         try {
             PDFieldTreeNode totalHoursField = acroForm.getField("TOTAL HOURS OF PRACTICE DRIVING");
             PDFieldTreeNode totalNightField = acroForm.getField("TOTAL HOURS OF NIGHT DRIVING");
