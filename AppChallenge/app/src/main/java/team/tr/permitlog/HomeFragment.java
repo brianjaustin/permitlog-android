@@ -29,6 +29,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -142,18 +143,20 @@ public class HomeFragment extends Fragment {
     };
 
     public void updateGoalTextViews() {
+        // Pads numbers with "0" if they are only one digit:
+        DecimalFormat padder = new DecimalFormat("00");
         // Convert the time to seconds and format appropriately:
         String totalTimeStr = ElapsedTime.formatSeconds(totalTime/1000);
         // Show the goal if it is nonzero:
         if (totalGoal == 0) totalTimeView.setText("Total: "+totalTimeStr);
-        else totalTimeView.setText("Total: "+totalTimeStr+"/0"+totalGoal+":00 hrs.");
+        else totalTimeView.setText("Total: "+totalTimeStr+"/"+padder.format(totalGoal)+":00");
         // Do the same for day and night:
         String dayTimeStr = ElapsedTime.formatSeconds(dayTime/1000);
         if (dayGoal == 0) dayTimeView.setText("Day: "+dayTimeStr);
-        else dayTimeView.setText("Day: "+dayTimeStr+"/0"+dayGoal+":00 hrs.");
+        else dayTimeView.setText("Day: "+dayTimeStr+"/"+padder.format(dayGoal)+":00");
         String nightTimeStr = ElapsedTime.formatSeconds(nightTime/1000);
         if (nightGoal == 0) nightTimeView.setText("Night: "+nightTimeStr);
-        else nightTimeView.setText("Night: "+nightTimeStr+"/0"+nightGoal+":00 hrs.");
+        else nightTimeView.setText("Night: "+nightTimeStr+"/"+padder.format(nightGoal)+":00");
     }
 
     //This is the listener for the "Start Drive" button.
