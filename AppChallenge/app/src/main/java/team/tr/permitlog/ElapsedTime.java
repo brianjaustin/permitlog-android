@@ -14,11 +14,14 @@ public class ElapsedTime {
     public static String TAG = "ElapsedTime";
 
     public static String formatSeconds(long seconds) {
-        /* Adds "0:" to DateUtils.formatElapsedTime() if seconds < 3600. */
         String secondsString = DateUtils.formatElapsedTime(seconds);
         //If the time is less than an hour, then add "0:" to the beginning:
-        if (seconds < 3600) secondsString = "0:"+secondsString;
-        return secondsString;
+        if (seconds < 36000) {
+            if (seconds < 3600) secondsString = "00:" + secondsString;
+            else secondsString = "0:" + secondsString;
+        }
+        //Removes seconds from time, becouse it's unneeded information
+        return secondsString.substring(0, secondsString.length()-3);
     }
 
     //Firebase reference:
