@@ -2,7 +2,9 @@ package team.tr.permitlog;
 
 import android.content.Intent;
 import android.content.res.AssetManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -314,14 +316,31 @@ public class LogFragment extends ListFragment {
             Log.e(TAG, e.getMessage());
         }
 
-        // Save the PDF
-        File file = new File(getContext().getFilesDir(), "log.pdf");
-        try {
-            pdfDocument.save(file);
-            pdfDocument.close();
-        } catch (IOException e) {
-            Log.e(TAG, e.getMessage());
+        // If we can write to external storage, save the PDF:
+        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            File file = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "log.pdf");
+            try {
+                pdfDocument.save(file);
+                pdfDocument.close();
+
+                // Send the PDF file to the user
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("application/pdf");
+                intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+                try {
+                    startActivity(Intent.createChooser(intent, "Send Driving Log"));
+                } catch (android.content.ActivityNotFoundException exception) {
+                    // There is no app installed that can send this, so show an error:
+                    Toast.makeText(getContext(), R.string.export_pdf_error, Toast.LENGTH_LONG).show();
+                }
+            } catch (IOException e) {
+                // When there is an error, log it and notify the user:
+                Log.e(TAG, e.getMessage());
+                Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
+            }
         }
+        // Otherwise, show the user an error message:
+        else Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
     }
 
     private View.OnClickListener onManualExport = new View.OnClickListener() {
@@ -399,7 +418,7 @@ public class LogFragment extends ListFragment {
                 startActivity(Intent.createChooser(intent, "Send Driving Log"));
             } catch (android.content.ActivityNotFoundException exception) {
                 // There is no app installed that can send this, so show an error:
-                Toast.makeText(rootView.getContext(), R.string.export_email_error, Toast.LENGTH_LONG).show();
+                Toast.makeText(getContext(), R.string.export_email_error, Toast.LENGTH_LONG).show();
             }
         }
     };
