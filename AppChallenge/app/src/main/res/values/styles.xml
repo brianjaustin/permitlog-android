@@ -28,7 +28,9 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:homeAsUpIndicator">@drawable/ic_close_white</item>
+        <item name="homeAsUpIndicator">@drawable/ic_close_white</item>‌
         <item name="android:activatedBackgroundIndicator">@drawable/drawer_list_selector</item>
+
     </style>
     <style name="MyAlertDialogStyle" parent="Theme.AppCompat.Light.Dialog.Alert"> </style>
 
