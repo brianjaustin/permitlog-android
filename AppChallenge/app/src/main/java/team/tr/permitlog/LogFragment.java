@@ -40,6 +40,8 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Formatter;
+import java.util.Locale;
 
 public class LogFragment extends ListFragment {
     //For logging:
@@ -278,6 +280,9 @@ public class LogFragment extends ListFragment {
             return;
         }
 
+        // Set up a Formatter for formatDateRange()
+        StringBuilder noAccumulate = new StringBuilder();
+        Formatter fdrFormatter = new Formatter(noAccumulate, Locale.US);
         // Fill the fields
         int subtraction = 0;
         for (int i=0; i < logSnapshots.size(); i++) {
@@ -302,12 +307,14 @@ public class LogFragment extends ListFragment {
             long startMillis = (long) logSnapshot.child("start").getValue();
             long endMillis = (long) logSnapshot.child("end").getValue();
 
-            // Format the Date/time field
+            // Set the flags for formatDateRange():
             int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_TIME;
-            //Show the year if showYear is set:
+            // Show the year if showYear is set:
             if (showYear) flags |= DateUtils.FORMAT_SHOW_YEAR;
-            Log.d(TAG, "Show year: "+showYear);
-            String dateTimeString = DateUtils.formatDateRange(getContext(), startMillis, endMillis, flags);
+            // Clear fdrFormatter so the result is not appended on to previus results of formatDateRange():
+            noAccumulate.setLength(0);
+            // Format the Date/time field
+            String dateTimeString = DateUtils.formatDateRange(getContext(), fdrFormatter, startMillis, endMillis, flags).toString();
             // Get rid of Unicode dash:
             dateTimeString = TextUtils.join("-", dateTimeString.split("\u2013"));
 
