@@ -248,7 +248,7 @@ public class LogFragment extends ListFragment {
         // Fill the fields
         int subtraction = 0;
         for (int i=0; i < logSnapshots.size(); i++) {
-            if (i % 25 == 0 && i != 0 && i != logSnapshots.size()) { // Begin a new page
+            if (i % 50 == 0 && i != 0 && i != logSnapshots.size()) { // Begin a new page
                 // Save this section
                 logPages.add(pdfDocument);
 
@@ -261,7 +261,7 @@ public class LogFragment extends ListFragment {
                 }
                 acroForm = pdfDocument.getDocumentCatalog().getAcroForm();
 
-                subtraction += 25;
+                subtraction += 50;
             }
 
             // Get the log info:
