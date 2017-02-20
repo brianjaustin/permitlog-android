@@ -55,6 +55,17 @@ public class CustomDriveDialog extends AppCompatActivity {
     private TextView timeNotice, ddNotice;
 
     @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // Save the current data
+        outState.putLong("startTime", startingTime.getTimeInMillis());
+        outState.putLong("endTime", endingTime.getTimeInMillis());
+        outState.putInt("driver", driversSpinner.getSelectedItemPosition());
+        outState.putBoolean("night", ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).isChecked());
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_custom_dialog);
@@ -81,6 +92,34 @@ public class CustomDriveDialog extends AppCompatActivity {
         timeNotice = (TextView)findViewById(R.id.time_notice);
         ddNoticeContainer = (LinearLayout)findViewById(R.id.dd_notice_container);
         ddNotice = (TextView)findViewById(R.id.dd_notice);
+
+        // Load the current values
+        final Boolean nightChecked;
+        final int driverIndex;
+        if (savedInstanceState != null) {
+            startingTime.setTimeInMillis(savedInstanceState.getLong("startTime"));
+            endingTime.setTimeInMillis(savedInstanceState.getLong("endTime"));
+            driverIndex = savedInstanceState.getInt("driver");
+            nightChecked = savedInstanceState.getBoolean("night");
+        } else {
+            nightChecked = false;
+            driverIndex = 0;
+        }
+
+        // Actually update view components
+        driversSpinner.post(new Runnable() { // This ensures that we don't get an index out of bounds error
+            @Override
+            public void run() {
+                driversSpinner.setSelection(driverIndex);
+            }
+        });
+        final CheckBox nightBox = (CheckBox)findViewById(R.id.drive_at_night_checkbox);
+        nightBox.post(new Runnable() { // This forces the checkbox to actually update (for some reason it does not with just setChecked)
+            @Override
+            public void run() {
+                nightBox.setChecked(nightChecked);
+            }
+        });
 
         //Get logId from the intent:
         logId = getIntent().getStringExtra("logId");
