@@ -1,7 +1,9 @@
 package team.tr.permitlog;
 
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.res.AssetManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
@@ -21,17 +23,24 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.tom_roush.pdfbox.multipdf.PDFMergerUtility;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.PDPage;
+import com.tom_roush.pdfbox.pdmodel.common.PDStream;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDField;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDFieldTreeNode;
 import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -220,6 +229,8 @@ public class LogFragment extends ListFragment {
     };
 
     private void createPdfLog() {
+        ArrayList<PDDocument> logPages = new ArrayList<>();
+
         // Get the PDF template
         AssetManager assetManager = getActivity().getAssets();
         PDDocument pdfDocument;
@@ -240,10 +251,22 @@ public class LogFragment extends ListFragment {
         }
 
         // Fill the fields
+        int subtraction = 0;
         for (int i=0; i < logSnapshots.size(); i++) {
-            if (i % 25 == 0 && i != 0) {
-                // Save the PDF
+            if (i % 25 == 0 && i != 0 && i != logSnapshots.size()) { // Begin a new page
+                // Save this section
+                logPages.add(pdfDocument);
 
+                // Start a new section
+                try {
+                    pdfDocument = PDDocument.load(assetManager.open("maine_log.pdf"));
+                } catch (IOException e) {
+                    Log.e(TAG, e.getMessage());
+                    return;
+                }
+                acroForm = pdfDocument.getDocumentCatalog().getAcroForm();
+
+                subtraction += 25;
             }
 
             // Get the log info:
@@ -254,7 +277,8 @@ public class LogFragment extends ListFragment {
             endDate.setTimeInMillis((long) logSnapshot.child("end").getValue());
 
             // Format the Date/time field
-            String dateTimeString = startDate.get(Calendar.MONTH) + "/" + startDate.get(Calendar.DAY_OF_MONTH) + "/" + startDate.get(Calendar.YEAR) + " ";
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
+            String dateTimeString = dateFormat.format(startDate.getTime()) + " ";
             dateTimeString += String.format(Locale.ENGLISH, "%02d:%02d", startDate.get(Calendar.HOUR), startDate.get(Calendar.MINUTE)) + "-";
             dateTimeString += String.format(Locale.ENGLISH, "%02d:%02d", endDate.get(Calendar.HOUR), endDate.get(Calendar.MINUTE));
 
@@ -286,11 +310,12 @@ public class LogFragment extends ListFragment {
 
             try {
                 // Add the values to the PDF
-                PDFieldTreeNode dateTimeField = acroForm.getField("Date and TimeRow" + Integer.toString(i));
-                PDFieldTreeNode hoursField = acroForm.getField("Number of Driving HoursRow" + Integer.toString(i));
-                PDFieldTreeNode nightField = acroForm.getField("Number of After Dark Driving HoursRow" + Integer.toString(i));
-                PDFieldTreeNode driverField = acroForm.getField("Supervising Drivers Name and AgeRow" + Integer.toString(i));
-                PDFieldTreeNode licenseField = acroForm.getField("License Number of Supervising DriverRow" + Integer.toString(i));
+                int rowNum = (i + 1) - subtraction;
+                PDFieldTreeNode dateTimeField = acroForm.getField("Date and TimeRow" + Integer.toString(rowNum));
+                PDFieldTreeNode hoursField = acroForm.getField("Number of Driving HoursRow" + Integer.toString(rowNum));
+                PDFieldTreeNode nightField = acroForm.getField("Number of After Dark Driving HoursRow" + Integer.toString(rowNum));
+                PDFieldTreeNode driverField = acroForm.getField("Supervising Drivers Name and AgeRow" + Integer.toString(rowNum));
+                PDFieldTreeNode licenseField = acroForm.getField("License Number of Supervising DriverRow" + Integer.toString(rowNum));
                 if (dateTimeField != null) dateTimeField.setValue(dateTimeString);
                 if (hoursField != null) hoursField.setValue(stringElapsed);
                 if (nightField != null && (boolean) logSnapshot.child("night").getValue()) {
@@ -315,11 +340,26 @@ public class LogFragment extends ListFragment {
             Log.e(TAG, e.getMessage());
         }
 
+        // Save the last page
+        logPages.add(pdfDocument);
+
+        // Merge the files into one
+        PDDocument totalDocument = new PDDocument();
+        PDFMergerUtility mt = new PDFMergerUtility();
+        for (PDDocument document : logPages) {
+            try {
+                mt.appendDocument(totalDocument, document);
+            } catch (IOException e) {
+                Log.e(TAG, e.getMessage());
+                return;
+            }
+        }
+
         // Save the PDF
         File file = new File(getContext().getFilesDir(), "log.pdf");
         try {
-            pdfDocument.save(file);
-            pdfDocument.close();
+            totalDocument.save(file);
+            totalDocument.close();
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
         }
