@@ -6,6 +6,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ListFragment;
+import android.text.TextUtils;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -269,17 +271,13 @@ public class LogFragment extends ListFragment {
 
             // Get the log info:
             DataSnapshot logSnapshot = logSnapshots.get(i);
-            Calendar startDate = Calendar.getInstance();
-            Calendar endDate = Calendar.getInstance();
-            startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
-            endDate.setTimeInMillis((long) logSnapshot.child("end").getValue());
+            long startMillis = (long) logSnapshot.child("start").getValue();
+            long endMillis = (long) logSnapshot.child("end").getValue();
 
             // Format the Date/time field
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
-            String dateTimeString = dateFormat.format(startDate.getTime()) + " ";
-            dateTimeString += String.format(Locale.ENGLISH, "%02d:%02d", startDate.get(Calendar.HOUR), startDate.get(Calendar.MINUTE)) + "-";
-            dateTimeString += String.format(Locale.ENGLISH, "%02d:%02d", endDate.get(Calendar.HOUR), endDate.get(Calendar.MINUTE));
-
+            String dateTimeString = DateUtils.formatDateRange(getContext(), startMillis, endMillis, DateUtils.FORMAT_SHOW_DATE+DateUtils.FORMAT_NUMERIC_DATE+DateUtils.FORMAT_SHOW_YEAR+DateUtils.FORMAT_SHOW_TIME);
+            // Get rid of Unicode dash:
+            dateTimeString = TextUtils.join("-", dateTimeString.split("\u2013"));
             // Get the elapsed time
             long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
             String stringElapsed = ElapsedTime.formatSeconds(timeElapsed/1000);
