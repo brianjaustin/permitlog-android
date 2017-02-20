@@ -34,6 +34,16 @@ public class SettingsFragment extends Fragment {
     private EditText nightEdit;
 
     @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // Save current values (persist for rotation)
+        outState.putString("total", totalEdit.getText().toString());
+        outState.putString("day", dayEdit.getText().toString());
+        outState.putString("night", nightEdit.getText().toString());
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         LayoutInflater lf = getActivity().getLayoutInflater();
@@ -49,25 +59,32 @@ public class SettingsFragment extends Fragment {
         nightEdit = (EditText) rootView.findViewById(R.id.goal_night);
 
         // Set the values
-        goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if (dataSnapshot.hasChild("total")) {
-                    totalEdit.setText(dataSnapshot.child("total").getValue().toString());
+        if (savedInstanceState == null) {
+            goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if (dataSnapshot.hasChild("total")) {
+                        totalEdit.setText(dataSnapshot.child("total").getValue().toString());
+                    }
+                    if (dataSnapshot.hasChild("day")) {
+                        dayEdit.setText(dataSnapshot.child("day").getValue().toString());
+                    }
+                    if (dataSnapshot.hasChild("night")) {
+                        nightEdit.setText(dataSnapshot.child("night").getValue().toString());
+                    }
                 }
-                if (dataSnapshot.hasChild("day")) {
-                    dayEdit.setText(dataSnapshot.child("day").getValue().toString());
-                }
-                if (dataSnapshot.hasChild("night")) {
-                    nightEdit.setText(dataSnapshot.child("night").getValue().toString());
-                }
-            }
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.e(TAG, databaseError.getMessage());
-            }
-        });
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.e(TAG, databaseError.getMessage());
+                }
+            });
+        } else {
+            // Get previous (but unsaved) values
+            totalEdit.setText(savedInstanceState.getString("total"));
+            dayEdit.setText(savedInstanceState.getString("day"));
+            nightEdit.setText(savedInstanceState.getString("night"));
+        }
 
         // Save the goals when the button is clicked
         Button saveButton = (Button) rootView.findViewById(R.id.settings_save);
