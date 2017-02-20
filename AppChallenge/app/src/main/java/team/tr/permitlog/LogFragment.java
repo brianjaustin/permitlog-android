@@ -281,8 +281,8 @@ public class LogFragment extends ListFragment {
             String driverId = logSnapshot.child("driver_id").getValue().toString();
             int driverIndex = -1;
             DataSnapshot driverSnapshot = null;
-            String driverNameAndAge = "UNKNOWN DRIVER";
-            String driverLicense = "UNKNOWN DRIVER";
+            String driverNameAndAge = "";
+            String driverLicense = "";
             // If possible, get driver index and info:
             if (driversInfo.driverIds.contains(driverId)) {
                 driverIndex = driversInfo.driverIds.indexOf(driverId);
