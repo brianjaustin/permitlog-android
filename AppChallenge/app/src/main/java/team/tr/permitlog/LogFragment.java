@@ -311,12 +311,23 @@ public class LogFragment extends ListFragment {
             int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_TIME;
             // Show the year if showYear is set:
             if (showYear) flags |= DateUtils.FORMAT_SHOW_YEAR;
-            // Clear fdrFormatter so the result is not appended on to previus results of formatDateRange():
+            // Clear fdrFormatter so the result is not appended on to previous results of formatDateRange():
             noAccumulate.setLength(0);
             // Format the Date/time field
             String dateTimeString = DateUtils.formatDateRange(getContext(), fdrFormatter, startMillis, endMillis, flags).toString();
-            // Get rid of Unicode dash:
-            dateTimeString = TextUtils.join("-", dateTimeString.split("\u2013"));
+            // Split string into end and beginning:
+            String dateTimeStringParts[] = dateTimeString.split("\u2013");
+            // If there is two parts (i.e., the drive is more than a minute long):
+            if (dateTimeStringParts.length > 1) {
+                // Split the second part by commas:
+                String endTimeStringParts[] = dateTimeStringParts[1].split(",");
+                // If there is more than one part, that means endMillis is from a different day than startMillis.
+                // However, we only want to show the first day, so get rid of the second one:
+                if (endTimeStringParts.length > 1) dateTimeStringParts[1] = endTimeStringParts[1];
+
+                // Finally, join the two parts together again with a regular hyphen:
+                dateTimeString = TextUtils.join("-", dateTimeStringParts);
+            }
 
             // Get the elapsed time
             long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
