@@ -3,6 +3,7 @@ package team.tr.permitlog;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ListFragment;
@@ -32,17 +33,9 @@ import com.tom_roush.pdfbox.pdmodel.interactive.form.PDFieldTreeNode;
 import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.sql.Driver;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
 
 public class LogFragment extends ListFragment {
     //For logging:
@@ -223,9 +216,10 @@ public class LogFragment extends ListFragment {
             boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
             if (!isSignedIn) return;
 
-            // Export to Maine Log PDF
-            createPdfLog();
-
+            // Create the PDF log asynchronously:
+            createPdfLogAsync.execute();
+            // Tell the user it might be a while:
+            Toast.makeText(getContext(), "Creating the PDF for the Maine log may take a few minutes. Please wait. You will be asked to send the driving log to another app when it's finished.", Toast.LENGTH_LONG).show();
         }
     };
 
@@ -287,16 +281,18 @@ public class LogFragment extends ListFragment {
             String driverId = logSnapshot.child("driver_id").getValue().toString();
             int driverIndex = -1;
             DataSnapshot driverSnapshot = null;
-            String driverName = "UNKNOWN DRIVER";
+            String driverNameAndAge = "UNKNOWN DRIVER";
             String driverLicense = "UNKNOWN DRIVER";
             // If possible, get driver index and info:
             if (driversInfo.driverIds.contains(driverId)) {
                 driverIndex = driversInfo.driverIds.indexOf(driverId);
                 driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
-                // Get the driver's name and age
-                // TODO: fetch age
-                if (DriverAdapter.hasCompleteName.accept(driverSnapshot)) driverName = driversInfo.driverNames.get(driverIndex);
-                if (driverSnapshot.hasChild("age")) driverName += ", " + driverSnapshot.child("age").getValue().toString();
+                // Get the driver's name
+                if (DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
+                    driverNameAndAge = driversInfo.driverNames.get(driverIndex);
+                }
+                // Get the driver's age
+                if (driverSnapshot.hasChild("age")) driverNameAndAge += ", " + driverSnapshot.child("age").getValue().toString();
                 // Get the driver's license number
                 if (driverSnapshot.hasChild("license_number")) driverLicense = driverSnapshot.child("license_number").getValue().toString();
             }
@@ -316,7 +312,7 @@ public class LogFragment extends ListFragment {
                 } else if (nightField != null) {
                     nightField.setValue("0");
                 }
-                if (driverField != null) driverField.setValue(driverName);
+                if (driverField != null) driverField.setValue(driverNameAndAge);
                 if (licenseField != null) licenseField.setValue(driverLicense);
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
@@ -374,6 +370,12 @@ public class LogFragment extends ListFragment {
         // Otherwise, show the user an error message:
         else Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
     }
+
+    // Turn createPdfLog into an AsyncTask:
+    private AsyncTask<Void, Void, Void> createPdfLogAsync = new AsyncTask<Void, Void, Void>() { @Override public Void doInBackground(Void... voids) {
+        createPdfLog();
+        return null;
+    } };
 
     private View.OnClickListener onManualExport = new View.OnClickListener() {
         @Override
