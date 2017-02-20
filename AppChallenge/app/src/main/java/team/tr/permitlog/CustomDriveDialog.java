@@ -234,6 +234,8 @@ public class CustomDriveDialog extends AppCompatActivity {
 
     public void pickStartTime(View view) {
         /* This function is called when the user presses the "pick the start time" button. */
+        //Set isUserChoosingEndTime so we know the user is setting the starting time later on:
+        isUserChoosingEndingTime = false;
         pickTime(startingTime);
     }
 
@@ -256,8 +258,6 @@ public class CustomDriveDialog extends AppCompatActivity {
             driveTime = endingTime;
             //Get the view for the ending time:
             driveTimeView = (TextView)findViewById(R.id.drive_end_time);
-            //They are no longer choosing the ending time, so unset the boolean:
-            isUserChoosingEndingTime = false;
         }
         //Otherwise, if they are choosing the start time:
         else {
