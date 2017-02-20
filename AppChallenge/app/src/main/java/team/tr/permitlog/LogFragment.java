@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ListFragment;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
@@ -17,6 +18,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.firebase.auth.FirebaseAuth;
@@ -217,14 +220,43 @@ public class LogFragment extends ListFragment {
             boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
             if (!isSignedIn) return;
 
-            // Create the PDF log asynchronously:
-            createPdfLogAsync.execute();
-            // Tell the user it might be a while:
-            Toast.makeText(getContext(), "Creating the PDF for the Maine log may take a few minutes. Please wait. You will be asked to send the driving log to another app when it's finished.", Toast.LENGTH_LONG).show();
+            // This Toast, when shown, will tell the user creating the PDF could take a while:
+            final Toast notice = Toast.makeText(getContext(), "Creating the PDF for the Maine log may take a few minutes. Please wait. You will be asked to send the driving log to another app when it's finished.", Toast.LENGTH_LONG);
+            // Turn createPdfLog into an AsyncTask:
+            // Note that this can not just be an instance member because it needs to be created every time the method runs
+            // since one AsyncTask can only be executed once.
+            final AsyncTask<Boolean, Void, Void> createPdfLogAsync = new AsyncTask<Boolean, Void, Void>() { @Override public Void doInBackground(Boolean... bools) {
+                createPdfLog(bools[0]);
+                return null;
+            } };
+
+            new MaterialDialog.Builder(getContext())
+                    .content("Do you want the log to include the year in its dates?")
+                    .positiveText(R.string.yes)
+                    .negativeText(R.string.no)
+                    .onPositive(new MaterialDialog.SingleButtonCallback() {
+                        @Override
+                        public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                            // Create the PDF log asynchronously while showing the year:
+                            createPdfLogAsync.execute(true);
+                            // Tell the user it might be a while:
+                            notice.show();
+                        }
+                    })
+                    .onNegative(new MaterialDialog.SingleButtonCallback() {
+                        @Override
+                        public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                            // Create the PDF log asynchronously while not showing the year:
+                            createPdfLogAsync.execute(false);
+                            // Tell the user it might be a while:
+                            notice.show();
+                        }
+                    })
+                    .show();
         }
     };
 
-    private void createPdfLog() {
+    private void createPdfLog(boolean showYear) {
         ArrayList<PDDocument> logPages = new ArrayList<>();
 
         // Get the PDF template
@@ -271,7 +303,11 @@ public class LogFragment extends ListFragment {
             long endMillis = (long) logSnapshot.child("end").getValue();
 
             // Format the Date/time field
-            String dateTimeString = DateUtils.formatDateRange(getContext(), startMillis, endMillis, DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_TIME);
+            int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_TIME;
+            //Show the year if showYear is set:
+            if (showYear) flags |= DateUtils.FORMAT_SHOW_YEAR;
+            Log.d(TAG, "Show year: "+showYear);
+            String dateTimeString = DateUtils.formatDateRange(getContext(), startMillis, endMillis, flags);
             // Get rid of Unicode dash:
             dateTimeString = TextUtils.join("-", dateTimeString.split("\u2013"));
 
@@ -285,8 +321,8 @@ public class LogFragment extends ListFragment {
             String driverId = logSnapshot.child("driver_id").getValue().toString();
             int driverIndex = -1;
             DataSnapshot driverSnapshot = null;
-            String driverNameAndAge = "";
-            String driverLicense = "";
+            String driverNameAndAge = "DELETED DRIVER";
+            String driverLicense = "DELETED DRIVER";
             // If possible, get driver index and info:
             if (driversInfo.driverIds.contains(driverId)) {
                 driverIndex = driversInfo.driverIds.indexOf(driverId);
@@ -375,12 +411,6 @@ public class LogFragment extends ListFragment {
         else Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
     }
 
-    // Turn createPdfLog into an AsyncTask:
-    private AsyncTask<Void, Void, Void> createPdfLogAsync = new AsyncTask<Void, Void, Void>() { @Override public Void doInBackground(Void... voids) {
-        createPdfLog();
-        return null;
-    } };
-
     private View.OnClickListener onManualExport = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
@@ -436,7 +466,7 @@ public class LogFragment extends ListFragment {
                 if (driverSnapshot != null && DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
                     driverName = driversInfo.driverNames.get(driverIndex);
                 }
-                else driverName = "UNKNOWN DRIVER";
+                else driverName = "DELETED DRIVER";
                 logAsCsv += driverName + ", ";
 
                 // Get the license number if available.
@@ -445,7 +475,7 @@ public class LogFragment extends ListFragment {
                     licenseId = driverSnapshot.child("license_number").getValue().toString();
                 }
                 // If the license number is not available, just say the driver is unknown:
-                else licenseId = "UNKNOWN DRIVER";
+                else licenseId = "DELETED DRIVER";
                 // Add the license number and a newline
                 logAsCsv += licenseId+"\n";
             }
