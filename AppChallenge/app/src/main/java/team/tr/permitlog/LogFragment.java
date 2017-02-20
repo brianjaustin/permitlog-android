@@ -282,26 +282,21 @@ public class LogFragment extends ListFragment {
             long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
             String stringElapsed = ElapsedTime.formatSeconds(timeElapsed/1000);
 
+            // The following variables hold info about the drivers. These are their default values:
             String driverId = logSnapshot.child("driver_id").getValue().toString();
-            // If possible, get driver index and info:
             int driverIndex = -1;
             DataSnapshot driverSnapshot = null;
+            String driverName = "UNKNOWN DRIVER";
+            String driverLicense = "UNKNOWN DRIVER";
+            // If possible, get driver index and info:
             if (driversInfo.driverIds.contains(driverId)) {
                 driverIndex = driversInfo.driverIds.indexOf(driverId);
                 driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
-            }
-
-            // Get the driver's name and age
-            // TODO: fetch age
-            String driverInfo = "";
-            if (driverSnapshot != null && DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
-                driverInfo = driversInfo.driverNames.get(driverIndex);
-            }
-
-            // Get the driver's license number
-            String driverLicense = "";
-            if (driverSnapshot != null && driverSnapshot.hasChild("license_number")) {
-                driverLicense = driverSnapshot.child("license_number").getValue().toString();
+                 // Get the driver's name and age
+                 // TODO: fetch age
+                 if (DriverAdapter.hasCompleteName.accept(driverSnapshot)) driverName = driversInfo.driverNames.get(driverIndex);
+                 // Get the driver's license number
+                 if (driverSnapshot.hasChild("license_number")) driverLicense = driverSnapshot.child("license_number").getValue().toString();
             }
 
             try {
@@ -319,7 +314,7 @@ public class LogFragment extends ListFragment {
                 } else if (nightField != null) {
                     nightField.setValue("0");
                 }
-                if (driverField != null) driverField.setValue(driverInfo);
+                if (driverField != null) driverField.setValue(driverName);
                 if (licenseField != null) licenseField.setValue(driverLicense);
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
@@ -402,10 +397,12 @@ public class LogFragment extends ListFragment {
                     driverIndex = driversInfo.driverIds.indexOf(driverId);
                     driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
                 }
-                // Add the month
+                // Get the calendar object:
                 Calendar startDate = Calendar.getInstance();
                 startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
-                logAsCsv += startDate.get(Calendar.MONTH) + ", ";
+                // Add the month
+                String months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+                logAsCsv += months[startDate.get(Calendar.MONTH)] + ", ";
 
                 // Add the day
                 logAsCsv += startDate.get(Calendar.DAY_OF_MONTH) + ", ";
