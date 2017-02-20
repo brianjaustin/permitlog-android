@@ -23,6 +23,8 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cancel">Cancel</string>
+    <string name="save_pdf_error">Unable to export using the Maine format: could not save the PDF.</string>
+    <string name="export_pdf_error">Unable to export log using the Maine format: an app that can handle PDFs is required.</string>
     <string name="export_email_error">Unable to export log manually: an email client is required.</string>
     <array name="menu_items">
         <item>Home</item>
