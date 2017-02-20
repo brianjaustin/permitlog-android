@@ -1,10 +1,10 @@
 package team.tr.permitlog;
 
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -25,10 +25,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
-import com.tom_roush.pdfbox.pdmodel.PDPage;
-import com.tom_roush.pdfbox.pdmodel.common.PDStream;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
-import com.tom_roush.pdfbox.pdmodel.interactive.form.PDField;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDFieldTreeNode;
 import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
@@ -72,10 +69,11 @@ public class LogFragment extends ListFragment {
     //This holds the driver information:
     private DriverAdapter driversInfo;
 
-    // These get / hold the total times
-    private ValueEventListener totalListener;
+    // Holds total time drove overall and during night:
     private long totalTime;
     private long totalNight;
+    // Firebase listener that updates totalTime and totalNight:
+    private ValueEventListener totalListener;
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
@@ -355,14 +353,31 @@ public class LogFragment extends ListFragment {
             }
         }
 
-        // Save the PDF
-        File file = new File(getContext().getFilesDir(), "log.pdf");
-        try {
-            totalDocument.save(file);
-            totalDocument.close();
-        } catch (IOException e) {
-            Log.e(TAG, e.getMessage());
+        // If we can write to external storage, save the PDF:
+        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            File file = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "log.pdf");
+            try {
+                totalDocument.save(file);
+                totalDocument.close();
+
+                // Send the PDF file to the user
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("application/pdf");
+                intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+                try {
+                    startActivity(Intent.createChooser(intent, "Send Driving Log"));
+                } catch (android.content.ActivityNotFoundException exception) {
+                    // There is no app installed that can send this, so show an error:
+                    Toast.makeText(getContext(), R.string.export_pdf_error, Toast.LENGTH_LONG).show();
+                }
+            } catch (IOException e) {
+                // When there is an error, log it and notify the user:
+                Log.e(TAG, e.getMessage());
+                Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
+            }
         }
+        // Otherwise, show the user an error message:
+        else Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
     }
 
     private View.OnClickListener onManualExport = new View.OnClickListener() {
@@ -379,9 +394,7 @@ public class LogFragment extends ListFragment {
             // Setup the variable to hold the CSV file
             String logAsCsv = "month, day, year, duration, day/night, driver, license_number\n";
             // Loop through the logs:
-            for (int i = 0; i < logSnapshots.size(); i++) {
-                // Get the log info:
-                DataSnapshot logSnapshot = logSnapshots.get(i);
+            for (DataSnapshot logSnapshot : logSnapshots) {
                 // Get the driver database key:
                 String driverId = logSnapshot.child("driver_id").getValue().toString();
                 // If possible, get driver index and info:
@@ -441,8 +454,8 @@ public class LogFragment extends ListFragment {
             try {
                 startActivity(Intent.createChooser(intent, "Send Driving Log"));
             } catch (android.content.ActivityNotFoundException exception) {
-                // There app installed that can send this
-                Toast.makeText(rootView.getContext(), R.string.export_email_error, Toast.LENGTH_LONG).show();
+                // There is no app installed that can send this, so show an error:
+                Toast.makeText(getContext(), R.string.export_email_error, Toast.LENGTH_LONG).show();
             }
         }
     };
