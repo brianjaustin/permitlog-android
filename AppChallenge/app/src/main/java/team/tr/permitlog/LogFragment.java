@@ -115,7 +115,7 @@ public class LogFragment extends ListFragment {
     };
 
     public static DataSnapshotPredicate validLog = new DataSnapshotPredicate() { @Override public boolean accept(DataSnapshot dataSnapshot) {
-        /* Returns true iff there is the start, end, night, and driver_id children. */
+        /* Returns true if there is the start, end, night, and driver_id children. */
         return dataSnapshot.hasChild("start") && dataSnapshot.hasChild("end")
                 && dataSnapshot.hasChild("night") && dataSnapshot.hasChild("driver_id");
     } };

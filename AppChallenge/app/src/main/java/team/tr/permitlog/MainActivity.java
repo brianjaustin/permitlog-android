@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         currentUser = mAuth.getCurrentUser();
         // Log whether currentUser is null or not:
         Log.d(TAG, "Is the user not signed in? "+Boolean.toString(currentUser == null));
-        navigateBasedOnUser();
+        if (savedInstanceState == null) navigateBasedOnUser();
     }
 
 
