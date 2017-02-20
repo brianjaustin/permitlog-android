@@ -61,13 +61,17 @@ public class DriverDialog extends AppCompatActivity {
             final EditText editFirst = (EditText) findViewById(R.id.driver_firstname);
             final EditText editLast = (EditText) findViewById(R.id.driver_lastname);
             final EditText editLicense = (EditText) findViewById(R.id.driver_license);
+            final EditText editAge = (EditText) findViewById(R.id.driver_age);
             DatabaseReference editRef = driverRef.child(driverId);
             editRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
-                    editFirst.setText(dataSnapshot.child("name").child("first").getValue().toString());
-                    editLast.setText(dataSnapshot.child("name").child("last").getValue().toString());
-                    editLicense.setText(dataSnapshot.child("license_number").getValue().toString());
+                    if (dataSnapshot.hasChild("name")) {
+                        editFirst.setText(dataSnapshot.child("name").child("first").getValue().toString());
+                        editLast.setText(dataSnapshot.child("name").child("last").getValue().toString());
+                    }
+                    if (dataSnapshot.hasChild("license_number")) editLicense.setText(dataSnapshot.child("license_number").getValue().toString());
+                    if (dataSnapshot.hasChild("age")) editAge.setText(dataSnapshot.child("age").getValue().toString());
                 }
                 @Override
                 public void onCancelled(DatabaseError databaseError) {
@@ -103,13 +107,15 @@ public class DriverDialog extends AppCompatActivity {
         EditText firstNameField = (EditText)findViewById(R.id.driver_firstname);
         EditText lastNameField = (EditText)findViewById(R.id.driver_lastname);
         EditText licenseField = (EditText)findViewById(R.id.driver_license);
+        EditText ageField = (EditText)findViewById(R.id.driver_age);
 
         String firstName = firstNameField.getText().toString();
         String lastName = lastNameField.getText().toString();
         String licenseNumber = licenseField.getText().toString();
+        String driverAge = ageField.getText().toString();
 
         // Check if any value is empty
-        if (firstName.trim().isEmpty() || lastName.trim().isEmpty() || licenseNumber.trim().isEmpty()) {
+        if (firstName.trim().isEmpty() || lastName.trim().isEmpty() || licenseNumber.trim().isEmpty() || driverAge.trim().isEmpty()) {
             Toast.makeText(this, R.string.driver_dialog_error, Toast.LENGTH_SHORT).show();
             return;
         }
@@ -120,12 +126,14 @@ public class DriverDialog extends AppCompatActivity {
             editRef.child("name").child("first").setValue(firstName);
             editRef.child("name").child("last").setValue(lastName);
             editRef.child("license_number").setValue(licenseNumber);
+            editRef.child("age").setValue(driverAge);
         } else {
             // Push a new driver
             DatabaseReference newRef = driverRef.push();
             newRef.child("name").child("first").setValue(firstName);
             newRef.child("name").child("last").setValue(lastName);
             newRef.child("license_number").setValue(licenseNumber);
+            newRef.child("age").setValue(driverAge);
         }
 
         // Close the dialog

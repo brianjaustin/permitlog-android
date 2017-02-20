@@ -294,10 +294,10 @@ public class LogFragment extends ListFragment {
             }
 
             // Get the driver's name and age
-            // TODO: fetch age
             String driverInfo = "";
             if (driverSnapshot != null && DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
                 driverInfo = driversInfo.driverNames.get(driverIndex);
+                driverInfo += ", " + driversInfo.driverSnapshots.get(driverIndex).child("age").getValue().toString();
             }
 
             // Get the driver's license number
