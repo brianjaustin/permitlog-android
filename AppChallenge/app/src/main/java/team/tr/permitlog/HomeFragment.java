@@ -48,6 +48,10 @@ public class HomeFragment extends Fragment {
     private Date startingTime = new Date();
     private Date endingTime = new Date();
 
+    // Start/stop buttons
+    private Button startButton;
+    private Button stopButton;
+
     // Variables to update the drive_time label
     private String formattedTime;
     private Timer timer;
@@ -76,6 +80,16 @@ public class HomeFragment extends Fragment {
     };
 
     @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // Save values for rotate
+        outState.putBoolean("startEnabled", startButton.isEnabled());
+        outState.putBoolean("stopEnabled", stopButton.isEnabled());
+        outState.putLong("startTime", startingTime.getTime());
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         LayoutInflater lf = getActivity().getLayoutInflater();
@@ -83,12 +97,22 @@ public class HomeFragment extends Fragment {
         rootView = lf.inflate(R.layout.fragment_home, container, false);
 
         // Set start drive button click
-        Button startDrive = (Button) rootView.findViewById(R.id.start_drive);
-        startDrive.setOnClickListener(onStartDrive);
+        startButton = (Button) rootView.findViewById(R.id.start_drive);
+        startButton.setOnClickListener(onStartDrive);
 
         // Set stop drive button click
-        Button stopDrive = (Button) rootView.findViewById(R.id.stop_drive);
-        stopDrive.setOnClickListener(onStopDrive);
+        stopButton = (Button) rootView.findViewById(R.id.stop_drive);
+        stopButton.setOnClickListener(onStopDrive);
+
+        // Get the values from rotate
+        if (savedInstanceState != null) {
+            startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
+            stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
+            startingTime.setTime(savedInstanceState.getLong("startTime"));
+
+            // Start updating the label
+            timerUpdateLabel();
+        }
 
         // Set add drive button click
         FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.add_drive);
@@ -115,6 +139,22 @@ public class HomeFragment extends Fragment {
         // Set the TextView's texts:
         updateGoals();
         return rootView;
+    }
+
+    private void timerUpdateLabel() {
+        timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                // Get the difference between the start and current time in seconds
+                long timeDiff = ((new Date()).getTime()-startingTime.getTime())/1000;
+                // Format this time appropriately:
+                formattedTime = DateUtils.formatElapsedTime(timeDiff);
+                // Remember to add hours:
+                if (timeDiff < 3600) formattedTime = "0:"+formattedTime;
+                mHandler.obtainMessage(1).sendToTarget();
+            }
+        }, 0, 1000);
     }
 
 
@@ -185,19 +225,7 @@ public class HomeFragment extends Fragment {
         Log.d(TAG, "startingTime: " + startingTime);
 
         // Start updating the label
-        timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                // Get the difference between the start and current time in seconds
-                long timeDiff = ((new Date()).getTime()-startingTime.getTime())/1000;
-                // Format this time appropriately:
-                formattedTime = DateUtils.formatElapsedTime(timeDiff);
-                // Remember to add hours:
-                if (timeDiff < 3600) formattedTime = "0:"+formattedTime;
-                mHandler.obtainMessage(1).sendToTarget();
-            }
-        }, 0, 1000);
+        timerUpdateLabel();
     } };
 
     public Handler mHandler = new Handler() {
