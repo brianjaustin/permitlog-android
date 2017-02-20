@@ -111,7 +111,7 @@ public class HomeFragment extends Fragment {
             startingTime.setTime(savedInstanceState.getLong("startTime"));
 
             // Start updating the label
-            timerUpdateLabel();
+            if (savedInstanceState.getBoolean("stopEnabled")) timerUpdateLabel();
         }
 
         // Set add drive button click
