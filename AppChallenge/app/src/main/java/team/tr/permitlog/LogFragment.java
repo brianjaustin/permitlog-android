@@ -34,6 +34,7 @@ import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -270,12 +271,15 @@ public class LogFragment extends ListFragment {
             long endMillis = (long) logSnapshot.child("end").getValue();
 
             // Format the Date/time field
-            String dateTimeString = DateUtils.formatDateRange(getContext(), startMillis, endMillis, DateUtils.FORMAT_SHOW_DATE+DateUtils.FORMAT_NUMERIC_DATE+DateUtils.FORMAT_SHOW_YEAR+DateUtils.FORMAT_SHOW_TIME);
+            String dateTimeString = DateUtils.formatDateRange(getContext(), startMillis, endMillis, DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_TIME);
             // Get rid of Unicode dash:
             dateTimeString = TextUtils.join("-", dateTimeString.split("\u2013"));
+
             // Get the elapsed time
             long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
-            String stringElapsed = ElapsedTime.formatSeconds(timeElapsed/1000);
+            double hoursElapsed = (double)timeElapsed / (1000.0 * 3600.0);
+            DecimalFormat df = new DecimalFormat("0.00");
+            String stringElapsed = df.format(hoursElapsed);
 
             // The following variables hold info about the drivers. These are their default values:
             String driverId = logSnapshot.child("driver_id").getValue().toString();
