@@ -6,6 +6,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ListFragment;
+import android.text.TextUtils;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,6 +36,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Driver;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -269,41 +272,33 @@ public class LogFragment extends ListFragment {
 
             // Get the log info:
             DataSnapshot logSnapshot = logSnapshots.get(i);
-            Calendar startDate = Calendar.getInstance();
-            Calendar endDate = Calendar.getInstance();
-            startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
-            endDate.setTimeInMillis((long) logSnapshot.child("end").getValue());
+            long startMillis = (long) logSnapshot.child("start").getValue();
+            long endMillis = (long) logSnapshot.child("end").getValue();
 
             // Format the Date/time field
-            SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy", Locale.US);
-            String dateTimeString = dateFormat.format(startDate.getTime()) + " ";
-            dateTimeString += String.format(Locale.ENGLISH, "%02d:%02d", startDate.get(Calendar.HOUR), startDate.get(Calendar.MINUTE)) + "-";
-            dateTimeString += String.format(Locale.ENGLISH, "%02d:%02d", endDate.get(Calendar.HOUR), endDate.get(Calendar.MINUTE));
-
+            String dateTimeString = DateUtils.formatDateRange(getContext(), startMillis, endMillis, DateUtils.FORMAT_SHOW_DATE+DateUtils.FORMAT_NUMERIC_DATE+DateUtils.FORMAT_SHOW_YEAR+DateUtils.FORMAT_SHOW_TIME);
+            // Get rid of Unicode dash:
+            dateTimeString = TextUtils.join("-", dateTimeString.split("\u2013"));
             // Get the elapsed time
             long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
             String stringElapsed = ElapsedTime.formatSeconds(timeElapsed/1000);
 
+            // The following variables hold info about the drivers. These are their default values:
             String driverId = logSnapshot.child("driver_id").getValue().toString();
-            // If possible, get driver index and info:
             int driverIndex = -1;
             DataSnapshot driverSnapshot = null;
+            String driverName = "UNKNOWN DRIVER";
+            String driverLicense = "UNKNOWN DRIVER";
+            // If possible, get driver index and info:
             if (driversInfo.driverIds.contains(driverId)) {
                 driverIndex = driversInfo.driverIds.indexOf(driverId);
                 driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
-            }
-
-            // Get the driver's name and age
-            String driverInfo = "";
-            if (driverSnapshot != null && DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
-                driverInfo = driversInfo.driverNames.get(driverIndex);
-                driverInfo += ", " + driversInfo.driverSnapshots.get(driverIndex).child("age").getValue().toString();
-            }
-
-            // Get the driver's license number
-            String driverLicense = "";
-            if (driverSnapshot != null && driverSnapshot.hasChild("license_number")) {
-                driverLicense = driverSnapshot.child("license_number").getValue().toString();
+                // Get the driver's name and age
+                // TODO: fetch age
+                if (DriverAdapter.hasCompleteName.accept(driverSnapshot)) driverName = driversInfo.driverNames.get(driverIndex);
+                if (driverSnapshot.hasChild("age")) driverName += ", " + driverSnapshot.child("age").getValue().toString();
+                // Get the driver's license number
+                if (driverSnapshot.hasChild("license_number")) driverLicense = driverSnapshot.child("license_number").getValue().toString();
             }
 
             try {
@@ -321,7 +316,7 @@ public class LogFragment extends ListFragment {
                 } else if (nightField != null) {
                     nightField.setValue("0");
                 }
-                if (driverField != null) driverField.setValue(driverInfo);
+                if (driverField != null) driverField.setValue(driverName);
                 if (licenseField != null) licenseField.setValue(driverLicense);
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
@@ -404,10 +399,12 @@ public class LogFragment extends ListFragment {
                     driverIndex = driversInfo.driverIds.indexOf(driverId);
                     driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
                 }
-                // Add the month
+                // Get the calendar object:
                 Calendar startDate = Calendar.getInstance();
                 startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
-                logAsCsv += startDate.get(Calendar.MONTH) + ", ";
+                // Add the month
+                String months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+                logAsCsv += months[startDate.get(Calendar.MONTH)] + ", ";
 
                 // Add the day
                 logAsCsv += startDate.get(Calendar.DAY_OF_MONTH) + ", ";
