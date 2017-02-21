@@ -52,9 +52,10 @@ public class MainActivity extends AppCompatActivity {
     public static final int SETTINGS_MENU_INDEX = 3;
     public static final int ABOUT_MENU_INDEX = 4;
     public static final int SIGN_OUT_MENU_INDEX = 5;
-    // Fragments and titles for menu items
+    // Fragments, titles, and arguments for menu items
     private Class menuFragmentClasses[] = {HomeFragment.class, LogFragment.class, DriversFragment.class, SettingsFragment.class, AboutFragment.class};
     private String menuTitles[] = {"Permit Log", "Driving Log", "Drivers", "Settings", "About"};
+    private Bundle menuArgs[] = {null, null, null, null, null};
     // Keeps track of previous menus:
     private LinkedList<Integer> fragmentsStack = new LinkedList<>();
 
@@ -132,6 +133,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "While making "+title+" fragment: "+e);
                 return;
             }
+            // Set fragment's arguments:
+            fragment.setArguments(menuArgs[position]);
             // Transition fragments:
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             transaction.replace(R.id.fragment_container, fragment);
@@ -149,6 +152,11 @@ public class MainActivity extends AppCompatActivity {
     }
     // By default, push fragments onto the stack:
     public void transitionFragment(int position) { transitionFragment(position, true); }
+
+    public void saveArguments(int position, Bundle args) {
+        /* Saves args for fragment where position represents the index of the fragment in the menu */
+        menuArgs[position] = args;
+    }
 
     private void navigateBasedOnUser() {
         // If no user is logged in, show the FirebaseUI login screen.
