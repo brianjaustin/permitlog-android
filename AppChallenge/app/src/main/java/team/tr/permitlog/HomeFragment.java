@@ -84,9 +84,7 @@ public class HomeFragment extends Fragment {
         super.onSaveInstanceState(outState);
 
         // Save values for rotate
-        outState.putBoolean("startEnabled", startButton.isEnabled());
-        outState.putBoolean("stopEnabled", stopButton.isEnabled());
-        outState.putLong("startTime", startingTime.getTime());
+        saveToBundle(outState);
     }
 
     @Override
@@ -104,14 +102,12 @@ public class HomeFragment extends Fragment {
         stopButton = (Button) rootView.findViewById(R.id.stop_drive);
         stopButton.setOnClickListener(onStopDrive);
 
-        // Get the values from rotate
-        if (savedInstanceState != null) {
-            startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
-            stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
-            startingTime.setTime(savedInstanceState.getLong("startTime"));
-
-            // Start updating the label
-            if (savedInstanceState.getBoolean("stopEnabled")) timerUpdateLabel();
+        // Get the values from rotate, if possible:
+        if (savedInstanceState != null) loadFromBundle(savedInstanceState);
+        // Otherwise, get values from last onDestroyView(), if possible:
+        else {
+            Bundle args = getArguments();
+            if (args != null) loadFromBundle(args);
         }
 
         // Set add drive button click
@@ -139,6 +135,23 @@ public class HomeFragment extends Fragment {
         // Set the TextView's texts:
         updateGoals();
         return rootView;
+    }
+
+    private void loadFromBundle(Bundle savedInstanceState) {
+        /* Takes Bundle and sets startButton, stopButton, and startingTime from Bundle. */
+        startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
+        stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
+        startingTime.setTime(savedInstanceState.getLong("startTime"));
+
+        // Start updating the label
+        if (savedInstanceState.getBoolean("stopEnabled")) timerUpdateLabel();
+    }
+
+    private void saveToBundle(Bundle outState) {
+        /* Takes Bundle and sets state of buttons and startingTime in Bundle. */
+        outState.putBoolean("startEnabled", startButton.isEnabled());
+        outState.putBoolean("stopEnabled", stopButton.isEnabled());
+        outState.putLong("startTime", startingTime.getTime());
     }
 
     private void timerUpdateLabel() {
@@ -360,6 +373,11 @@ public class HomeFragment extends Fragment {
         // Since this activity is being stopped, we don't need to listen to the drivers or logs anymore:
         spinnerData.stopListening();
         ElapsedTime.stopListening(timesListener);
+        // Save the state:
+        Bundle state = new Bundle();
+        saveToBundle(state);
+        MainActivity mainActivity = (MainActivity)getActivity();
+        mainActivity.saveArguments(MainActivity.HOME_MENU_INDEX, state);
         super.onDestroyView();
     }
 }
