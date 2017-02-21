@@ -99,6 +99,19 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState == null) navigateBasedOnUser();
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // Save menuArgs during an orientation change:
+        outState.putParcelableArray("menuArgs", menuArgs);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        // Get menuArgs from when we previously saved it during an orientation change:
+        menuArgs = (Bundle[])savedInstanceState.getParcelableArray("menuArgs");
+        super.onRestoreInstanceState(savedInstanceState);
+    }
 
     public void transitionFragment(int position, boolean pushFragmentOnStack) {
         /* This function switches the current fragment according to the menu position passed in. */
