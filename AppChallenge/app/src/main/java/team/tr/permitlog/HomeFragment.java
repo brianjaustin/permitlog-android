@@ -56,7 +56,7 @@ public class HomeFragment extends Fragment {
 
     // The driver spinner:
     private Spinner driversSpinner;
-    // Position of spinner as set by arguments from activity:
+    // Position of spinner as set in Bundle:
     private int spinnerPosition;
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
