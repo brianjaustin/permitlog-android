@@ -139,7 +139,7 @@ public class HomeFragment extends Fragment {
 
         // Get the values from rotate, if possible:
         if (savedInstanceState != null) loadFromBundle(savedInstanceState);
-            // Otherwise, get values from last onDestroyView(), if possible:
+        // Otherwise, get values from last onDestroyView(), if possible:
         else {
             Bundle args = getArguments();
             if (args != null) loadFromBundle(args);
