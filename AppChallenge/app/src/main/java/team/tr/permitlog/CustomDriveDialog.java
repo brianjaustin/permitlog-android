@@ -35,14 +35,12 @@ public class CustomDriveDialog extends AppCompatActivity {
     private DatabaseReference timesRef;
     // The spinner for selecting drivers:
     private Spinner driversSpinner;
-    // The position of the spinner set in Bundle:
-    private int driverIndex;
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
     // If we are editing a log, the database key of the log; otherwise, null
     private String logId;
-    // If we are editing a log, the database key of the driver in the log; otherwise null
-    private String driverIdFromLog;
+    // The database key of the driver in the log from either getIntent() or getArguments():
+    private String driverId;
 
     //This is true if and only if the user is currently choosing the ending time:
     private boolean isUserChoosingEndingTime = false;
@@ -63,7 +61,7 @@ public class CustomDriveDialog extends AppCompatActivity {
         // Save the current data
         outState.putLong("startTime", startingTime.getTimeInMillis());
         outState.putLong("endTime", endingTime.getTimeInMillis());
-        outState.putInt("driver", driversSpinner.getSelectedItemPosition());
+        outState.putString("driverId", spinnerData.driverIds.get(driversSpinner.getSelectedItemPosition()));
         outState.putBoolean("night", ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).isChecked());
     }
 
@@ -95,58 +93,51 @@ public class CustomDriveDialog extends AppCompatActivity {
         ddNoticeContainer = (LinearLayout)findViewById(R.id.dd_notice_container);
         ddNotice = (TextView)findViewById(R.id.dd_notice);
 
-        // Load the current values
-        final Boolean nightChecked;
+        // Load the current values if possible:
         if (savedInstanceState != null) {
+            // Set date and times:
             startingTime.setTimeInMillis(savedInstanceState.getLong("startTime"));
             endingTime.setTimeInMillis(savedInstanceState.getLong("endTime"));
-            driverIndex = savedInstanceState.getInt("driver");
-            nightChecked = savedInstanceState.getBoolean("night");
-        } else {
-            nightChecked = false;
-            driverIndex = 0;
-        }
-
-        // If possible, set the drivers:
-        if (spinnerData.driverIds.size() > driverIndex) driversSpinner.setSelection(driverIndex);
-        // Otherwise, keep listening to the driver adapter until this is possible:
-        else spinnerData.driversAdapter.registerDataSetObserver(setDriverIndex);
-        // Update the checkBox using .post():
-        final CheckBox nightBox = (CheckBox)findViewById(R.id.drive_at_night_checkbox);
-        nightBox.post(new Runnable() { // This forces the checkbox to actually update (for some reason it does not with just setChecked)
-            @Override
-            public void run() {
-                nightBox.setChecked(nightChecked);
-            }
-        });
-
-        //Get logId from the intent:
-        logId = getIntent().getStringExtra("logId");
-        //If logId is null, then we will create a new log, so set the date and times to the current time:
-        if (logId == null) {
             updateDateAndTime();
-            //Since this is a new log, there is no possibility of a deleted driver, so remove the notice:
-            ddNoticeContainer.removeView(ddNotice);
+            // Select the driver in the spinner:
+            selectDriver(savedInstanceState.getString("driverId"));
+            // Update the checkBox using .post():
+            final boolean nightChecked = savedInstanceState.getBoolean("night");
+            final CheckBox nightBox = (CheckBox)findViewById(R.id.drive_at_night_checkbox);
+            nightBox.post(new Runnable() { // This forces the checkbox to actually update (for some reason it does not with just setChecked)
+                @Override
+                public void run() {
+                    nightBox.setChecked(nightChecked);
+                }
+            });
+            // Set the title and show the delete button if we are editing a log:
+            logId = getIntent().getStringExtra("logId");
+            if (logId != null) {
+                findViewById(R.id.custom_drive_delete).setVisibility(View.VISIBLE);
+                ab.setTitle("Edit Drive Log");
+            }
         }
-        //Otherwise, we are editing: an old log:
+        //Otherwise, look at the intent to see what we should set:
         else {
-            //Set the times according to the log:
-            timesRef.child(logId).addListenerForSingleValueEvent(setLogData);
-            //Show the Delete button:
-            findViewById(R.id.custom_drive_delete).setVisibility(View.VISIBLE);
-            //Change the title at the top:
-            ab.setTitle("Edit Drive Log");
+            //Get logId from the intent:
+            logId = getIntent().getStringExtra("logId");
+            //If logId is null, then we will create a new log, so set the date and times to the current time:
+            if (logId == null) {
+                updateDateAndTime();
+                //Since this is a new log, there is no possibility of a deleted driver, so remove the notice:
+                ddNoticeContainer.removeView(ddNotice);
+            }
+            //Otherwise, we are editing an old log:
+            else {
+                //Set the times according to the log:
+                timesRef.child(logId).addListenerForSingleValueEvent(setLogData);
+                //Show the Delete button:
+                findViewById(R.id.custom_drive_delete).setVisibility(View.VISIBLE);
+                //Change the title at the top:
+                ab.setTitle("Edit Drive Log");
+            }
         }
     }
-
-    private DataSetObserver setDriverIndex = new DataSetObserver() { @Override public void onChanged() {
-        // Set spinnerPosition if possible:
-        if (spinnerData.driverIds.size() > driverIndex) {
-            driversSpinner.setSelection(driverIndex);
-            // Stop listening to data changes once we've done this:
-            spinnerData.driversAdapter.unregisterDataSetObserver(setDriverIndex);
-        }
-    } };
 
     private ValueEventListener setLogData = new ValueEventListener() {
         @Override
@@ -160,15 +151,8 @@ public class CustomDriveDialog extends AppCompatActivity {
             ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).setChecked(
                     (boolean)dataSnapshot.child("night").getValue()
             );
-            //Store the driver from the log:
-            driverIdFromLog = dataSnapshot.child("driver_id").getValue().toString();
-            //If the driver from the log has been found, then select it and remove the deleted driver notice:
-            if (spinnerData.driverIds.contains(driverIdFromLog)) {
-                driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverIdFromLog));
-                ddNoticeContainer.removeView(ddNotice);
-            }
-            //Otherwise, listen to data changes and select the driver from the log when it comes up:
-            else spinnerData.driversAdapter.registerDataSetObserver(observeDrivers);
+            //Adjust the spinner according to the driver:
+            selectDriver(dataSnapshot.child("driver_id").getValue().toString());
         }
         @Override
         public void onCancelled(DatabaseError databaseError) {
@@ -176,11 +160,24 @@ public class CustomDriveDialog extends AppCompatActivity {
         }
     };
 
+    private void selectDriver(String driverId) {
+        /* Selects the driver in driversSpinner corresponding to driverId. */
+        //Set the instance property:
+        this.driverId = driverId;
+        //If the driver from the log has been found, then select it and remove the deleted driver notice:
+        if (spinnerData.driverIds.contains(driverId)) {
+            driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverId));
+            ddNoticeContainer.removeView(ddNotice);
+        }
+        //Otherwise, listen to data changes and select the driver from the log when it comes up:
+        else spinnerData.driversAdapter.registerDataSetObserver(observeDrivers);
+    }
+
     private DataSetObserver observeDrivers = new DataSetObserver() { @Override public void onChanged() {
-        Log.d(TAG, "Have we found "+driverIdFromLog+" yet? "+spinnerData.driverIds.contains(driverIdFromLog));
+        Log.d(TAG, "Have we found "+driverId+" yet? "+spinnerData.driverIds.contains(driverId));
         //If the driver from the log has been found, select it, remove the deleted driver notice, and stop listening to data changes:
-        if (spinnerData.driverIds.contains(driverIdFromLog)) {
-            driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverIdFromLog));
+        if (spinnerData.driverIds.contains(driverId)) {
+            driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverId));
             ddNoticeContainer.removeView(ddNotice);
             spinnerData.driversAdapter.unregisterDataSetObserver(observeDrivers);
         }
