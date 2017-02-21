@@ -35,6 +35,8 @@ public class CustomDriveDialog extends AppCompatActivity {
     private DatabaseReference timesRef;
     // The spinner for selecting drivers:
     private Spinner driversSpinner;
+    // The position of the spinner set in Bundle:
+    private int driverIndex;
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
     // If we are editing a log, the database key of the log; otherwise, null
@@ -95,7 +97,6 @@ public class CustomDriveDialog extends AppCompatActivity {
 
         // Load the current values
         final Boolean nightChecked;
-        final int driverIndex;
         if (savedInstanceState != null) {
             startingTime.setTimeInMillis(savedInstanceState.getLong("startTime"));
             endingTime.setTimeInMillis(savedInstanceState.getLong("endTime"));
@@ -106,13 +107,11 @@ public class CustomDriveDialog extends AppCompatActivity {
             driverIndex = 0;
         }
 
-        // Actually update view components
-        driversSpinner.post(new Runnable() { // This ensures that we don't get an index out of bounds error
-            @Override
-            public void run() {
-                driversSpinner.setSelection(driverIndex);
-            }
-        });
+        // If possible, set the drivers:
+        if (spinnerData.driverIds.size() > driverIndex) driversSpinner.setSelection(driverIndex);
+        // Otherwise, keep listening to the driver adapter until this is possible:
+        else spinnerData.driversAdapter.registerDataSetObserver(setDriverIndex);
+        // Update the checkBox using .post():
         final CheckBox nightBox = (CheckBox)findViewById(R.id.drive_at_night_checkbox);
         nightBox.post(new Runnable() { // This forces the checkbox to actually update (for some reason it does not with just setChecked)
             @Override
@@ -139,6 +138,15 @@ public class CustomDriveDialog extends AppCompatActivity {
             ab.setTitle("Edit Drive Log");
         }
     }
+
+    private DataSetObserver setDriverIndex = new DataSetObserver() { @Override public void onChanged() {
+        // Set spinnerPosition if possible:
+        if (spinnerData.driverIds.size() > driverIndex) {
+            driversSpinner.setSelection(driverIndex);
+            // Stop listening to data changes once we've done this:
+            spinnerData.driversAdapter.unregisterDataSetObserver(setDriverIndex);
+        }
+    } };
 
     private ValueEventListener setLogData = new ValueEventListener() {
         @Override
