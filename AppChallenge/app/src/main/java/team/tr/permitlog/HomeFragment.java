@@ -252,7 +252,6 @@ public class HomeFragment extends Fragment {
     private void showTutorial2() {
         // Show the second tutorial
         new ShowcaseView.Builder(getActivity())
-                .setTarget(new PointTarget(40, 250))
                 .setStyle(R.style.CustomShowcaseView)
                 .setContentText(R.string.tutorial_text2)
                 .hideOnTouchOutside()

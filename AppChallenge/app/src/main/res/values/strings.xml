@@ -27,7 +27,7 @@
     <string name="export_pdf_error">Unable to export log using the Maine format: an app that can handle PDFs is required.</string>
     <string name="export_email_error">Unable to export log manually: an email client is required.</string>
     <string name="tutorial_text1">Tap here to add a new driver or to log a custom drive.</string>
-    <string name="tutorial_text2">Tap here to set your driving goals, edit drivers, and export the driving log.</string>
+    <string name="tutorial_text2">Tap the menu button to set your driving goals, edit drivers, and export the driving log.</string>
     <array name="menu_items">
         <item>Home</item>
         <item>Log</item>
