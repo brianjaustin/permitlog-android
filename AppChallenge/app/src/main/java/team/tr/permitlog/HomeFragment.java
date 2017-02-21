@@ -46,6 +46,8 @@ public class HomeFragment extends Fragment {
 
     private final String TAG = "HomeFragment";
     private String userId;
+    // Have we shown the tutorial yet?
+    private boolean shownTutorial = false;
 
     // Store drive start/stop times
     private Date startingTime = new Date();
@@ -208,7 +210,8 @@ public class HomeFragment extends Fragment {
             else {
                 totalGoal = 0;
                 // If they don't have goals, assume they are a new user, so show the tutorial:
-                showTutorial1();
+                if (!shownTutorial) showTutorial1();
+                shownTutorial = true;
             }
             // Do the same for day and night:
             if (dataSnapshot.hasChild("day")) dayGoal = (long)dataSnapshot.child("day").getValue();
