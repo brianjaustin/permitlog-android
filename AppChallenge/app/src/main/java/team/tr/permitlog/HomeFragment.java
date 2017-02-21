@@ -2,6 +2,7 @@ package team.tr.permitlog;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.DataSetObserver;
 import android.os.Bundle;
 
 import com.afollestad.materialdialogs.DialogAction;
@@ -19,9 +20,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -56,6 +54,10 @@ public class HomeFragment extends Fragment {
     private String formattedTime;
     private Timer timer;
 
+    // The driver spinner:
+    private Spinner driversSpinner;
+    // Position of spinner as set by arguments from activity:
+    private int spinnerPosition;
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
 
@@ -102,14 +104,6 @@ public class HomeFragment extends Fragment {
         stopButton = (Button) rootView.findViewById(R.id.stop_drive);
         stopButton.setOnClickListener(onStopDrive);
 
-        // Get the values from rotate, if possible:
-        if (savedInstanceState != null) loadFromBundle(savedInstanceState);
-        // Otherwise, get values from last onDestroyView(), if possible:
-        else {
-            Bundle args = getArguments();
-            if (args != null) loadFromBundle(args);
-        }
-
         // Set add drive button click
         FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.add_drive);
         addDrive.setOnClickListener(onAddDrive);
@@ -119,7 +113,7 @@ public class HomeFragment extends Fragment {
         addDriver.setOnClickListener(onAddDriver);
 
         // Get the drivers spinner:
-        Spinner driversSpinner = (Spinner) rootView.findViewById(R.id.drivers_spinner);
+        driversSpinner = (Spinner) rootView.findViewById(R.id.drivers_spinner);
         // Get the UID:
         userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         // Add the items to the spinner:
@@ -134,25 +128,48 @@ public class HomeFragment extends Fragment {
         timesListener = ElapsedTime.startListening(userId, timeCallback);
         // Set the TextView's texts:
         updateGoals();
+
+        // Get the values from rotate, if possible:
+        if (savedInstanceState != null) loadFromBundle(savedInstanceState);
+            // Otherwise, get values from last onDestroyView(), if possible:
+        else {
+            Bundle args = getArguments();
+            if (args != null) loadFromBundle(args);
+        }
         return rootView;
     }
 
-    private void loadFromBundle(Bundle savedInstanceState) {
-        /* Takes Bundle and sets startButton, stopButton, and startingTime from Bundle. */
-        startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
-        stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
-        startingTime.setTime(savedInstanceState.getLong("startTime"));
-
-        // Start updating the label
-        if (savedInstanceState.getBoolean("stopEnabled")) timerUpdateLabel();
-    }
-
     private void saveToBundle(Bundle outState) {
-        /* Takes Bundle and sets state of buttons and startingTime in Bundle. */
+        /* Takes Bundle and sets info about autodrive in Bundle. */
         outState.putBoolean("startEnabled", startButton.isEnabled());
         outState.putBoolean("stopEnabled", stopButton.isEnabled());
         outState.putLong("startTime", startingTime.getTime());
+        outState.putInt("spinnerPosition", driversSpinner.getSelectedItemPosition());
     }
+
+    private void loadFromBundle(Bundle savedInstanceState) {
+        /* Takes Bundle and sets info about autodrive from Bundle. */
+        startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
+        stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
+        startingTime.setTime(savedInstanceState.getLong("startTime"));
+        spinnerPosition = savedInstanceState.getInt("spinnerPosition");
+        // Set spinnerPosition if possible:
+        if (spinnerData.driverIds.size() > spinnerPosition) driversSpinner.setSelection(spinnerPosition);
+        // Otherwise, keep listening to the adapter and set it when possible:
+        else spinnerData.driversAdapter.registerDataSetObserver(setSpinnerPosition);
+
+        // Start updating the label
+        if (savedInstanceState.getBoolean("stopEnabled")) timerUpdateLabel();
+    };
+
+    private DataSetObserver setSpinnerPosition = new DataSetObserver() { @Override public void onChanged() {
+        // Set spinnerPosition if possible:
+        if (spinnerData.driverIds.size() > spinnerPosition) {
+            driversSpinner.setSelection(spinnerPosition);
+            // Stop listening to data changes once we've done this:
+            spinnerData.driversAdapter.unregisterDataSetObserver(setSpinnerPosition);
+        }
+    } };
 
     private void timerUpdateLabel() {
         timer = new Timer();
@@ -265,7 +282,6 @@ public class HomeFragment extends Fragment {
         final Context myContext = rootView.getContext();
 
         // Check if the driver field is empty
-        Spinner driversSpinner = (Spinner) rootView.findViewById(R.id.drivers_spinner);
         int spinnerPosition = driversSpinner.getSelectedItemPosition();
         if (spinnerData.driverIds.isEmpty()) {
             Toast.makeText(myContext, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
