@@ -236,6 +236,7 @@ public class LogFragment extends ListFragment {
                     .content("Do you want the log to include the year in its dates?")
                     .positiveText(R.string.yes)
                     .negativeText(R.string.no)
+                    .neutralText(R.string.cancel)
                     .onPositive(new MaterialDialog.SingleButtonCallback() {
                         @Override
                         public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
