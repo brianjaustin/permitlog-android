@@ -52,6 +52,9 @@ public class MainActivity extends AppCompatActivity {
     public static final int SETTINGS_MENU_INDEX = 3;
     public static final int ABOUT_MENU_INDEX = 4;
     public static final int SIGN_OUT_MENU_INDEX = 5;
+    // Fragments and titles for menu items
+    private Class menuFragmentClasses[] = {HomeFragment.class, LogFragment.class, DriversFragment.class, SettingsFragment.class, AboutFragment.class};
+    private String menuTitles[] = {"Permit Log", "Driving Log", "Drivers", "Settings", "About"};
     // Keeps track of previous menus:
     private LinkedList<Integer> fragmentsStack = new LinkedList<>();
 
@@ -100,53 +103,34 @@ public class MainActivity extends AppCompatActivity {
         /* This function switches the current fragment according to the menu position passed in. */
         // Assuming the user is signed in:
         if (currentUser != null) {
+            // Sign out button clicked -> Sign out and return
+            if (position == SIGN_OUT_MENU_INDEX) {
+                AuthUI.getInstance()
+                        .signOut(MainActivity.this)
+                        .addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                // Set currentUser:
+                                currentUser = null;
+                                // Show the sign in now that they are signed out:
+                                showSignIn();
+                            }
+                        });
+                return;
+            }
             // We need to instantiate the fragment and get the title based off position:
+            String title = menuTitles[position];
+            // This error message will be shown if there is an error with fragment:
+            Toast fragmentError = Toast.makeText(this, "There was an error when making the "+title+" part of the app. Sorry!", Toast.LENGTH_SHORT);
             Fragment fragment;
-            String title;
-            switch (position) {
-                case HOME_MENU_INDEX:
-                    fragment = new HomeFragment();
-                    title = "Permit Log";
-                    break;
-
-                case LOG_MENU_INDEX:
-                    fragment = new LogFragment();
-                    title = "Driving Log";
-                    break;
-
-                case DRIVERS_MENU_INDEX:
-                    fragment = new DriversFragment();
-                    title = "Drivers";
-                    break;
-
-                case SETTINGS_MENU_INDEX:
-                    fragment = new SettingsFragment();
-                    title = "Settings";
-                    break;
-
-                case ABOUT_MENU_INDEX:
-                    fragment = new AboutFragment();
-                    title = "About";
-                    break;
-
-                case SIGN_OUT_MENU_INDEX: // Sign out button clicked -> Sign out and return
-                    AuthUI.getInstance()
-                            .signOut(MainActivity.this)
-                            .addOnCompleteListener(new OnCompleteListener<Void>() {
-                                @Override
-                                public void onComplete(@NonNull Task<Void> task) {
-                                    // Set currentUser:
-                                    currentUser = null;
-                                    // Show the sign in now that they are signed out:
-                                    showSignIn();
-                                }
-                            });
-                    return;
-
-                // If it's something unexpected, simply highlight the menu item and return:
-                default:
-                    mDrawerList.setItemChecked(position, true);
-                    return;
+            try {
+                fragment = (Fragment) menuFragmentClasses[position].newInstance();
+            }
+            // If there is an error, notify the user, log it, and return:
+            catch (IllegalAccessException | InstantiationException e) {
+                fragmentError.show();
+                Log.e(TAG, "While making "+title+" fragment: "+e);
+                return;
             }
             // Transition fragments:
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
