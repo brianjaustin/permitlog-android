@@ -37,6 +37,7 @@ import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DateFormatSymbols;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -458,8 +459,7 @@ public class LogFragment extends ListFragment {
                 Calendar startDate = Calendar.getInstance();
                 startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
                 // Add the month
-                String months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-                logAsCsv += months[startDate.get(Calendar.MONTH)] + ", ";
+                logAsCsv += new DateFormatSymbols().getShortMonths()[startDate.get(Calendar.MONTH)] + ", ";
 
                 // Add the day
                 logAsCsv += startDate.get(Calendar.DAY_OF_MONTH) + ", ";
