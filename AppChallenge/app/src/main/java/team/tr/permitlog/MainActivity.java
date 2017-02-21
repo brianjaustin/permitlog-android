@@ -178,24 +178,8 @@ public class MainActivity extends AppCompatActivity {
         } else {
             // Transition to the home fragment
             transitionFragment(HOME_MENU_INDEX);
-            // Get the goal values; if there is no total goal, show the settings page to set them 
-            DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals");
-            goalsRef.addListenerForSingleValueEvent(goalsListener);
         }
     }
-
-    // This listener is used to see if the user has set a total goal:
-    private ValueEventListener goalsListener = new ValueEventListener() {
-        @Override
-        public void onDataChange(DataSnapshot dataSnapshot) {
-            // If there is no total goal set, switch to the settings:
-            if (!dataSnapshot.hasChild("total")) transitionFragment(SETTINGS_MENU_INDEX);
-        }
-        @Override
-        public void onCancelled(DatabaseError databaseError) {
-            Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());
-        }
-    };
 
     // Show the sign in screen using Firebase UI
     public void showSignIn() {
