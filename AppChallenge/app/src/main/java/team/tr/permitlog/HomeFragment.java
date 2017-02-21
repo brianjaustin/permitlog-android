@@ -46,6 +46,8 @@ public class HomeFragment extends Fragment {
 
     private final String TAG = "HomeFragment";
     private String userId;
+    // Have we shown the tutorial yet?
+    private boolean shownTutorial = false;
 
     // Store drive start/stop times
     private Date startingTime = new Date();
@@ -134,9 +136,6 @@ public class HomeFragment extends Fragment {
         // Set the TextView's texts:
         updateGoals();
 
-        // Show the tutorial
-        if (totalGoal == 0) showTutorial1();
-
         // Get the values from rotate, if possible:
         if (savedInstanceState != null) loadFromBundle(savedInstanceState);
         // Otherwise, get values from last onDestroyView(), if possible:
@@ -208,7 +207,12 @@ public class HomeFragment extends Fragment {
         public void onDataChange(DataSnapshot dataSnapshot) {
             // Set totalGoal, or set it to 0 if not present:
             if (dataSnapshot.hasChild("total")) totalGoal = (long)dataSnapshot.child("total").getValue();
-            else totalGoal = 0;
+            else {
+                totalGoal = 0;
+                // If they don't have goals, assume they are a new user, so show the tutorial:
+                if (!shownTutorial) showTutorial1();
+                shownTutorial = true;
+            }
             // Do the same for day and night:
             if (dataSnapshot.hasChild("day")) dayGoal = (long)dataSnapshot.child("day").getValue();
             else dayGoal = 0;
