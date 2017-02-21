@@ -2,10 +2,12 @@ package team.tr.permitlog;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.text.format.DateUtils;
@@ -210,7 +212,8 @@ public class HomeFragment extends Fragment {
             else {
                 totalGoal = 0;
                 // If they don't have goals, assume they are a new user, so show the tutorial:
-                if (!shownTutorial) showTutorial1();
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+                if (!shownTutorial && prefs.getBoolean("tutorial", true)) showTutorial1();
                 shownTutorial = true;
             }
             // Do the same for day and night:
@@ -259,6 +262,16 @@ public class HomeFragment extends Fragment {
                 .setStyle(R.style.CustomShowcaseView)
                 .setContentText(R.string.tutorial_text2)
                 .hideOnTouchOutside()
+                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
+                    @Override
+                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                        // Make sure this isn't shown again on this device (in case the user does not set goals)
+                        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+                        SharedPreferences.Editor editor = prefs.edit();
+                        editor.putBoolean("tutorial", false);
+                        editor.commit();
+                    }
+                })
                 .build();
     }
 
