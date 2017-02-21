@@ -52,9 +52,6 @@ public class MainActivity extends AppCompatActivity {
     public static final int SETTINGS_MENU_INDEX = 3;
     public static final int ABOUT_MENU_INDEX = 4;
     public static final int SIGN_OUT_MENU_INDEX = 5;
-    // Fragments, titles, and arguments for each menu item:
-    private Fragment menuFragments[] = {new HomeFragment(), new LogFragment(), new DriversFragment(), new SettingsFragment(), new AboutFragment()};
-    private String menuTitles[] = {"Permit Log", "Driving Log", "Drivers", "Settings", "About"};
     // Keeps track of previous menus:
     private LinkedList<Integer> fragmentsStack = new LinkedList<>();
 
@@ -103,24 +100,54 @@ public class MainActivity extends AppCompatActivity {
         /* This function switches the current fragment according to the menu position passed in. */
         // Assuming the user is signed in:
         if (currentUser != null) {
-            // if the sign out button clicked, sign out and return
-            if (position == SIGN_OUT_MENU_INDEX) {
-                AuthUI.getInstance()
-                        .signOut(MainActivity.this)
-                        .addOnCompleteListener(new OnCompleteListener<Void>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Void> task) {
-                                // Set currentUser:
-                                currentUser = null;
-                                // Show the sign in now that they are signed out:
-                                showSignIn();
-                            }
-                        });
-                return;
+            // We need to instantiate the fragment and get the title based off position:
+            Fragment fragment;
+            String title;
+            switch (position) {
+                case HOME_MENU_INDEX:
+                    fragment = new HomeFragment();
+                    title = "Permit Log";
+                    break;
+
+                case LOG_MENU_INDEX:
+                    fragment = new LogFragment();
+                    title = "Driving Log";
+                    break;
+
+                case DRIVERS_MENU_INDEX:
+                    fragment = new DriversFragment();
+                    title = "Drivers";
+                    break;
+
+                case SETTINGS_MENU_INDEX:
+                    fragment = new SettingsFragment();
+                    title = "Settings";
+                    break;
+
+                case ABOUT_MENU_INDEX:
+                    fragment = new AboutFragment();
+                    title = "About";
+                    break;
+
+                case SIGN_OUT_MENU_INDEX: // Sign out button clicked -> Sign out and return
+                    AuthUI.getInstance()
+                            .signOut(MainActivity.this)
+                            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    // Set currentUser:
+                                    currentUser = null;
+                                    // Show the sign in now that they are signed out:
+                                    showSignIn();
+                                }
+                            });
+                    return;
+
+                // If it's something unexpected, simply highlight the menu item and return:
+                default:
+                    mDrawerList.setItemChecked(position, true);
+                    return;
             }
-            // Get the fragment and the title based off position:
-            Fragment fragment = menuFragments[position];
-            String title = menuTitles[position];
             // Transition fragments:
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             transaction.replace(R.id.fragment_container, fragment);
