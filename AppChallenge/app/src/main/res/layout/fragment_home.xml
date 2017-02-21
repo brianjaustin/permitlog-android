@@ -123,30 +123,34 @@
     </ScrollView>
 
 
-    <com.github.clans.fab.FloatingActionMenu
+    <GridLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/card_view"
-        android:id="@+id/menu"
-        android:src="@drawable/ic_add_white"
-        fab:menu_colorNormal="@color/colorAccent"
-        android:layout_gravity="bottom|right"
-        app:fab_elevationCompat="4dp">
-        <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/add_drive"
+        android:layout_gravity="bottom|end">
+        <com.github.clans.fab.FloatingActionMenu
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_car"
-            fab:fab_size="mini"
-            fab:fab_label="Custom Drive"
-            app:fab_colorNormal="@color/colorAccent"/>
-        <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/add_driver"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_person"
-            fab:fab_size="mini"
-            fab:fab_label="Add Driver"
-            app:fab_colorNormal="@color/colorAccent"/>
-    </com.github.clans.fab.FloatingActionMenu>
+            android:id="@+id/menu"
+            android:src="@drawable/ic_add_white"
+            fab:menu_colorNormal="@color/colorAccent"
+            app:fab_elevationCompat="4dp">
+            <com.github.clans.fab.FloatingActionButton
+                android:id="@+id/add_drive"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_car"
+                fab:fab_size="mini"
+                fab:fab_label="Custom Drive"
+                app:fab_colorNormal="@color/colorAccent"/>
+            <com.github.clans.fab.FloatingActionButton
+                android:id="@+id/add_driver"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_person"
+                fab:fab_size="mini"
+                fab:fab_label="Add Driver"
+                app:fab_colorNormal="@color/colorAccent"/>
+        </com.github.clans.fab.FloatingActionMenu>
+    </GridLayout>
 </android.support.design.widget.CoordinatorLayout>

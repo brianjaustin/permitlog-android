@@ -4,18 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.DataSetObserver;
 import android.os.Bundle;
-
-import com.afollestad.materialdialogs.DialogAction;
-import com.afollestad.materialdialogs.MaterialDialog;
-import com.github.clans.fab.FloatingActionButton;
-import com.github.clans.fab.FloatingActionMenu;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
@@ -26,9 +14,26 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
+import com.github.amlcurran.showcaseview.ShowcaseView;
+import com.github.amlcurran.showcaseview.SimpleShowcaseEventListener;
+import com.github.amlcurran.showcaseview.targets.ActionItemTarget;
+import com.github.amlcurran.showcaseview.targets.PointTarget;
+import com.github.amlcurran.showcaseview.targets.ViewTarget;
+import com.github.clans.fab.FloatingActionButton;
+import com.github.clans.fab.FloatingActionMenu;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.text.DecimalFormat;
 import java.util.Date;
@@ -129,6 +134,9 @@ public class HomeFragment extends Fragment {
         // Set the TextView's texts:
         updateGoals();
 
+        // Show the tutorial
+        if (totalGoal == 0) showTutorial1();
+
         // Get the values from rotate, if possible:
         if (savedInstanceState != null) loadFromBundle(savedInstanceState);
             // Otherwise, get values from last onDestroyView(), if possible:
@@ -214,6 +222,42 @@ public class HomeFragment extends Fragment {
             Log.e(TAG, "While trying to start settings: "+databaseError.getMessage());
         }
     };
+
+    private void showTutorial1() {
+        // Get the FAB
+        FloatingActionMenu fab = (FloatingActionMenu) rootView.findViewById(R.id.menu);
+
+        // Show the first tutorial
+        RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        int vMargin = (int) getResources().getDimension(R.dimen.activity_vertical_margin);
+        int hMargin = (int) getResources().getDimension(R.dimen.activity_vertical_margin);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+        lps.setMargins(vMargin, 0, 0, hMargin);
+        ShowcaseView sv = new ShowcaseView.Builder(getActivity())
+                .setTarget(new ViewTarget(fab))
+                .setStyle(R.style.CustomShowcaseView)
+                .setContentText(R.string.tutorial_text1)
+                .hideOnTouchOutside()
+                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
+                    @Override
+                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                        showTutorial2();
+                    }
+                })
+                .build();
+        sv.setButtonPosition(lps);
+    }
+
+    private void showTutorial2() {
+        // Show the second tutorial
+        new ShowcaseView.Builder(getActivity())
+                .setTarget(new PointTarget(40, 250))
+                .setStyle(R.style.CustomShowcaseView)
+                .setContentText(R.string.tutorial_text2)
+                .hideOnTouchOutside()
+                .build();
+    }
 
     public void updateGoalTextViews() {
         // Pads numbers with "0" if they are only one digit:
