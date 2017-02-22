@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int SIGN_OUT_MENU_INDEX = 5;
     // Fragments, titles, and arguments for menu items
     private Class menuFragmentClasses[] = {HomeFragment.class, LogFragment.class, DriversFragment.class, SettingsFragment.class, AboutFragment.class};
-    private String menuTitles[] = {"Permit Log", "Driving Log", "Drivers", "Settings", "About"};
+    private String menuTitles[] = {"Permit Log", "Driving Log", "Drivers", "Goals", "About"};
     private Bundle menuArgs[] = {null, null, null, null, null};
     // Keeps track of previous menus:
     private LinkedList<Integer> fragmentsStack = new LinkedList<>();
