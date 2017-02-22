@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:src="@drawable/ic_attachment_white_24px"
             fab:fab_size="mini"
-            fab:fab_label="Manual Export"
+            fab:fab_label="Spreadsheet Export"
             app:fab_colorNormal="@color/colorAccent"/>
     </com.github.clans.fab.FloatingActionMenu>
 
