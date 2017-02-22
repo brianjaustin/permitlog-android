@@ -46,6 +46,8 @@ public class HomeFragment extends Fragment {
 
     private final String TAG = "HomeFragment";
     private String userId;
+    // Are we showing the tutorial right now?
+    private boolean showingTutorial = false;
     // Have we shown the tutorial yet?
     private boolean shownTutorial = false;
 
@@ -79,11 +81,11 @@ public class HomeFragment extends Fragment {
     // Callback for timesListener:
     private TriLongConsumer timeCallback = new TriLongConsumer() {
         @Override public void accept(long totalTimeP, long dayTimeP, long nightTimeP) {
-            //Set the instance properties:
+            // Set the instance properties:
             totalTime = totalTimeP;
             dayTime = dayTimeP;
             nightTime = nightTimeP;
-            //Update the "Time Completed" section:
+            // Update the "Time Completed" section:
             updateGoalTextViews();
         }
     };
@@ -209,10 +211,9 @@ public class HomeFragment extends Fragment {
             if (dataSnapshot.hasChild("total")) totalGoal = (long)dataSnapshot.child("total").getValue();
             else {
                 totalGoal = 0;
-                // If they don't have goals, assume they are a new user, so show the tutorial:
+                // If they don't have goals and they have not seen the tutorial, assume they are a new user, so show the tutorial:
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
                 if (!shownTutorial && prefs.getBoolean("tutorial", true)) showTutorial();
-                shownTutorial = true;
             }
             // Do the same for day and night:
             if (dataSnapshot.hasChild("day")) dayGoal = (long)dataSnapshot.child("day").getValue();
@@ -228,12 +229,21 @@ public class HomeFragment extends Fragment {
         }
     };
 
-    private void showTutorial() {
-        // Introduce the app
-        new ShowcaseView.Builder(getActivity())
+    private ShowcaseView.Builder createBuilder(int textId) {
+        /* Returns ShowcaseView.Builder using textId as text */
+        return new ShowcaseView.Builder(getActivity())
                 .setStyle(R.style.CustomShowcaseView)
-                .setContentText(R.string.tutorial_text_intro)
-                .hideOnTouchOutside()
+                .setContentText(textId)
+                .hideOnTouchOutside();
+    }
+
+    private void showTutorial() {
+        // Set showing and shownTutorial:
+        showingTutorial = shownTutorial = true;
+        // Disable the menu button:
+        ((MainActivity)getActivity()).disableMenuButton();
+        // Introduce the app
+        createBuilder(R.string.tutorial_text_intro)
                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                     @Override
                     public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
@@ -247,18 +257,16 @@ public class HomeFragment extends Fragment {
         // Get the FAB
         FloatingActionMenu fab = (FloatingActionMenu) rootView.findViewById(R.id.menu);
 
-        // Show the first tutorial
+        // Create LayoutParams
         RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         int vMargin = (int) getResources().getDimension(R.dimen.activity_vertical_margin);
         int hMargin = (int) getResources().getDimension(R.dimen.activity_vertical_margin);
         lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         lps.setMargins(vMargin, 0, 0, hMargin);
-        ShowcaseView sv = new ShowcaseView.Builder(getActivity())
+        // Introduce the FAB
+        ShowcaseView sv = createBuilder(R.string.tutorial_text_fam)
                 .setTarget(new ViewTarget(fab))
-                .setStyle(R.style.CustomShowcaseView)
-                .setContentText(R.string.tutorial_text_fam)
-                .hideOnTouchOutside()
                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                     @Override
                     public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
@@ -266,6 +274,7 @@ public class HomeFragment extends Fragment {
                     }
                 })
                 .build();
+        // Set LayoutParams for ShowcaseView
         sv.setButtonPosition(lps);
     }
 
@@ -273,11 +282,8 @@ public class HomeFragment extends Fragment {
         // Store the text alignment and center the spinner before describing it in the tutorial:
         final int originalAlignment = driversSpinner.getTextAlignment();
         driversSpinner.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        new ShowcaseView.Builder(getActivity())
+        createBuilder(R.string.tutorial_text_spinner)
                 .setTarget(new ViewTarget(driversSpinner))
-                .setStyle(R.style.CustomShowcaseView)
-                .setContentText(R.string.tutorial_text_spinner)
-                .hideOnTouchOutside()
                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                     @Override
                     public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
@@ -291,21 +297,15 @@ public class HomeFragment extends Fragment {
 
     private void showTutorialAutoDrive() {
         // Describe the start button
-        new ShowcaseView.Builder(getActivity())
+        createBuilder(R.string.tutorial_text_start)
                 .setTarget(new ViewTarget(startButton))
-                .setStyle(R.style.CustomShowcaseView)
-                .setContentText(R.string.tutorial_text_start)
-                .hideOnTouchOutside()
                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                     @Override
                     public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
                         // Enable and describe the start button
                         stopButton.setEnabled(true);
-                        new ShowcaseView.Builder(getActivity())
+                        createBuilder(R.string.tutorial_text_start)
                                 .setTarget(new ViewTarget(stopButton))
-                                .setStyle(R.style.CustomShowcaseView)
-                                .setContentText(R.string.tutorial_text_stop)
-                                .hideOnTouchOutside()
                                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                                     @Override
                                     public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
@@ -322,10 +322,7 @@ public class HomeFragment extends Fragment {
 
     private void showTutorialMenu() {
         // Describe the menu
-        new ShowcaseView.Builder(getActivity())
-                .setStyle(R.style.CustomShowcaseView)
-                .setContentText(R.string.tutorial_text_menu)
-                .hideOnTouchOutside()
+        createBuilder(R.string.tutorial_text_menu)
                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                     @Override
                     public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
@@ -334,6 +331,10 @@ public class HomeFragment extends Fragment {
                         SharedPreferences.Editor editor = prefs.edit();
                         editor.putBoolean("tutorial", false);
                         editor.commit();
+                        // The tutorial has ended:
+                        showingTutorial = false;
+                        // Enable the menu button:
+                        ((MainActivity)getActivity()).enableMenuButton();
                     }
                 })
                 .build();
@@ -359,6 +360,8 @@ public class HomeFragment extends Fragment {
     //This is the listener for the "Start Drive" button.
     //The weird indentation is done like this in order to make the indentation like a regular function.
     private View.OnClickListener onStartDrive = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Don't do anything if we're showing the tutorial:
+        if (showingTutorial) return;
         // Check if the driver field is empty
         Context myContext = rootView.getContext();
         if (spinnerData.driverIds.isEmpty()) {
@@ -392,6 +395,8 @@ public class HomeFragment extends Fragment {
 
     //This is the listener for the "Stop Drive" button.
     private View.OnClickListener onStopDrive = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Don't do anything if we're showing the tutorial:
+        if (showingTutorial) return;
         // Stop the timer
         timer.cancel();
 

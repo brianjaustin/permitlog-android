@@ -1,6 +1,5 @@
 package team.tr.permitlog;
 
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
@@ -10,7 +9,6 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 
 import com.google.firebase.auth.FirebaseAuth;
-
 
 public class DriversFragment extends ListFragment {
     // For logging
