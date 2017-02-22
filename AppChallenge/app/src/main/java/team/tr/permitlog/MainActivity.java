@@ -1,5 +1,6 @@
 package team.tr.permitlog;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -29,6 +30,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import android.support.multidex.*;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -61,6 +63,12 @@ public class MainActivity extends AppCompatActivity {
 
     // Sign in request code
     private static final int RC_SIGN_IN = 123;
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        MultiDex.install(this);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
