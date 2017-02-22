@@ -44,6 +44,15 @@ import java.util.Calendar;
 import java.util.Formatter;
 import java.util.Locale;
 
+import jxl.Workbook;
+import jxl.format.Alignment;
+import jxl.write.Label;
+import jxl.write.WritableCellFormat;
+import jxl.write.WritableFont;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+import jxl.write.WriteException;
+
 public class LogFragment extends ListFragment {
     //For logging:
     public static String TAG = "LogFragment";
@@ -442,72 +451,91 @@ public class LogFragment extends ListFragment {
             boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
             if (!isSignedIn) return;
 
-            // Setup the variable to hold the CSV file
-            String logAsCsv = "month, day, year, duration, day/night, driver, license_number\n";
-            // Loop through the logs:
-            for (DataSnapshot logSnapshot : logSnapshots) {
-                // Get the driver database key:
-                String driverId = logSnapshot.child("driver_id").getValue().toString();
-                // If possible, get driver index and info:
-                int driverIndex = -1;
-                DataSnapshot driverSnapshot = null;
-                if (driversInfo.driverIds.contains(driverId)) {
-                    driverIndex = driversInfo.driverIds.indexOf(driverId);
-                    driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
+            if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+                File sheetFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "log.xls");
+                try {
+                    // Create workbook and sheet in above file:
+                    WritableWorkbook wb = Workbook.createWorkbook(sheetFile);
+                    WritableSheet sheet = wb.createSheet("Sheet1", 0);
+
+                    // Create header format:
+                    WritableFont headerFont = new WritableFont(WritableFont.ARIAL, 10, WritableFont.BOLD);
+                    WritableCellFormat headerFormat = new WritableCellFormat(headerFont);
+                    headerFormat.setAlignment(Alignment.CENTRE);
+                    // Create header cells:
+                    String headers[] = {
+                            "Month", "Date", "Year", "Duration", "Day/Night",
+                            "Supervising Driver", "Supervisor Age", "License Number"
+                    };
+                    for (int i = 0; i < headers.length; i++) {
+                        // Put this cell in the top row and ith column:
+                        Label headerCell = new Label(i, 0, headers[i]);
+                        headerCell.setCellFormat(headerFormat);
+                        sheet.addCell(headerCell);
+                    }
+
+                    // Loop through the logs:
+                    for (int i = 0; i < logSnapshots.size(); i++) {
+                        DataSnapshot logSnapshot = logSnapshots.get(i);
+                        // Get the driver database key:
+                        String driverId = logSnapshot.child("driver_id").getValue().toString();
+
+                        // Get the calendar object:
+                        Calendar startDate = Calendar.getInstance();
+                        startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
+                        // Add the month
+                        String month = new DateFormatSymbols().getShortMonths()[startDate.get(Calendar.MONTH)];
+                        Label monthCell = new Label(0, i+1, month);
+                        sheet.addCell(monthCell);
+                        // Add the day
+                        Label dayCell = new Label(1, i+1, Integer.toString(startDate.get(Calendar.DAY_OF_MONTH)));
+                        sheet.addCell(dayCell);
+                        // Add the year
+                        Label yearCell = new Label(2, i+1, Integer.toString(startDate.get(Calendar.YEAR)));
+                        sheet.addCell(yearCell);
+                        // Add the duration
+                        long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
+                        Label durationCell = new Label(3, i+1, ElapsedTime.formatSeconds(timeElapsed/1000));
+                        sheet.addCell(durationCell);
+                        // Add the day/night
+                        Label nightCell = new Label(4, i+1, ((boolean)logSnapshot.child("night").getValue()) ? "Night" : "Day");
+                        sheet.addCell(nightCell);
+
+                        // Get the driver info if possible:
+                        String driverName = "DELETED DRIVER", driverAge = "DELETED DRIVER", driverLicense = "DELETED DRIVER";
+                        if (driversInfo.driverIds.contains(driverId)) {
+                            int driverIndex = driversInfo.driverIds.indexOf(driverId);
+                            DataSnapshot driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
+                            if (DriverAdapter.hasCompleteName.accept(driverSnapshot)) driverName = driversInfo.driverNames.get(driverIndex);
+                            if (driverSnapshot.hasChild("age")) driverAge = driverSnapshot.child("age").getValue().toString();
+                            if (driverSnapshot.hasChild("license_number")) driverLicense = driverSnapshot.child("license_number").getValue().toString();
+                        }
+                        // Add it to the sheet:
+                        Label nameCell = new Label(5, i+1, driverName);
+                        sheet.addCell(nameCell);
+                        Label ageCell = new Label(6, i+1, driverAge);
+                        sheet.addCell(ageCell);
+                        Label licenseCell = new Label(7, i+1, driverLicense);
+                        sheet.addCell(licenseCell);
+                    }
+
+                    // Save and close the Workbook:
+                    wb.write();
+                    wb.close();
+                } catch (IOException | WriteException e) {
+                    Log.e(TAG, "Spreadsheet Error" + e);
+                    return;
                 }
-                // Get the calendar object:
-                Calendar startDate = Calendar.getInstance();
-                startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
-                // Add the month
-                logAsCsv += new DateFormatSymbols().getShortMonths()[startDate.get(Calendar.MONTH)] + ", ";
 
-                // Add the day
-                logAsCsv += startDate.get(Calendar.DAY_OF_MONTH) + ", ";
-
-                // Add the year
-                logAsCsv += startDate.get(Calendar.YEAR) + ", ";
-
-                // Add the duration
-                long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
-                logAsCsv += ElapsedTime.formatSeconds(timeElapsed/1000) + ", ";
-
-                // Get night flag
-                if ((boolean) logSnapshot.child("night").getValue()) {
-                    // During the night
-                    logAsCsv += "night, ";
-                } else {
-                    // During the day
-                    logAsCsv += "day, ";
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("application/vnd.ms-excel");
+                intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(sheetFile));
+                try {
+                    startActivity(Intent.createChooser(intent, "Send Driving Log"));
+                } catch (android.content.ActivityNotFoundException exception) {
+                    // There is no app installed that can send this, so show an error:
+                    Toast.makeText(getContext(), R.string.export_xls_error, Toast.LENGTH_LONG).show();
                 }
-
-                // Get the license name if available
-                String driverName;
-                if (driverSnapshot != null && DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
-                    driverName = driversInfo.driverNames.get(driverIndex);
-                }
-                else driverName = "DELETED DRIVER";
-                logAsCsv += driverName + ", ";
-
-                // Get the license number if available.
-                String licenseId;
-                if (driverSnapshot != null && driverSnapshot.hasChild("license_number")) {
-                    licenseId = driverSnapshot.child("license_number").getValue().toString();
-                }
-                // If the license number is not available, just say the driver is unknown:
-                else licenseId = "DELETED DRIVER";
-                // Add the license number and a newline
-                logAsCsv += licenseId+"\n";
-            }
-
-            // Send the CSV file to the user
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.setType("text/plain");
-            intent.putExtra(Intent.EXTRA_TEXT, logAsCsv);
-            try {
-                startActivity(Intent.createChooser(intent, "Send Driving Log"));
-            } catch (android.content.ActivityNotFoundException exception) {
-                // There is no app installed that can send this, so show an error:
-                Toast.makeText(getContext(), R.string.export_email_error, Toast.LENGTH_LONG).show();
             }
         }
     };
