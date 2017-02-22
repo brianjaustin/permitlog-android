@@ -211,7 +211,7 @@ public class HomeFragment extends Fragment {
                 totalGoal = 0;
                 // If they don't have goals, assume they are a new user, so show the tutorial:
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-                if (!shownTutorial && prefs.getBoolean("tutorial", true)) showTutorial1();
+                if (!shownTutorial && prefs.getBoolean("tutorial", true)) showTutorial();
                 shownTutorial = true;
             }
             // Do the same for day and night:
@@ -228,7 +228,22 @@ public class HomeFragment extends Fragment {
         }
     };
 
-    private void showTutorial1() {
+    private void showTutorial() {
+        // Introduce the app
+        new ShowcaseView.Builder(getActivity())
+                .setStyle(R.style.CustomShowcaseView)
+                .setContentText(R.string.tutorial_text_intro)
+                .hideOnTouchOutside()
+                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
+                    @Override
+                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                        showTutorialFam();
+                    }
+                })
+                .build();
+    }
+
+    private void showTutorialFam() {
         // Get the FAB
         FloatingActionMenu fab = (FloatingActionMenu) rootView.findViewById(R.id.menu);
 
@@ -242,23 +257,74 @@ public class HomeFragment extends Fragment {
         ShowcaseView sv = new ShowcaseView.Builder(getActivity())
                 .setTarget(new ViewTarget(fab))
                 .setStyle(R.style.CustomShowcaseView)
-                .setContentText(R.string.tutorial_text1)
+                .setContentText(R.string.tutorial_text_fam)
                 .hideOnTouchOutside()
                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                     @Override
                     public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
-                        showTutorial2();
+                        showTutorialSpinner();
                     }
                 })
                 .build();
         sv.setButtonPosition(lps);
     }
 
-    private void showTutorial2() {
-        // Show the second tutorial
+    private void showTutorialSpinner() {
+        // Store the text alignment and center the spinner before describing it in the tutorial:
+        final int originalAlignment = driversSpinner.getTextAlignment();
+        driversSpinner.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        new ShowcaseView.Builder(getActivity())
+                .setTarget(new ViewTarget(driversSpinner))
+                .setStyle(R.style.CustomShowcaseView)
+                .setContentText(R.string.tutorial_text_spinner)
+                .hideOnTouchOutside()
+                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
+                    @Override
+                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                        // Restore the spinner's text alignment before moving on:
+                        driversSpinner.setTextAlignment(originalAlignment);
+                        showTutorialAutoDrive();
+                    }
+                })
+                .build();
+    }
+
+    private void showTutorialAutoDrive() {
+        // Describe the start button
+        new ShowcaseView.Builder(getActivity())
+                .setTarget(new ViewTarget(startButton))
+                .setStyle(R.style.CustomShowcaseView)
+                .setContentText(R.string.tutorial_text_start)
+                .hideOnTouchOutside()
+                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
+                    @Override
+                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                        // Enable and describe the start button
+                        stopButton.setEnabled(true);
+                        new ShowcaseView.Builder(getActivity())
+                                .setTarget(new ViewTarget(stopButton))
+                                .setStyle(R.style.CustomShowcaseView)
+                                .setContentText(R.string.tutorial_text_stop)
+                                .hideOnTouchOutside()
+                                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
+                                    @Override
+                                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                                        // Disable the start button before moving on
+                                        stopButton.setEnabled(false);
+                                        showTutorialMenu();
+                                    }
+                                })
+                                .build();
+                    }
+                })
+                .build();
+    }
+
+    private void showTutorialMenu() {
+        // Describe the menu
         new ShowcaseView.Builder(getActivity())
                 .setStyle(R.style.CustomShowcaseView)
-                .setContentText(R.string.tutorial_text2)
+                .setContentText(R.string.tutorial_text_menu)
                 .hideOnTouchOutside()
                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                     @Override

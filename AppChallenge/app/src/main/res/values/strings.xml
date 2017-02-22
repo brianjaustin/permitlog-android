@@ -27,8 +27,12 @@
     <string name="save_pdf_error">Unable to export using the Maine format: could not save the PDF.</string>
     <string name="export_pdf_error">Unable to export log using the Maine format: an app that can handle PDFs is required.</string>
     <string name="export_xls_error">Unable to export log manually: an app that can handle XLS files (i.e. spreadsheets) is required.</string>
-    <string name="tutorial_text1">Tap here to add a new driver or to log a custom drive.</string>
-    <string name="tutorial_text2">Tap the menu button to set your driving goals, edit drivers, and export the driving log.</string>
+    <string name="tutorial_text_intro">Welcome to Permit Log, the app that helps drivers with learner\'s permits record their driving hours!</string>
+    <string name="tutorial_text_fam">Tap the orange button to add a new supervising driver or to manually enter when you drove.</string>
+    <string name="tutorial_text_spinner">Once you\'ve added drivers, before you start driving, select the driver that is supervising you here.</string>
+    <string name="tutorial_text_start">Then, tap the "Start Drive" button to start the timer.</string>
+    <string name="tutorial_text_stop">When you\'re done driving, tap the "Stop Drive" button to stop the timer and the app will record the drive in the driving log.</string>
+    <string name="tutorial_text_menu">Tap the menu button in upper-left corner to see the menu. Edit and export the driving log in the Log page, edit info about the supervising drivers in the Drivers page, and set your goals in the Goals page.\n\nWe hope you enjoy using Permit Log!\n-Team Redundancy Team</string>
     <array name="menu_items">
         <item>Home</item>
         <item>Log</item>
@@ -39,7 +43,4 @@
     </array>
     <string name="network_connection_error">Please connect to the Internet and come back to this app to sign in.</string>
     <string name="unknown_auth_error">For some reason, authentication failed. Please try again.</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
