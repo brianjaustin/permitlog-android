@@ -45,6 +45,7 @@ import java.util.Formatter;
 import java.util.Locale;
 
 import jxl.Workbook;
+import jxl.WorkbookSettings;
 import jxl.format.Alignment;
 import jxl.write.Label;
 import jxl.write.WritableCellFormat;
@@ -454,8 +455,11 @@ public class LogFragment extends ListFragment {
             if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
                 File sheetFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "log.xls");
                 try {
+                    // This is needed to conserve memory:
+                    WorkbookSettings wbSettings = new WorkbookSettings();
+                    wbSettings.setUseTemporaryFileDuringWrite(true);
                     // Create workbook and sheet in above file:
-                    WritableWorkbook wb = Workbook.createWorkbook(sheetFile);
+                    WritableWorkbook wb = Workbook.createWorkbook(sheetFile, wbSettings);
                     WritableSheet sheet = wb.createSheet("Sheet1", 0);
 
                     // Create header format:
@@ -465,13 +469,15 @@ public class LogFragment extends ListFragment {
                     // Create header cells:
                     String headers[] = {
                             "Month", "Date", "Year", "Duration", "Day/Night",
-                            "Supervising Driver", "Supervisor Age", "License Number"
+                            "Supervising Driver", "Age", "License Number"
                     };
                     for (int i = 0; i < headers.length; i++) {
                         // Put this cell in the top row and ith column:
                         Label headerCell = new Label(i, 0, headers[i]);
                         headerCell.setCellFormat(headerFormat);
                         sheet.addCell(headerCell);
+                        // Set the column width according to the header:
+                        sheet.setColumnView(i, Math.max(10, headers[i].length()+3));
                     }
 
                     // Loop through the logs:
@@ -502,7 +508,7 @@ public class LogFragment extends ListFragment {
                         sheet.addCell(nightCell);
 
                         // Get the driver info if possible:
-                        String driverName = "DELETED DRIVER", driverAge = "DELETED DRIVER", driverLicense = "DELETED DRIVER";
+                        String driverName = "DELETED DRIVER", driverAge = "DELETED", driverLicense = "DELETED DRIVER";
                         if (driversInfo.driverIds.contains(driverId)) {
                             int driverIndex = driversInfo.driverIds.indexOf(driverId);
                             DataSnapshot driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
@@ -510,6 +516,7 @@ public class LogFragment extends ListFragment {
                             if (driverSnapshot.hasChild("age")) driverAge = driverSnapshot.child("age").getValue().toString();
                             if (driverSnapshot.hasChild("license_number")) driverLicense = driverSnapshot.child("license_number").getValue().toString();
                         }
+
                         // Add it to the sheet:
                         Label nameCell = new Label(5, i+1, driverName);
                         sheet.addCell(nameCell);
