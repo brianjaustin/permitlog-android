@@ -304,7 +304,7 @@ public class HomeFragment extends Fragment {
                     public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
                         // Enable and describe the start button
                         stopButton.setEnabled(true);
-                        createBuilder(R.string.tutorial_text_start)
+                        createBuilder(R.string.tutorial_text_stop)
                                 .setTarget(new ViewTarget(stopButton))
                                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                                     @Override
