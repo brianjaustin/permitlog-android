@@ -88,6 +88,8 @@ public class LogFragment extends ListFragment {
     private ChildEventListener timesListener = new ChildEventListener() {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+            //If there are no snapshots, then we are currently showing "No logs", so get rid of that:
+            if (logSnapshots.isEmpty()) logSummaries.clear();
             //Set the data, start listening to get data for this driver, and update the adapter:
             logSnapshots.add(dataSnapshot);
             logSummaries.add(genLogSummary(dataSnapshot));
@@ -113,6 +115,8 @@ public class LogFragment extends ListFragment {
             //Remove the data, stop listening to the driver, and update the adapter:
             logSnapshots.remove(logIndex);
             logSummaries.remove(logIndex);
+            //Add "No logs" if there are no more logs:
+            if (logSummaries.isEmpty()) logSummaries.add("No logs");
             listAdapter.notifyDataSetChanged();
         }
 
@@ -173,6 +177,8 @@ public class LogFragment extends ListFragment {
         //Initialize driversInfo to start listening to drivers:
         driversInfo = new DriverAdapter(getActivity(), userId, android.R.layout.simple_dropdown_item_1line);
 
+        //Show "No logs" at the beginning:
+        logSummaries.add("No logs");
         //Set the adapter:
         listAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, logSummaries);
         setListAdapter(listAdapter);
@@ -194,9 +200,10 @@ public class LogFragment extends ListFragment {
 
     @Override
     public void onListItemClick(ListView listView, View view, int position, long id) {
+        // Don't do anything if there are no logs:
+        if (logIds.isEmpty()) return;
         // Check if the user is signed in:
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
-
         // Don't do anything if the user isn't signed in:
         if (!isSignedIn) return;
 
