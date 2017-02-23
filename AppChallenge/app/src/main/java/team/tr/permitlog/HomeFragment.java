@@ -70,21 +70,15 @@ public class HomeFragment extends Fragment {
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
 
-    // This holds the user's completed time:
-    private long totalTime, dayTime, nightTime;
     // This holds the user's goals:
     private long totalGoal, dayGoal, nightGoal;
     // TextViews:
     private TextView totalTimeView, dayTimeView, nightTimeView;
-    // Firebase listener to logs:
-    private ValueEventListener timesListener;
+    // Object that updates totalTime, dayTime, and nightTime:
+    private ElapsedTime timeUpdater;
     // Callback for timesListener:
     private TriLongConsumer timeCallback = new TriLongConsumer() {
         @Override public void accept(long totalTimeP, long dayTimeP, long nightTimeP) {
-            // Set the instance properties:
-            totalTime = totalTimeP;
-            dayTime = dayTimeP;
-            nightTime = nightTimeP;
             // Update the "Time Completed" section:
             updateGoalTextViews();
         }
@@ -134,7 +128,7 @@ public class HomeFragment extends Fragment {
         dayTimeView=(TextView)rootView.findViewById(R.id.day_elapsed);
         nightTimeView=(TextView)rootView.findViewById(R.id.night_elapsed);
         // Start listening to logs:
-        timesListener = ElapsedTime.startListening(userId, timeCallback);
+        timeUpdater = new ElapsedTime(userId, timeCallback);
         // Set the TextView's texts:
         updateGoals();
 
@@ -344,15 +338,15 @@ public class HomeFragment extends Fragment {
         // Pads numbers with "0" if they are only one digit:
         DecimalFormat padder = new DecimalFormat("00");
         // Convert the time to seconds and format appropriately:
-        String totalTimeStr = ElapsedTime.formatSeconds(totalTime/1000);
+        String totalTimeStr = ElapsedTime.formatSeconds(timeUpdater.totalTime/1000);
         // Show the goal if it is nonzero:
         if (totalGoal == 0) totalTimeView.setText("Total: "+totalTimeStr);
         else totalTimeView.setText("Total: "+totalTimeStr+"/"+padder.format(totalGoal)+":00");
         // Do the same for day and night:
-        String dayTimeStr = ElapsedTime.formatSeconds(dayTime/1000);
+        String dayTimeStr = ElapsedTime.formatSeconds(timeUpdater.dayTime/1000);
         if (dayGoal == 0) dayTimeView.setText("Day: "+dayTimeStr);
         else dayTimeView.setText("Day: "+dayTimeStr+"/"+padder.format(dayGoal)+":00");
-        String nightTimeStr = ElapsedTime.formatSeconds(nightTime/1000);
+        String nightTimeStr = ElapsedTime.formatSeconds(timeUpdater.nightTime/1000);
         if (nightGoal == 0) nightTimeView.setText("Night: "+nightTimeStr);
         else nightTimeView.setText("Night: "+nightTimeStr+"/"+padder.format(nightGoal)+":00");
     }
@@ -517,7 +511,7 @@ public class HomeFragment extends Fragment {
     public void onDestroyView() {
         // Since this activity is being stopped, we don't need to listen to the drivers or logs anymore:
         spinnerData.stopListening();
-        ElapsedTime.stopListening(timesListener);
+        timeUpdater.stopListening();
         // Save the state:
         Bundle state = new Bundle();
         saveToBundle(state);
