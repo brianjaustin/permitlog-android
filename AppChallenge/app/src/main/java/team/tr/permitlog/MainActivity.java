@@ -25,11 +25,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import android.support.multidex.*;
 
 import java.util.Arrays;
@@ -54,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
     public static final int SETTINGS_MENU_INDEX = 3;
     public static final int ABOUT_MENU_INDEX = 4;
     public static final int SIGN_OUT_MENU_INDEX = 5;
+    // Is the menu button disabled?
+    private boolean menuDisabled = false;
     // Fragments, titles, and arguments for menu items
     private Class menuFragmentClasses[] = {HomeFragment.class, LogFragment.class, DriversFragment.class, SettingsFragment.class, AboutFragment.class};
     private String menuTitles[] = {"Permit Log", "Driving Log", "Drivers", "Goals", "About"};
@@ -211,10 +209,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // These two methods disable and enable the menu button:
+    public void disableMenuButton() {
+        menuDisabled = true;
+    }
+
+    public void enableMenuButton() {
+        menuDisabled = false;
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // If the home button is clicked, open/close the menu
-        if (item.getItemId() == android.R.id.home) {
+        // If the home button is clicked and it is enabled, open/close the menu
+        if (item.getItemId() == android.R.id.home && !menuDisabled) {
             if(mDrawerLayout.isDrawerOpen(Gravity.LEFT)) {
                 mDrawerLayout.closeDrawer(Gravity.LEFT);
             } else {

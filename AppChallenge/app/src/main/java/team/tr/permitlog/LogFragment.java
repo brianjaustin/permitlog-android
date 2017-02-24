@@ -28,7 +28,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
@@ -82,16 +81,15 @@ public class LogFragment extends ListFragment {
     //This holds the driver information:
     private DriverAdapter driversInfo;
 
-    // Holds total time drove overall and during night:
-    private long totalTime;
-    private long totalNight;
-    // Firebase listener that updates totalTime and totalNight:
-    private ValueEventListener totalListener;
+    // Object that keeps track of total time and total time during night:
+    private ElapsedTime totalUpdater;
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+            //If there are no snapshots, then we are currently showing "No logs", so get rid of that:
+            if (logSnapshots.isEmpty()) logSummaries.clear();
             //Set the data, start listening to get data for this driver, and update the adapter:
             logSnapshots.add(dataSnapshot);
             logSummaries.add(genLogSummary(dataSnapshot));
@@ -117,6 +115,8 @@ public class LogFragment extends ListFragment {
             //Remove the data, stop listening to the driver, and update the adapter:
             logSnapshots.remove(logIndex);
             logSummaries.remove(logIndex);
+            //Add "No logs" if there are no more logs:
+            if (logSummaries.isEmpty()) logSummaries.add("No logs");
             listAdapter.notifyDataSetChanged();
         }
 
@@ -136,15 +136,6 @@ public class LogFragment extends ListFragment {
         return dataSnapshot.hasChild("start") && dataSnapshot.hasChild("end")
                 && dataSnapshot.hasChild("night") && dataSnapshot.hasChild("driver_id");
     } };
-
-    private TriLongConsumer totalCallback = new TriLongConsumer() {
-        @Override
-        public void accept(long totalTimeP, long dayTimeP, long nightTimeP) {
-            //Set the instance properties:
-            totalTime = totalTimeP;
-            totalNight = nightTimeP;
-        }
-    };
 
     private String genLogSummary(DataSnapshot dataSnapshot) {
         //Find the time elapsed during the drive:
@@ -181,11 +172,13 @@ public class LogFragment extends ListFragment {
         timesRef.addChildEventListener(timesListener);
 
         // Get the totals
-        totalListener = ElapsedTime.startListening(userId, totalCallback);
+        totalUpdater = new ElapsedTime(userId, null);
 
         //Initialize driversInfo to start listening to drivers:
         driversInfo = new DriverAdapter(getActivity(), userId, android.R.layout.simple_dropdown_item_1line);
 
+        //Show "No logs" at the beginning:
+        logSummaries.add("No logs");
         //Set the adapter:
         listAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, logSummaries);
         setListAdapter(listAdapter);
@@ -207,9 +200,10 @@ public class LogFragment extends ListFragment {
 
     @Override
     public void onListItemClick(ListView listView, View view, int position, long id) {
+        // Don't do anything if there are no logs:
+        if (logIds.isEmpty()) return;
         // Check if the user is signed in:
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
-
         // Don't do anything if the user isn't signed in:
         if (!isSignedIn) return;
 
@@ -297,6 +291,8 @@ public class LogFragment extends ListFragment {
         Formatter fdrFormatter = new Formatter(noAccumulate, Locale.US);
         // Fill the fields
         int subtraction = 0;
+        // For formatting doubles:
+        DecimalFormat df = new DecimalFormat("0.00");
         for (int i=0; i < logSnapshots.size(); i++) {
             if (i % 50 == 0 && i != 0 && i != logSnapshots.size()) { // Begin a new page
                 // Save this section
@@ -344,7 +340,6 @@ public class LogFragment extends ListFragment {
             // Get the elapsed time
             long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
             double hoursElapsed = (double)timeElapsed / (1000.0 * 3600.0);
-            DecimalFormat df = new DecimalFormat("0.00");
             String stringElapsed = df.format(hoursElapsed);
 
             // The following variables hold info about the drivers. These are their default values:
@@ -393,8 +388,8 @@ public class LogFragment extends ListFragment {
         try {
             PDFieldTreeNode totalHoursField = acroForm.getField("TOTAL HOURS OF PRACTICE DRIVING");
             PDFieldTreeNode totalNightField = acroForm.getField("TOTAL HOURS OF NIGHT DRIVING");
-            if (totalHoursField != null) totalHoursField.setValue(ElapsedTime.formatSeconds(totalTime / 1000));
-            if (totalNightField != null) totalNightField.setValue(ElapsedTime.formatSeconds(totalNight / 1000));
+            if (totalHoursField != null) totalHoursField.setValue(df.format(totalUpdater.totalTime / (1000.0 * 3600.0)));
+            if (totalNightField != null) totalNightField.setValue(df.format(totalUpdater.nightTime / (1000.0 * 3600.0)));
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
         }
@@ -530,7 +525,7 @@ public class LogFragment extends ListFragment {
                     wb.write();
                     wb.close();
                 } catch (IOException | WriteException e) {
-                    Log.e(TAG, "Spreadsheet Error" + e);
+                    Log.e(TAG, "While trying to make spreadsheet: " + e);
                     return;
                 }
 
@@ -552,7 +547,7 @@ public class LogFragment extends ListFragment {
         //When we are done here, stop listening:
         timesRef.removeEventListener(timesListener);
         driversInfo.stopListening();
-        ElapsedTime.stopListening(totalListener);
+        totalUpdater.stopListening();
         super.onDestroyView();
     }
 }

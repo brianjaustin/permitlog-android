@@ -3,11 +3,13 @@ package team.tr.permitlog;
 import android.text.format.DateUtils;
 import android.util.Log;
 
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
 
 public class ElapsedTime {
     //For logging:
@@ -25,44 +27,88 @@ public class ElapsedTime {
     }
 
     //Firebase reference:
-    private static DatabaseReference timesRef;
+    private DatabaseReference timesRef;
+    //Store the logs' IDs, duration, and whether they were during the day or night:
+    private ArrayList<String> logIds = new ArrayList<>();
+    private ArrayList<Long> logDurations = new ArrayList<>();
+    private ArrayList<Boolean> logsAtNight = new ArrayList<>();
+    //Store the total time, total time during day, and total time during night:
+    public long totalTime, dayTime, nightTime;
+    //This is the callback called whenever there is a change to the above variables:
+    private TriLongConsumer callback;
 
-    public static ValueEventListener startListening(String userId, final TriLongConsumer callback) {
-        //Get the DatabaseReference if it hasn't been initialized yet:
-        if (timesRef == null) timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
-        //Create the listener:
-        ValueEventListener timesListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                //This are the totals:
-                long totalTime = 0, dayTime = 0, nightTime = 0;
-                //Loop through the children that are valid logs:
-                for (DataSnapshot logSnapshot : dataSnapshot.getChildren()) if (LogFragment.validLog.accept(logSnapshot)) {
-                    //Find the time elapsed during the drive and add it to the total:
-                    long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
-                    totalTime += timeElapsed;
-                    //If this was during the night, add it to the night total:
-                    if ((boolean) logSnapshot.child("night").getValue()) nightTime += timeElapsed;
-                        //Otherwise, add it to the day total:
-                    else dayTime += timeElapsed;
-                }
-                //Call the callbacks:
-                callback.accept(totalTime, dayTime, nightTime);
-            }
+    //Firebase listener:
+    private ChildEventListener timesListener = new ChildEventListener() {
+        @Override
+        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+            //Add the data to logDurations and logsAtNight:
+            long duration = (long)dataSnapshot.child("end").getValue() - (long)dataSnapshot.child("start").getValue();
+            logDurations.add(duration);
+            boolean atNight = (boolean)dataSnapshot.child("night").getValue();
+            logsAtNight.add(atNight);
+            //Update totalTime and dayTime/nightTime:
+            totalTime += duration;
+            if (atNight) nightTime += duration;
+            else dayTime += duration;
+            //Call the callback:
+            if (callback != null) callback.accept(totalTime, dayTime, nightTime);
+        }
+        @Override
+        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+            //Find the snapshot in logIds:
+            int logIndex = logIds.indexOf(dataSnapshot.getKey());
+            //Subtract totalTime and dayTime/nightTime by the time specified in logDurations:
+            totalTime -= logDurations.get(logIndex);
+            if (logsAtNight.get(logIndex)) nightTime -= logDurations.get(logIndex);
+            else dayTime -= logDurations.get(logIndex);
+            //Update the data in logDurations and logsAtNight:
+            long duration = (long)dataSnapshot.child("end").getValue() - (long)dataSnapshot.child("start").getValue();
+            logDurations.set(logIndex, duration);
+            boolean atNight = (boolean)dataSnapshot.child("night").getValue();
+            logsAtNight.set(logIndex, atNight);
+            //Update totalTime and dayTime/nightTime:
+            totalTime += duration;
+            if (atNight) nightTime += duration;
+            else dayTime += duration;
+            //Call the callback:
+            if (callback != null) callback.accept(totalTime, dayTime, nightTime);
+        }
+        @Override
+        public void onChildRemoved(DataSnapshot dataSnapshot) {
+            //Find the snapshot in logIds:
+            int logIndex = logIds.indexOf(dataSnapshot.getKey());
+            //Subtract totalTime and dayTime/nightTime by the time specified in logDurations:
+            totalTime -= logDurations.get(logIndex);
+            if (logsAtNight.get(logIndex)) nightTime -= logDurations.get(logIndex);
+            else dayTime -= logDurations.get(logIndex);
+            //Remove the data from logDurations and logsAtNight:
+            logDurations.remove(logIndex);
+            logsAtNight.remove(logIndex);
+            //Call the callback:
+            if (callback != null) callback.accept(totalTime, dayTime, nightTime);
+        }
+        // The following must be implemented in order to complete the abstract class:
+        @Override
+        public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+            Log.e(TAG, "While trying to get logs: "+databaseError.getMessage());
+        }
+    };
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                Log.e(TAG, "While trying to get logs: "+databaseError.getMessage());
-            }
-        };
+    public ElapsedTime(String userId, TriLongConsumer callback) {
+        //Get the DatabaseReference:
+        timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
+        //Set the callback:
+        this.callback = callback;
+        //Transform the listener so that it only listens for complete logs:
+        timesListener = FirebaseHelper.transformListener(timesListener, LogFragment.validLog, logIds);
         //Start listening:
-        timesRef.addValueEventListener(timesListener);
-        //Finally, return the timesListener:
-        return timesListener;
+        timesRef.addChildEventListener(timesListener);
     }
 
-    public static void stopListening(ValueEventListener timesListener) {
-        //Stop listening if possible:
-        if (timesRef != null) timesRef.removeEventListener(timesListener);
+    public void stopListening() {
+        //Stop listening:
+        timesRef.removeEventListener(timesListener);
     }
 }

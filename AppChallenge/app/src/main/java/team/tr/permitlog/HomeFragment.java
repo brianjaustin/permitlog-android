@@ -46,6 +46,8 @@ public class HomeFragment extends Fragment {
 
     private final String TAG = "HomeFragment";
     private String userId;
+    // Are we showing the tutorial right now?
+    private boolean showingTutorial = false;
     // Have we shown the tutorial yet?
     private boolean shownTutorial = false;
 
@@ -68,22 +70,16 @@ public class HomeFragment extends Fragment {
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
 
-    // This holds the user's completed time:
-    private long totalTime, dayTime, nightTime;
     // This holds the user's goals:
     private long totalGoal, dayGoal, nightGoal;
     // TextViews:
     private TextView totalTimeView, dayTimeView, nightTimeView;
-    // Firebase listener to logs:
-    private ValueEventListener timesListener;
+    // Object that updates totalTime, dayTime, and nightTime:
+    private ElapsedTime timeUpdater;
     // Callback for timesListener:
     private TriLongConsumer timeCallback = new TriLongConsumer() {
         @Override public void accept(long totalTimeP, long dayTimeP, long nightTimeP) {
-            //Set the instance properties:
-            totalTime = totalTimeP;
-            dayTime = dayTimeP;
-            nightTime = nightTimeP;
-            //Update the "Time Completed" section:
+            // Update the "Time Completed" section:
             updateGoalTextViews();
         }
     };
@@ -132,7 +128,7 @@ public class HomeFragment extends Fragment {
         dayTimeView=(TextView)rootView.findViewById(R.id.day_elapsed);
         nightTimeView=(TextView)rootView.findViewById(R.id.night_elapsed);
         // Start listening to logs:
-        timesListener = ElapsedTime.startListening(userId, timeCallback);
+        timeUpdater = new ElapsedTime(userId, timeCallback);
         // Set the TextView's texts:
         updateGoals();
 
@@ -209,10 +205,9 @@ public class HomeFragment extends Fragment {
             if (dataSnapshot.hasChild("total")) totalGoal = (long)dataSnapshot.child("total").getValue();
             else {
                 totalGoal = 0;
-                // If they don't have goals, assume they are a new user, so show the tutorial:
+                // If they don't have goals and they have not seen the tutorial, assume they are a new user, so show the tutorial:
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-                if (!shownTutorial && prefs.getBoolean("tutorial", true)) showTutorial1();
-                shownTutorial = true;
+                if (!shownTutorial && prefs.getBoolean("tutorial", true)) showTutorial();
             }
             // Do the same for day and night:
             if (dataSnapshot.hasChild("day")) dayGoal = (long)dataSnapshot.child("day").getValue();
@@ -228,38 +223,100 @@ public class HomeFragment extends Fragment {
         }
     };
 
-    private void showTutorial1() {
+    private ShowcaseView.Builder createBuilder(int textId) {
+        /* Returns ShowcaseView.Builder using textId as text */
+        return new ShowcaseView.Builder(getActivity())
+                .setStyle(R.style.CustomShowcaseView)
+                .setContentText(textId)
+                .hideOnTouchOutside();
+    }
+
+    private void showTutorial() {
+        // Set showing and shownTutorial:
+        showingTutorial = shownTutorial = true;
+        // Disable the menu button:
+        ((MainActivity)getActivity()).disableMenuButton();
+        // Introduce the app
+        createBuilder(R.string.tutorial_text_intro)
+                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
+                    @Override
+                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                        showTutorialFam();
+                    }
+                })
+                .build();
+    }
+
+    private void showTutorialFam() {
         // Get the FAB
         FloatingActionMenu fab = (FloatingActionMenu) rootView.findViewById(R.id.menu);
 
-        // Show the first tutorial
+        // Create LayoutParams
         RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         int vMargin = (int) getResources().getDimension(R.dimen.activity_vertical_margin);
         int hMargin = (int) getResources().getDimension(R.dimen.activity_vertical_margin);
         lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
         lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
         lps.setMargins(vMargin, 0, 0, hMargin);
-        ShowcaseView sv = new ShowcaseView.Builder(getActivity())
+        // Introduce the FAB
+        ShowcaseView sv = createBuilder(R.string.tutorial_text_fam)
                 .setTarget(new ViewTarget(fab))
-                .setStyle(R.style.CustomShowcaseView)
-                .setContentText(R.string.tutorial_text1)
-                .hideOnTouchOutside()
                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                     @Override
                     public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
-                        showTutorial2();
+                        showTutorialSpinner();
                     }
                 })
                 .build();
+        // Set LayoutParams for ShowcaseView
         sv.setButtonPosition(lps);
     }
 
-    private void showTutorial2() {
-        // Show the second tutorial
-        new ShowcaseView.Builder(getActivity())
-                .setStyle(R.style.CustomShowcaseView)
-                .setContentText(R.string.tutorial_text2)
-                .hideOnTouchOutside()
+    private void showTutorialSpinner() {
+        // Store the text alignment and center the spinner before describing it in the tutorial:
+        final int originalAlignment = driversSpinner.getTextAlignment();
+        driversSpinner.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        createBuilder(R.string.tutorial_text_spinner)
+                .setTarget(new ViewTarget(driversSpinner))
+                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
+                    @Override
+                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                        // Restore the spinner's text alignment before moving on:
+                        driversSpinner.setTextAlignment(originalAlignment);
+                        showTutorialAutoDrive();
+                    }
+                })
+                .build();
+    }
+
+    private void showTutorialAutoDrive() {
+        // Describe the start button
+        createBuilder(R.string.tutorial_text_start)
+                .setTarget(new ViewTarget(startButton))
+                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
+                    @Override
+                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                        // Enable and describe the start button
+                        stopButton.setEnabled(true);
+                        createBuilder(R.string.tutorial_text_stop)
+                                .setTarget(new ViewTarget(stopButton))
+                                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
+                                    @Override
+                                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
+                                        // Disable the start button before moving on
+                                        stopButton.setEnabled(false);
+                                        showTutorialMenu();
+                                    }
+                                })
+                                .build();
+                    }
+                })
+                .build();
+    }
+
+    private void showTutorialMenu() {
+        // Describe the menu
+        createBuilder(R.string.tutorial_text_menu)
                 .setShowcaseEventListener(new SimpleShowcaseEventListener() {
                     @Override
                     public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
@@ -268,6 +325,10 @@ public class HomeFragment extends Fragment {
                         SharedPreferences.Editor editor = prefs.edit();
                         editor.putBoolean("tutorial", false);
                         editor.commit();
+                        // The tutorial has ended:
+                        showingTutorial = false;
+                        // Enable the menu button:
+                        ((MainActivity)getActivity()).enableMenuButton();
                     }
                 })
                 .build();
@@ -277,15 +338,15 @@ public class HomeFragment extends Fragment {
         // Pads numbers with "0" if they are only one digit:
         DecimalFormat padder = new DecimalFormat("00");
         // Convert the time to seconds and format appropriately:
-        String totalTimeStr = ElapsedTime.formatSeconds(totalTime/1000);
+        String totalTimeStr = ElapsedTime.formatSeconds(timeUpdater.totalTime/1000);
         // Show the goal if it is nonzero:
         if (totalGoal == 0) totalTimeView.setText("Total: "+totalTimeStr);
         else totalTimeView.setText("Total: "+totalTimeStr+"/"+padder.format(totalGoal)+":00");
         // Do the same for day and night:
-        String dayTimeStr = ElapsedTime.formatSeconds(dayTime/1000);
+        String dayTimeStr = ElapsedTime.formatSeconds(timeUpdater.dayTime/1000);
         if (dayGoal == 0) dayTimeView.setText("Day: "+dayTimeStr);
         else dayTimeView.setText("Day: "+dayTimeStr+"/"+padder.format(dayGoal)+":00");
-        String nightTimeStr = ElapsedTime.formatSeconds(nightTime/1000);
+        String nightTimeStr = ElapsedTime.formatSeconds(timeUpdater.nightTime/1000);
         if (nightGoal == 0) nightTimeView.setText("Night: "+nightTimeStr);
         else nightTimeView.setText("Night: "+nightTimeStr+"/"+padder.format(nightGoal)+":00");
     }
@@ -293,6 +354,8 @@ public class HomeFragment extends Fragment {
     //This is the listener for the "Start Drive" button.
     //The weird indentation is done like this in order to make the indentation like a regular function.
     private View.OnClickListener onStartDrive = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Don't do anything if we're showing the tutorial:
+        if (showingTutorial) return;
         // Check if the driver field is empty
         Context myContext = rootView.getContext();
         if (spinnerData.driverIds.isEmpty()) {
@@ -326,6 +389,8 @@ public class HomeFragment extends Fragment {
 
     //This is the listener for the "Stop Drive" button.
     private View.OnClickListener onStopDrive = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Don't do anything if we're showing the tutorial:
+        if (showingTutorial) return;
         // Stop the timer
         timer.cancel();
 
@@ -446,7 +511,7 @@ public class HomeFragment extends Fragment {
     public void onDestroyView() {
         // Since this activity is being stopped, we don't need to listen to the drivers or logs anymore:
         spinnerData.stopListening();
-        ElapsedTime.stopListening(timesListener);
+        timeUpdater.stopListening();
         // Save the state:
         Bundle state = new Bundle();
         saveToBundle(state);
