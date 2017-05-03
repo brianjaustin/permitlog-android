@@ -1,3 +1,6 @@
+# THIS SHOULD NEVER TOUCH THE SERVER!
+google-services.json
+
 # Built application files
 *.apk
 *.ap_
@@ -34,9 +37,7 @@ captures/
 
 # Intellij
 *.iml
-.idea/workspace.xml
-.idea/vcs.xml
-.idea/misc.xml
+.idea/
 
 # Keystore files
 *.jks
