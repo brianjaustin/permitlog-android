@@ -45,5 +45,5 @@
     <string name="unknown_auth_error">For some reason, authentication failed. Please try again.</string>
 
     <!-- Ad unit id, only for testing! -->
-    <string name="banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
 </resources>
