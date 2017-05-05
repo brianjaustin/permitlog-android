@@ -45,10 +45,6 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout mDrawerLayout;
     private ListView mDrawerList;
     public static final int HOME_MENU_INDEX = 0;
-    public static final int LOG_MENU_INDEX = 1;
-    public static final int DRIVERS_MENU_INDEX = 2;
-    public static final int SETTINGS_MENU_INDEX = 3;
-    public static final int ABOUT_MENU_INDEX = 4;
     public static final int SIGN_OUT_MENU_INDEX = 5;
     // Is the menu button disabled?
     private boolean menuDisabled = false;
