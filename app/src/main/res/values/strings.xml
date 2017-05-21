@@ -43,4 +43,7 @@
     </array>
     <string name="network_connection_error">Please connect to the Internet and come back to this app to sign in.</string>
     <string name="unknown_auth_error">For some reason, authentication failed. Please try again.</string>
+
+    <!-- Ad unit id -->
+    <string name="ad_unit_id">ca-app-pub-1631603318674332/4296343209</string>
 </resources>

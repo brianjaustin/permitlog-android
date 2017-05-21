@@ -28,6 +28,10 @@ import com.github.amlcurran.showcaseview.SimpleShowcaseEventListener;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.NativeExpressAdView;
+import com.google.android.gms.ads.VideoOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -131,6 +135,15 @@ public class HomeFragment extends Fragment {
         timeUpdater = new ElapsedTime(userId, timeCallback);
         // Set the TextView's texts:
         updateGoals();
+
+        // Initialize and load the ad
+        NativeExpressAdView adView = (NativeExpressAdView) rootView.findViewById(R.id.adView);
+        AdRequest request = new AdRequest.Builder()
+                .build();
+        adView.setVideoOptions(new VideoOptions.Builder()
+            .setStartMuted(true)
+            .build());
+        adView.loadAd(request);
 
         // Get the values from rotate, if possible:
         if (savedInstanceState != null) loadFromBundle(savedInstanceState);

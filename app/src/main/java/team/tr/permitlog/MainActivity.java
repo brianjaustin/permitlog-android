@@ -21,6 +21,7 @@ import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.ErrorCodes;
 import com.firebase.ui.auth.IdpResponse;
 import com.firebase.ui.auth.ResultCodes;
+import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -45,10 +46,6 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout mDrawerLayout;
     private ListView mDrawerList;
     public static final int HOME_MENU_INDEX = 0;
-    public static final int LOG_MENU_INDEX = 1;
-    public static final int DRIVERS_MENU_INDEX = 2;
-    public static final int SETTINGS_MENU_INDEX = 3;
-    public static final int ABOUT_MENU_INDEX = 4;
     public static final int SIGN_OUT_MENU_INDEX = 5;
     // Is the menu button disabled?
     private boolean menuDisabled = false;
@@ -103,6 +100,9 @@ public class MainActivity extends AppCompatActivity {
         // Log whether currentUser is null or not:
         Log.d(TAG, "Is the user not signed in? "+Boolean.toString(currentUser == null));
         if (savedInstanceState == null) navigateBasedOnUser();
+
+        // Initialize ad network
+        MobileAds.initialize(getApplicationContext(), "ca-app-pub-1631603318674332~4854746404");
     }
 
     @Override
