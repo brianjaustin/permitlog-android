@@ -139,6 +139,7 @@ public class HomeFragment extends Fragment {
         // Initialize and load the ad
         NativeExpressAdView adView = (NativeExpressAdView) rootView.findViewById(R.id.adView);
         AdRequest request = new AdRequest.Builder()
+                .addTestDevice("588673E3A47A5C68AD8CD4FE6FA5A4ED")
                 .build();
         adView.setVideoOptions(new VideoOptions.Builder()
             .setStartMuted(true)
