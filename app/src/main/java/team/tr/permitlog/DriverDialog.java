@@ -121,10 +121,10 @@ public class DriverDialog extends AppCompatActivity {
         }
 
         // Check to make sure the driver has a valid age
-        if (Integer.parseInt(driverAge) < 21) {
-            Toast.makeText(this, R.string.driver_age_error, Toast.LENGTH_SHORT).show();
-            return;
-        }
+        //if (Integer.parseInt(driverAge) < 21) {
+        //    Toast.makeText(this, R.string.driver_age_error, Toast.LENGTH_SHORT).show();
+        //    return;
+        //}
 
         if (editing) {
             // Update existing values

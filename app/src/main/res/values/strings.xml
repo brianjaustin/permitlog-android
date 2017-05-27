@@ -9,7 +9,7 @@
     <string name="driver_dialog_success">Driver successfully saved.</string>
     <string name="driver_dialog_deleted">Driver successfully deleted.</string>
     <string name="driver_dialog_error">Please complete all fields.</string>
-    <string name="driver_age_error">The driver\'s age must be at least 21.</string>
+    <!--<string name="driver_age_error">The driver\'s age must be at least 21.</string>-->
     <string name="settings_title">Settings</string>
     <string name="settings_total_desc">Enter the number of total driving hours that your state requires to take the driver license test:</string>
     <string name="settings_day_desc">Enter the number of day driving hours that your state requires: (Enter 0 if there is no requirement.)</string>
@@ -18,21 +18,21 @@
     <string name="settings_success">Goals successfully saved.</string>
     <string name="drawer_open">Open Drawer</string>
     <string name="drawer_close">Close Drawer</string>
-    <string name="go_to_add_driver_menu">Please add the driver that accompanied you by going to the "Add Driver" menu that can be found in the bottom-right corner of the home page.</string>
+    <string name="go_to_add_driver_menu">Please add the driver that accompanied you by tapping the plus sign in the bottom right, and tapping "Add Driver"</string>
     <string name="at_night_dialog_content">Was this driving done at night?</string>
     <string name="drive_saved">Drive successfully saved.</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="cancel">Cancel</string>
     <string name="save_pdf_error">Unable to export using the Maine format: could not save the PDF.</string>
-    <string name="export_pdf_error">Unable to export log using the Maine format: an app that can handle PDFs is required.</string>
-    <string name="export_xls_error">Unable to export log manually: an app that can handle XLS files (i.e. spreadsheets) is required.</string>
-    <string name="tutorial_text_intro">Welcome to Permit Log, the app that helps drivers with learner\'s permits record their driving hours!\n\nPlease view this tutorial in portrait mode so that you can read all of the text.</string>
-    <string name="tutorial_text_fam">Tap the orange button to add a new supervising driver or to manually enter when you drove.</string>
-    <string name="tutorial_text_spinner">Once you\'ve added drivers, before you start driving, select the driver that is supervising you here.</string>
+    <string name="export_pdf_error">Unable to export log using the Maine format: an app that can open PDFs is required.</string>
+    <string name="export_xls_error">Unable to export log manually: an app that can open XLS files (i.e. spreadsheets) is required.</string>
+    <string name="tutorial_text_intro">Welcome to Permit Log, the app that helps drivers with learner\'s permits record their driving hours!\n\nPlease view this tutorial in portrait mode.</string>
+    <string name="tutorial_text_fam">Tap the orange button to add a new supervising driver or to manually enter a drive.</string>
+    <string name="tutorial_text_spinner">Before each drive, select the driver that is supervising you here.</string>
     <string name="tutorial_text_start">Then, tap the "Start Drive" button to start the timer.</string>
     <string name="tutorial_text_stop">When you\'re done driving, tap the "Stop Drive" button to stop the timer and the app will record the drive in the driving log.</string>
-    <string name="tutorial_text_menu">Tap the menu button in upper-left corner to see the menu. Edit and export the driving log in the Log page, edit info about the supervising drivers in the Drivers page, and set your goals in the Goals page.\n\nWe hope you enjoy using Permit Log! And remember, don\'t use your phone while driving.\n-Team Redundancy Team</string>
+    <string name="tutorial_text_menu">Tap the menu button in upper-left corner to edit and export the driving log in the Log page, edit info about the supervising drivers in the Drivers page, and set your goals in the Goals page.\n\nWe hope you enjoy using Permit Log! And remember, don\'t use your phone while driving.\n-Team Redundancy Team</string>
     <array name="menu_items">
         <item>Home</item>
         <item>Log</item>
