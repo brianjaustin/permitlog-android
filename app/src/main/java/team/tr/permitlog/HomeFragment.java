@@ -11,11 +11,13 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.text.format.DateUtils;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -29,7 +31,7 @@ import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.NativeExpressAdView;
 import com.google.android.gms.ads.VideoOptions;
 import com.google.firebase.auth.FirebaseAuth;
@@ -136,15 +138,33 @@ public class HomeFragment extends Fragment {
         // Set the TextView's texts:
         updateGoals();
 
-        // Initialize and load the ad
-        NativeExpressAdView adView = (NativeExpressAdView) rootView.findViewById(R.id.adView);
-        AdRequest request = new AdRequest.Builder()
+        // Initialize the ad and ad request:
+        final NativeExpressAdView adView = new NativeExpressAdView(getContext());
+        adView.setAdUnitId(getString(R.string.ad_unit_id));
+        adView.setVideoOptions(new VideoOptions.Builder()
+                .setStartMuted(true)
+                .build());
+        final AdRequest request = new AdRequest.Builder()
                 .addTestDevice("588673E3A47A5C68AD8CD4FE6FA5A4ED")
                 .build();
-        adView.setVideoOptions(new VideoOptions.Builder()
-            .setStartMuted(true)
-            .build());
-        adView.loadAd(request);
+
+        //Get the LinearLayout container
+        final LinearLayout adContainer = (LinearLayout)rootView.findViewById(R.id.home_container);
+        //Get displayMetrics in order to convert pixels to dp:
+        final DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
+        //Wait for the LinearLayout to load in order to get its width:
+        adContainer.post(new Runnable() {
+            @Override
+            public void run() {
+                //Get the width of the LinearLayout in dp:
+                int adContainerWidthDp = (int)(adContainer.getWidth()/displayMetrics.density);
+                //Set the ad size to take up the whole LinearLayout, but also be at least 280 in order to meet the small template:
+                adView.setAdSize(new AdSize(Math.max(280, adContainerWidthDp), 100));
+                //Add the ad to the screen and load the request:
+                adContainer.addView(adView);
+                adView.loadAd(request);
+            }
+        });
 
         // Get the values from rotate, if possible:
         if (savedInstanceState != null) loadFromBundle(savedInstanceState);
