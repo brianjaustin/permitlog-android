@@ -13,6 +13,7 @@ import android.support.v4.app.Fragment;
 import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -138,12 +139,17 @@ public class HomeFragment extends Fragment {
         // Set the TextView's texts:
         updateGoals();
 
-        // Initialize the ad and ad request:
+        //Initialize the ad:
         final NativeExpressAdView adView = new NativeExpressAdView(getContext());
         adView.setAdUnitId(getString(R.string.ad_unit_id));
         adView.setVideoOptions(new VideoOptions.Builder()
                 .setStartMuted(true)
                 .build());
+        //Center the ad horizontally:
+        LinearLayout.LayoutParams adParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        adParams.gravity = Gravity.CENTER_HORIZONTAL;
+        adView.setLayoutParams(adParams);
+        //Initialize the ad request:
         final AdRequest request = new AdRequest.Builder()
                 .addTestDevice("588673E3A47A5C68AD8CD4FE6FA5A4ED")
                 .build();
