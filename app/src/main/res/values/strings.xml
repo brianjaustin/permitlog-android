@@ -9,7 +9,7 @@
     <string name="driver_dialog_success">Driver successfully saved.</string>
     <string name="driver_dialog_deleted">Driver successfully deleted.</string>
     <string name="driver_dialog_error">Please complete all fields.</string>
-    <!--<string name="driver_age_error">The driver\'s age must be at least 21.</string>-->
+    <string name="driver_age_error">Invalid driver age.</string>
     <string name="settings_title">Settings</string>
     <string name="settings_total_desc">Enter the number of total driving hours that your state requires to take the driver license test:</string>
     <string name="settings_day_desc">Enter the number of day driving hours that your state requires: (Enter 0 if there is no requirement.)</string>
