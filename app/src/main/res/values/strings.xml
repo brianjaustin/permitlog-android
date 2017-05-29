@@ -32,7 +32,7 @@
     <string name="tutorial_text_spinner">Before each drive, select the driver that is supervising you here.</string>
     <string name="tutorial_text_start">Then, tap the "Start Drive" button to start the timer.</string>
     <string name="tutorial_text_stop">When you\'re done driving, tap the "Stop Drive" button to stop the timer and the app will record the drive in the driving log.</string>
-    <string name="tutorial_text_menu">Tap the menu button in upper-left corner to edit and export the driving log in the Log page, edit info about the supervising drivers in the Drivers page, and set your goals in the Goals page.\n\nWe hope you enjoy using Permit Log! And remember, don\'t use your phone while driving.\n-Team Redundancy Team</string>
+    <string name="tutorial_text_menu">Tap the menu button in upper-left corner to edit and export the driving log, edit info about the supervising drivers, and set your goals.\n\nWe hope you enjoy using Permit Log! And remember, don\'t use your phone while driving.\n-Team Redundancy Team</string>
     <array name="menu_items">
         <item>Home</item>
         <item>Log</item>

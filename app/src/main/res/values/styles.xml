@@ -35,10 +35,4 @@
 
     </style>
     <style name="MyAlertDialogStyle" parent="Theme.AppCompat.Light.Dialog.Alert"> </style>
-    <style name="CustomShowcaseView">
-        <item name="sv_backgroundColor">#e51249d9</item>
-        <item name="sv_showcaseColor">#25467A</item>
-        <item name="sv_tintButtonColor">false</item>
-    </style>
-
 </resources>

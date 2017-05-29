@@ -123,8 +123,24 @@
             </android.support.v7.widget.CardView>
         </LinearLayout>
     </ScrollView>
-
-
+    <!--This terrible hack brought to you by Nathan Kiesman®-->
+    <!--This is the same size as the FAB so that showcaseview can focus on only the button, not the whole menu-->
+    <ImageView
+        android:id="@+id/FAB_image_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:adjustViewBounds="false"
+        android:cropToPadding="true"
+        android:longClickable="false"
+        android:maxHeight="56dp"
+        android:maxWidth="56dp"
+        android:minHeight="56dp"
+        android:minWidth="56dp"
+        android:scaleType="fitXY"
+        android:translationX="-5dp"
+        android:translationY="-7.5dp"
+        app:srcCompat="@color/tw__transparent" />
     <GridLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -7,6 +7,7 @@ import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -18,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
@@ -26,9 +28,11 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.github.amlcurran.showcaseview.ShowcaseView;
-import com.github.amlcurran.showcaseview.SimpleShowcaseEventListener;
-import com.github.amlcurran.showcaseview.targets.ViewTarget;
+
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
+import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
+
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.ads.AdRequest;
@@ -46,6 +50,9 @@ import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import static team.tr.permitlog.R.string.tutorial_text_start;
+import static team.tr.permitlog.R.string.tutorial_text_stop;
 
 public class HomeFragment extends Fragment {
     //The root view for this fragment, used to find elements by id:
@@ -263,116 +270,91 @@ public class HomeFragment extends Fragment {
         }
     };
 
-    private ShowcaseView.Builder createBuilder(int textId) {
-        /* Returns ShowcaseView.Builder using textId as text */
-        return new ShowcaseView.Builder(getActivity())
-                .setStyle(R.style.CustomShowcaseView)
-                .setContentText(textId)
-                .hideOnTouchOutside();
-    }
-
     private void showTutorial() {
         // Set showing and shownTutorial:
         showingTutorial = shownTutorial = true;
-        // Disable the menu button:
-        ((MainActivity)getActivity()).disableMenuButton();
-        // Introduce the app
-        createBuilder(R.string.tutorial_text_intro)
-                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
-                    @Override
-                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
-                        showTutorialFam();
-                    }
-                })
-                .build();
+
+        ShowcaseConfig config = new ShowcaseConfig();
+        config.setDelay(500); // half second between each showcase view
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(getActivity(), "tutorialID");
+        sequence.setConfig(config);
+
+        //Instanciate class that tracks where we are in the tutorial
+        final TutorialListener tutorialStatus = new TutorialListener();
+        //For the looks
+        stopButton.setEnabled(true);
+        //Adds each screen to the sequence, then runs it
+        sequence.addSequenceItem(
+                new MaterialShowcaseView.Builder(getActivity())
+                .setDismissText("OK")
+                .setContentText(R.string.tutorial_text_intro)
+                .setTarget(rootView.findViewById(R.id.FAB_image_view))
+                .withoutShape()
+                .setListener(tutorialStatus)
+                .build());
+
+        sequence.addSequenceItem(
+        new MaterialShowcaseView.Builder(getActivity())
+                        .setTarget(rootView.findViewById(R.id.FAB_image_view))
+                        .setDismissText("OK")
+                        .setContentText(R.string.tutorial_text_fam)
+                        .setListener(tutorialStatus)
+                        .build());
+
+        sequence.addSequenceItem(
+                new MaterialShowcaseView.Builder(getActivity())
+                        .setTarget(rootView.findViewById(R.id.drivers_spinner))
+                        .withRectangleShape()
+                        .setDismissText("OK")
+                        .setContentText(R.string.tutorial_text_spinner)
+                        .setListener(tutorialStatus)
+                        .build());
+
+        sequence.addSequenceItem(
+                new MaterialShowcaseView.Builder(getActivity())
+                        .setTarget(rootView.findViewById(R.id.start_drive))
+                        .withRectangleShape()
+                        .setDismissText("OK")
+                        .setContentText(tutorial_text_start)
+                        .setListener(tutorialStatus)
+                        .build());
+
+        sequence.addSequenceItem(
+                new MaterialShowcaseView.Builder(getActivity())
+                        .setTarget(rootView.findViewById(R.id.stop_drive))
+                        .withRectangleShape()
+                        .setDismissText("OK")
+                        .setContentText(tutorial_text_stop)
+                        .setListener(tutorialStatus)
+                        .build());
+
+        sequence.addSequenceItem(
+                new MaterialShowcaseView.Builder(getActivity())
+                        .setDismissText("OK")
+                        .setContentText(R.string.tutorial_text_menu)
+                        .setTarget(rootView.findViewById(R.id.FAB_image_view))
+                        .withoutShape()
+                        .setListener(tutorialStatus)
+                        .build());
+        sequence.start();
+        //Since we have to busy wait while the tutorial runs (.start is non-blocking), we start it in another thread so we don't crash the app
+        new Thread(new Runnable() {
+            public void run() {
+                //Waits for all the screens of the tutorial to be completed
+                while(tutorialStatus.getTutorialAmount() < 5){
+                    SystemClock.sleep(100);
+                }
+            }}).start();
+        stopButton.setEnabled(false);
+        // Make sure this isn't shown again on this device (in case the user does not set goals)
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("tutorial", false);
+        editor.commit();
+        // The tutorial has ended:
+        showingTutorial = false;
     }
 
-    private void showTutorialFam() {
-        // Get the FAB
-        FloatingActionMenu fab = (FloatingActionMenu) rootView.findViewById(R.id.menu);
-
-        // Create LayoutParams
-        RelativeLayout.LayoutParams lps = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        int vMargin = (int) getResources().getDimension(R.dimen.activity_vertical_margin);
-        int hMargin = (int) getResources().getDimension(R.dimen.activity_vertical_margin);
-        lps.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-        lps.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-        lps.setMargins(vMargin, 0, 0, hMargin);
-        // Introduce the FAB
-        ShowcaseView sv = createBuilder(R.string.tutorial_text_fam)
-                .setTarget(new ViewTarget(fab))
-                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
-                    @Override
-                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
-                        showTutorialSpinner();
-                    }
-                })
-                .build();
-        // Set LayoutParams for ShowcaseView
-        sv.setButtonPosition(lps);
-    }
-
-    private void showTutorialSpinner() {
-        // Store the text alignment and center the spinner before describing it in the tutorial:
-        final int originalAlignment = driversSpinner.getTextAlignment();
-        driversSpinner.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        createBuilder(R.string.tutorial_text_spinner)
-                .setTarget(new ViewTarget(driversSpinner))
-                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
-                    @Override
-                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
-                        // Restore the spinner's text alignment before moving on:
-                        driversSpinner.setTextAlignment(originalAlignment);
-                        showTutorialAutoDrive();
-                    }
-                })
-                .build();
-    }
-
-    private void showTutorialAutoDrive() {
-        // Describe the start button
-        createBuilder(R.string.tutorial_text_start)
-                .setTarget(new ViewTarget(startButton))
-                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
-                    @Override
-                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
-                        // Enable and describe the start button
-                        stopButton.setEnabled(true);
-                        createBuilder(R.string.tutorial_text_stop)
-                                .setTarget(new ViewTarget(stopButton))
-                                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
-                                    @Override
-                                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
-                                        // Disable the start button before moving on
-                                        stopButton.setEnabled(false);
-                                        showTutorialMenu();
-                                    }
-                                })
-                                .build();
-                    }
-                })
-                .build();
-    }
-
-    private void showTutorialMenu() {
-        // Describe the menu
-        createBuilder(R.string.tutorial_text_menu)
-                .setShowcaseEventListener(new SimpleShowcaseEventListener() {
-                    @Override
-                    public void onShowcaseViewDidHide(ShowcaseView showcaseView) {
-                        // Make sure this isn't shown again on this device (in case the user does not set goals)
-                        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-                        SharedPreferences.Editor editor = prefs.edit();
-                        editor.putBoolean("tutorial", false);
-                        editor.commit();
-                        // The tutorial has ended:
-                        showingTutorial = false;
-                        // Enable the menu button:
-                        ((MainActivity)getActivity()).enableMenuButton();
-                    }
-                })
-                .build();
-    }
 
     public void updateGoalTextViews() {
         // Pads numbers with "0" if they are only one digit:
