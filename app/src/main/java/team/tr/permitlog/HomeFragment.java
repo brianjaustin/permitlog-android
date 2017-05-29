@@ -7,7 +7,6 @@ import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -19,9 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,6 +26,7 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
+import uk.co.deanwild.materialshowcaseview.IShowcaseListener;
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
 import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
@@ -51,9 +49,6 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static team.tr.permitlog.R.string.tutorial_text_start;
-import static team.tr.permitlog.R.string.tutorial_text_stop;
-
 public class HomeFragment extends Fragment {
     //The root view for this fragment, used to find elements by id:
     private View rootView;
@@ -64,6 +59,8 @@ public class HomeFragment extends Fragment {
     private boolean showingTutorial = false;
     // Have we shown the tutorial yet?
     private boolean shownTutorial = false;
+    // Set to true and set the Total Goal on the Goals page to 0 in order to test tutorial:
+    private boolean testingTutorial = false;
 
     // Store drive start/stop times
     private Date startingTime = new Date();
@@ -171,8 +168,8 @@ public class HomeFragment extends Fragment {
             public void run() {
                 //Get the width of the LinearLayout in dp:
                 int adContainerWidthDp = (int)(adContainer.getWidth()/displayMetrics.density);
-                //Set the ad size to take up the whole LinearLayout, but also be at least 280 in order to meet the small template:
-                adView.setAdSize(new AdSize(Math.max(280, adContainerWidthDp), 100));
+                //Set the ad size to take up the whole LinearLayout, but also be within 280 and 1200 in order to meet the small template:
+                adView.setAdSize(new AdSize(Math.min(1200, Math.max(280, adContainerWidthDp)), 100));
                 //Add the ad to the screen and load the request:
                 adContainer.addView(adView);
                 adView.loadAd(request);
@@ -249,7 +246,13 @@ public class HomeFragment extends Fragment {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
             // Set totalGoal, or set it to 0 if not present:
-            if (dataSnapshot.hasChild("total")) totalGoal = (long)dataSnapshot.child("total").getValue();
+            if (dataSnapshot.hasChild("total")) {
+                totalGoal = (long)dataSnapshot.child("total").getValue();
+                //If the goal has been set to 0 and testingTutorial is true and tutorial has not been shown, then show tutorial:
+                //The reason that we can not just check testingTutorial and have to check the goal is
+                //because if we only check testingTutorial, then when the tester completes setting the goal, it will come back to HomeFragment and once again show the tutorial:
+                if (!shownTutorial && (totalGoal == 0) && testingTutorial) showTutorial();
+            }
             else {
                 totalGoal = 0;
                 // If they don't have goals and they have not seen the tutorial, assume they are a new user, so show the tutorial:
@@ -276,13 +279,9 @@ public class HomeFragment extends Fragment {
 
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500); // half second between each showcase view
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(getActivity(), "tutorialID");
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(getActivity());
         sequence.setConfig(config);
 
-        //Instanciate class that tracks where we are in the tutorial
-        final TutorialListener tutorialStatus = new TutorialListener();
-        //For the looks
-        stopButton.setEnabled(true);
         //Adds each screen to the sequence, then runs it
         sequence.addSequenceItem(
                 new MaterialShowcaseView.Builder(getActivity())
@@ -290,15 +289,13 @@ public class HomeFragment extends Fragment {
                 .setContentText(R.string.tutorial_text_intro)
                 .setTarget(rootView.findViewById(R.id.FAB_image_view))
                 .withoutShape()
-                .setListener(tutorialStatus)
                 .build());
 
         sequence.addSequenceItem(
-        new MaterialShowcaseView.Builder(getActivity())
+                new MaterialShowcaseView.Builder(getActivity())
                         .setTarget(rootView.findViewById(R.id.FAB_image_view))
                         .setDismissText("OK")
                         .setContentText(R.string.tutorial_text_fam)
-                        .setListener(tutorialStatus)
                         .build());
 
         sequence.addSequenceItem(
@@ -307,7 +304,6 @@ public class HomeFragment extends Fragment {
                         .withRectangleShape()
                         .setDismissText("OK")
                         .setContentText(R.string.tutorial_text_spinner)
-                        .setListener(tutorialStatus)
                         .build());
 
         sequence.addSequenceItem(
@@ -315,8 +311,7 @@ public class HomeFragment extends Fragment {
                         .setTarget(rootView.findViewById(R.id.start_drive))
                         .withRectangleShape()
                         .setDismissText("OK")
-                        .setContentText(tutorial_text_start)
-                        .setListener(tutorialStatus)
+                        .setContentText(R.string.tutorial_text_start)
                         .build());
 
         sequence.addSequenceItem(
@@ -324,8 +319,19 @@ public class HomeFragment extends Fragment {
                         .setTarget(rootView.findViewById(R.id.stop_drive))
                         .withRectangleShape()
                         .setDismissText("OK")
-                        .setContentText(tutorial_text_stop)
-                        .setListener(tutorialStatus)
+                        .setContentText(R.string.tutorial_text_stop)
+                        .setListener(new IShowcaseListener() {
+                            //Enable the stop button while showcasing it:
+                            @Override
+                            public void onShowcaseDisplayed(MaterialShowcaseView materialShowcaseView) {
+                                stopButton.setEnabled(true);
+                            }
+                            //Disable it when finished:
+                            @Override
+                            public void onShowcaseDismissed(MaterialShowcaseView materialShowcaseView) {
+                                stopButton.setEnabled(false);
+                            }
+                        })
                         .build());
 
         sequence.addSequenceItem(
@@ -334,25 +340,35 @@ public class HomeFragment extends Fragment {
                         .setContentText(R.string.tutorial_text_menu)
                         .setTarget(rootView.findViewById(R.id.FAB_image_view))
                         .withoutShape()
-                        .setListener(tutorialStatus)
+                        .build());
+
+        sequence.addSequenceItem(
+                new MaterialShowcaseView.Builder(getActivity())
+                        .setDismissText("OK")
+                        .setContentText(R.string.tutorial_redirect)
+                        .setTarget(rootView.findViewById(R.id.FAB_image_view))
+                        .withoutShape()
+                        .setListener(new IShowcaseListener() {
+                            //Necessary to complete abstract class:
+                            @Override
+                            public void onShowcaseDisplayed(MaterialShowcaseView materialShowcaseView) {}
+                            //Once the tutorial is over:
+                            @Override
+                            public void onShowcaseDismissed(MaterialShowcaseView materialShowcaseView) {
+                                // Make sure this isn't shown again on this device (in case the user does not set goals)
+                                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+                                SharedPreferences.Editor editor = prefs.edit();
+                                editor.putBoolean("tutorial", false);
+                                editor.commit();
+                                // The tutorial has ended:
+                                showingTutorial = false;
+                                // Transition to the goals:
+                                MainActivity curActivity = (MainActivity)getActivity();
+                                curActivity.transitionFragment(curActivity.GOALS_MENU_INDEX);
+                            }
+                        })
                         .build());
         sequence.start();
-        //Since we have to busy wait while the tutorial runs (.start is non-blocking), we start it in another thread so we don't crash the app
-        new Thread(new Runnable() {
-            public void run() {
-                //Waits for all the screens of the tutorial to be completed
-                while(tutorialStatus.getTutorialAmount() < 5){
-                    SystemClock.sleep(100);
-                }
-            }}).start();
-        stopButton.setEnabled(false);
-        // Make sure this isn't shown again on this device (in case the user does not set goals)
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean("tutorial", false);
-        editor.commit();
-        // The tutorial has ended:
-        showingTutorial = false;
     }
 
 
