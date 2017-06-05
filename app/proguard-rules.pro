@@ -4,6 +4,6 @@
 
 # Flags needed for Firebase Database
 -keepattributes Signature
--keepclassmembers class team.tr.permitlog.** {
-    *;
-}
+-keepclassmembers class team.tr.permitlog.** { *; }
+
+-dontwarn javax.naming.**
