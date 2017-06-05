@@ -334,18 +334,18 @@ public class HomeFragment extends Fragment {
                         })
                         .build());
 
-        sequence.addSequenceItem(
+        /*sequence.addSequenceItem(
                 new MaterialShowcaseView.Builder(getActivity())
                         .setDismissText("OK")
                         .setContentText(R.string.tutorial_text_menu)
                         .setTarget(rootView.findViewById(R.id.FAB_image_view))
                         .withoutShape()
-                        .build());
+                        .build());*/
 
         sequence.addSequenceItem(
                 new MaterialShowcaseView.Builder(getActivity())
                         .setDismissText("OK")
-                        .setContentText(R.string.tutorial_redirect)
+                        .setContentText(R.string.tutorial_text_menu)
                         .setTarget(rootView.findViewById(R.id.FAB_image_view))
                         .withoutShape()
                         .setListener(new IShowcaseListener() {
