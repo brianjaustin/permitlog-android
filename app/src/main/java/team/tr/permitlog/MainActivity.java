@@ -55,8 +55,6 @@ public class MainActivity extends AppCompatActivity {
     public static final int GOALS_MENU_INDEX = 3;
     public static final int ABOUT_MENU_INDEX = 4;
     public static final int SIGN_OUT_MENU_INDEX = 5;
-    // Is the menu button disabled?
-    private boolean menuDisabled = false;
     // Fragments, titles, and arguments for menu items
     private Class menuFragmentClasses[] = {HomeFragment.class, LogFragment.class, DriversFragment.class, SettingsFragment.class, AboutFragment.class};
     private String menuTitles[] = {"Permit Log", "Driving Log", "Drivers", "Goals", "About"};
@@ -226,19 +224,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // These two methods disable and enable the menu button:
-    public void disableMenuButton() {
-        menuDisabled = true;
-    }
-
-    public void enableMenuButton() {
-        menuDisabled = false;
-    }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // If the home button is clicked and it is enabled, open/close the menu
-        if (item.getItemId() == android.R.id.home && !menuDisabled) {
+        if (item.getItemId() == android.R.id.home) {
             if(mDrawerLayout.isDrawerOpen(Gravity.LEFT)) {
                 mDrawerLayout.closeDrawer(Gravity.LEFT);
             } else {

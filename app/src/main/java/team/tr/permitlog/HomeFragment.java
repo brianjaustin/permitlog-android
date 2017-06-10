@@ -55,8 +55,6 @@ public class HomeFragment extends Fragment {
 
     private final String TAG = "HomeFragment";
     private String userId;
-    // Are we showing the tutorial right now?
-    private boolean showingTutorial = false;
     // Have we shown the tutorial yet?
     private boolean shownTutorial = false;
 
@@ -263,8 +261,8 @@ public class HomeFragment extends Fragment {
     };
 
     private void showTutorial() {
-        // Set showing and shownTutorial:
-        showingTutorial = shownTutorial = true;
+        // Set shownTutorial:
+        shownTutorial = true;
 
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500); // half second between each showcase view
@@ -349,8 +347,6 @@ public class HomeFragment extends Fragment {
                                 SharedPreferences.Editor editor = prefs.edit();
                                 editor.putBoolean("tutorial", false);
                                 editor.commit();
-                                // The tutorial has ended:
-                                showingTutorial = false;
                                 // Transition to the goals:
                                 MainActivity curActivity = (MainActivity)getActivity();
                                 curActivity.transitionFragment(curActivity.GOALS_MENU_INDEX);
@@ -381,8 +377,6 @@ public class HomeFragment extends Fragment {
     //This is the listener for the "Start Drive" button.
     //The weird indentation is done like this in order to make the indentation like a regular function.
     private View.OnClickListener onStartDrive = new View.OnClickListener() { @Override public void onClick(View view) {
-        // Don't do anything if we're showing the tutorial:
-        if (showingTutorial) return;
         // Check if the driver field is empty
         Context myContext = rootView.getContext();
         if (spinnerData.driverIds.isEmpty()) {
@@ -416,8 +410,6 @@ public class HomeFragment extends Fragment {
 
     //This is the listener for the "Stop Drive" button.
     private View.OnClickListener onStopDrive = new View.OnClickListener() { @Override public void onClick(View view) {
-        // Don't do anything if we're showing the tutorial:
-        if (showingTutorial) return;
         // Stop the timer
         timer.cancel();
 
