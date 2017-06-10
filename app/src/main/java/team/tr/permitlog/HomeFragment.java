@@ -276,6 +276,7 @@ public class HomeFragment extends Fragment {
                     .setContentText(R.string.tutorial_text_intro)
                     .setTarget(rootView.findViewById(R.id.FAB_image_view))
                     .withoutShape()
+                    .setDismissOnTouch(true)
                     .build());
 
         sequence.addSequenceItem(
@@ -283,6 +284,7 @@ public class HomeFragment extends Fragment {
                         .setTarget(rootView.findViewById(R.id.FAB_image_view))
                         .setDismissText("OK")
                         .setContentText(R.string.tutorial_text_fam)
+                        .setDismissOnTouch(true)
                         .build());
 
         sequence.addSequenceItem(
@@ -291,6 +293,7 @@ public class HomeFragment extends Fragment {
                         .withRectangleShape()
                         .setDismissText("OK")
                         .setContentText(R.string.tutorial_text_spinner)
+                        .setDismissOnTouch(true)
                         .build());
 
         sequence.addSequenceItem(
@@ -299,6 +302,7 @@ public class HomeFragment extends Fragment {
                         .withRectangleShape()
                         .setDismissText("OK")
                         .setContentText(R.string.tutorial_text_start)
+                        .setDismissOnTouch(true)
                         .build());
 
         sequence.addSequenceItem(
@@ -307,16 +311,19 @@ public class HomeFragment extends Fragment {
                         .withRectangleShape()
                         .setDismissText("OK")
                         .setContentText(R.string.tutorial_text_stop)
+                        .setDismissOnTouch(true)
                         .setListener(new IShowcaseListener() {
                             //Enable the stop button while showcasing it:
                             @Override
                             public void onShowcaseDisplayed(MaterialShowcaseView materialShowcaseView) {
                                 stopButton.setEnabled(true);
+                                startButton.setEnabled(false);
                             }
                             //Disable it when finished:
                             @Override
                             public void onShowcaseDismissed(MaterialShowcaseView materialShowcaseView) {
                                 stopButton.setEnabled(false);
+                                startButton.setEnabled(true);
                             }
                         })
                         .build());
@@ -327,6 +334,7 @@ public class HomeFragment extends Fragment {
                         .setContentText(R.string.tutorial_text_menu)
                         .setTarget(rootView.findViewById(R.id.FAB_image_view))
                         .withoutShape()
+                        .setDismissOnTouch(true)
                         .build());
 
         sequence.addSequenceItem(
@@ -335,6 +343,7 @@ public class HomeFragment extends Fragment {
                         .setContentText(R.string.tutorial_redirect)
                         .setTarget(rootView.findViewById(R.id.FAB_image_view))
                         .withoutShape()
+                        .setDismissOnTouch(true)
                         .setListener(new IShowcaseListener() {
                             //Necessary to complete abstract class:
                             @Override
