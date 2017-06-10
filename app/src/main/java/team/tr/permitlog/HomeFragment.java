@@ -59,8 +59,6 @@ public class HomeFragment extends Fragment {
     private boolean showingTutorial = false;
     // Have we shown the tutorial yet?
     private boolean shownTutorial = false;
-    // Set to true and set the Total Goal on the Goals page to 0 in order to test tutorial:
-    private boolean testingTutorial = false;
 
     // Store drive start/stop times
     private Date startingTime = new Date();
@@ -87,6 +85,8 @@ public class HomeFragment extends Fragment {
     private TextView totalTimeView, dayTimeView, nightTimeView;
     // Object that updates totalTime, dayTime, and nightTime:
     private ElapsedTime timeUpdater;
+    // Firebase reference for goals:
+    private DatabaseReference goalsRef;
     // Callback for timesListener:
     private TriLongConsumer timeCallback = new TriLongConsumer() {
         @Override public void accept(long totalTimeP, long dayTimeP, long nightTimeP) {
@@ -140,8 +140,9 @@ public class HomeFragment extends Fragment {
         nightTimeView=(TextView)rootView.findViewById(R.id.night_elapsed);
         // Start listening to logs:
         timeUpdater = new ElapsedTime(userId, timeCallback);
-        // Set the TextView's texts:
-        updateGoals();
+        // Get data about the goals, if available:
+        goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
+        goalsRef.addValueEventListener(goalsListener);
 
         //Initialize the ad:
         final NativeExpressAdView adView = new NativeExpressAdView(getContext());
@@ -234,24 +235,12 @@ public class HomeFragment extends Fragment {
         }, 0, 1000);
     }
 
-
-    public void updateGoals() {
-        /* This function updates totalTimeView, dayTimeView, and nightTimeView. */
-        // Get the /goals data:
-        DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
-        goalsRef.addListenerForSingleValueEvent(goalsListener);
-    }
-
     private ValueEventListener goalsListener = new ValueEventListener() {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
             // Set totalGoal, or set it to 0 if not present:
             if (dataSnapshot.hasChild("total")) {
                 totalGoal = (long)dataSnapshot.child("total").getValue();
-                //If the goal has been set to 0 and testingTutorial is true and tutorial has not been shown, then show tutorial:
-                //The reason that we can not just check testingTutorial and have to check the goal is
-                //because if we only check testingTutorial, then when the tester completes setting the goal, it will come back to HomeFragment and once again show the tutorial:
-                if (!shownTutorial && (totalGoal == 0) && testingTutorial) showTutorial();
             }
             else {
                 totalGoal = 0;
@@ -285,11 +274,11 @@ public class HomeFragment extends Fragment {
         //Adds each screen to the sequence, then runs it
         sequence.addSequenceItem(
                 new MaterialShowcaseView.Builder(getActivity())
-                .setDismissText("OK")
-                .setContentText(R.string.tutorial_text_intro)
-                .setTarget(rootView.findViewById(R.id.FAB_image_view))
-                .withoutShape()
-                .build());
+                    .setDismissText("OK")
+                    .setContentText(R.string.tutorial_text_intro)
+                    .setTarget(rootView.findViewById(R.id.FAB_image_view))
+                    .withoutShape()
+                    .build());
 
         sequence.addSequenceItem(
                 new MaterialShowcaseView.Builder(getActivity())
@@ -334,18 +323,18 @@ public class HomeFragment extends Fragment {
                         })
                         .build());
 
-        /*sequence.addSequenceItem(
+        sequence.addSequenceItem(
                 new MaterialShowcaseView.Builder(getActivity())
                         .setDismissText("OK")
                         .setContentText(R.string.tutorial_text_menu)
                         .setTarget(rootView.findViewById(R.id.FAB_image_view))
                         .withoutShape()
-                        .build());*/
+                        .build());
 
         sequence.addSequenceItem(
                 new MaterialShowcaseView.Builder(getActivity())
                         .setDismissText("OK")
-                        .setContentText(R.string.tutorial_text_menu)
+                        .setContentText(R.string.tutorial_redirect)
                         .setTarget(rootView.findViewById(R.id.FAB_image_view))
                         .withoutShape()
                         .setListener(new IShowcaseListener() {
@@ -539,17 +528,11 @@ public class HomeFragment extends Fragment {
     }
 
     @Override
-    public void onResume() {
-        // Update the goal trackers as something might've changed:
-        updateGoals();
-        super.onResume();
-    }
-
-    @Override
     public void onDestroyView() {
         // Since this activity is being stopped, we don't need to listen to the drivers or logs anymore:
         spinnerData.stopListening();
         timeUpdater.stopListening();
+        goalsRef.removeEventListener(goalsListener);
         // Save the state:
         Bundle state = new Bundle();
         saveToBundle(state);

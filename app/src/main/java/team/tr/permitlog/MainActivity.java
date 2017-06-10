@@ -2,7 +2,9 @@ package team.tr.permitlog;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
@@ -40,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
     private static boolean isPersistenceEnabled = false;
+    // In order to test the tutorial, set this to true:
+    private static boolean testingTutorial = false;
 
     // For menu
     private String[] menuItems;
@@ -107,6 +111,15 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize ad network
         MobileAds.initialize(getApplicationContext(), "ca-app-pub-1631603318674332~4854746404");
+        // If we are testing the tutorial, delete the goals and set the tutorial preference to true:
+        if (testingTutorial) {
+            FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals").removeValue();
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean("tutorial", true);
+            editor.commit();
+        }
     }
 
     @Override
