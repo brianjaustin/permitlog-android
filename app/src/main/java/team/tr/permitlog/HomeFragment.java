@@ -57,6 +57,8 @@ public class HomeFragment extends Fragment {
     private String userId;
     // Have we shown the tutorial yet?
     private boolean shownTutorial = false;
+    // Are we currently showing the tutorial?
+    private boolean showingTutorial = false;
 
     // Store drive start/stop times
     private Date startingTime = new Date();
@@ -191,12 +193,17 @@ public class HomeFragment extends Fragment {
         outState.putBoolean("stopEnabled", stopButton.isEnabled());
         outState.putLong("startTime", startingTime.getTime());
         outState.putInt("spinnerPosition", driversSpinner.getSelectedItemPosition());
+        outState.putBoolean("showingTutorial", showingTutorial);
     }
 
     private void loadFromBundle(Bundle savedInstanceState) {
         /* Takes Bundle and sets info about autodrive from Bundle. */
-        startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
-        stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
+        showingTutorial = savedInstanceState.getBoolean("showingTutorial");
+        // Only reset the buttons if the tutorial was not playing:
+        if (!showingTutorial) {
+            startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
+            stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
+        }
         startingTime.setTime(savedInstanceState.getLong("startTime"));
         spinnerPosition = savedInstanceState.getInt("spinnerPosition");
         // Set spinnerPosition if possible:
@@ -204,8 +211,8 @@ public class HomeFragment extends Fragment {
         // Otherwise, keep listening to the adapter and set it when possible:
         else spinnerData.driversAdapter.registerDataSetObserver(setSpinnerPosition);
 
-        // Start updating the label
-        if (savedInstanceState.getBoolean("stopEnabled")) timerUpdateLabel();
+        // Start updating the label if the Stop Button is enabled:
+        if (stopButton.isEnabled()) timerUpdateLabel();
     };
 
     private DataSetObserver setSpinnerPosition = new DataSetObserver() { @Override public void onChanged() {
@@ -261,8 +268,8 @@ public class HomeFragment extends Fragment {
     };
 
     private void showTutorial() {
-        // Set shownTutorial:
-        shownTutorial = true;
+        // Set showing and shownTutorial:
+        showingTutorial = shownTutorial = true;
 
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500); // half second between each showcase view
@@ -351,6 +358,8 @@ public class HomeFragment extends Fragment {
                             //Once the tutorial is over:
                             @Override
                             public void onShowcaseDismissed(MaterialShowcaseView materialShowcaseView) {
+                                // The tutorial is over, so unset showingTutorial:
+                                showingTutorial = false;
                                 // Make sure this isn't shown again on this device (in case the user does not set goals)
                                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
                                 SharedPreferences.Editor editor = prefs.edit();
