@@ -28,7 +28,7 @@
     <string name="export_pdf_error">Unable to export log using the Maine format: an app that can open PDFs is required.</string>
     <string name="export_xls_error">Unable to export log manually: an app that can open XLS files (i.e. spreadsheets) is required.</string>
     <string name="tutorial_text_intro">Welcome to Permit Log, the app that helps drivers with learner\'s permits record their driving hours!\n\nPlease view this tutorial in portrait mode.</string>
-    <string name="tutorial_text_fam">Tap the orange button to add a new supervising driver or to manually enter a drive.</string>
+    <string name="tutorial_text_fam">Tap the orange button to add a new supervising driver (someone who ALREADY has a license) or to manually enter a drive.</string>
     <string name="tutorial_text_spinner">Before each drive, select the driver that is supervising you here.</string>
     <string name="tutorial_text_start">Then, tap the "Start Drive" button to start the timer.</string>
     <string name="tutorial_text_stop">When you\'re done driving, tap the "Stop Drive" button to stop the timer and the app will record the drive in the driving log.</string>
