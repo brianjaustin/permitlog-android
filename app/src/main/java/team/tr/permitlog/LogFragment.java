@@ -59,28 +59,20 @@ public class LogFragment extends ListFragment {
 
     // The root view for this fragment, used to find elements by id:
     private View rootView;
-
     // User ID from Firebase:
     private String userId;
-
     //Firebase reference:
     private DatabaseReference timesRef;
-
     //This holds all of the keys of the logs in the database:
     private ArrayList<String> logIds = new ArrayList<>();
-
     //This holds all of the summaries of the logs that we will show in the ListView:
     private ArrayList<String> logSummaries = new ArrayList<>();
-
     //This is the ListView's adapter:
     private ArrayAdapter<String> listAdapter;
-
     //This holds the log information:
     private ArrayList<DataSnapshot> logSnapshots = new ArrayList<>();
-
     //This holds the driver information:
     private DriverAdapter driversInfo;
-
     // Object that keeps track of total time and total time during night:
     private ElapsedTime totalUpdater;
 

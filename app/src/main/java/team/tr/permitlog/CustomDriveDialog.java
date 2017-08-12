@@ -101,10 +101,10 @@ public class CustomDriveDialog extends AppCompatActivity {
             updateDateAndTime();
             // Select the driver in the spinner:
             selectDriver(savedInstanceState.getString("driverId"));
-            // Update the checkBox using .post():
+            // Update the checkBox using .post() so it is done on the UI thread:
             final boolean nightChecked = savedInstanceState.getBoolean("night");
             final CheckBox nightBox = (CheckBox)findViewById(R.id.drive_at_night_checkbox);
-            nightBox.post(new Runnable() { // This forces the checkbox to actually update (for some reason it does not with just setChecked)
+            nightBox.post(new Runnable() {
                 @Override
                 public void run() {
                     nightBox.setChecked(nightChecked);
@@ -299,8 +299,6 @@ public class CustomDriveDialog extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void onCancel(View view) { finish(); }
-
     public void onSaveClick(View view) {
         //Get the position of the spinner:
         Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
@@ -337,6 +335,9 @@ public class CustomDriveDialog extends AppCompatActivity {
         Toast.makeText(getApplicationContext(), "Drive log deleted successfully.", Toast.LENGTH_SHORT).show();
         finish();
     }
+
+    //Close the dialog when someone presses the X in the top-left corner:
+    public void onCancel(View view) { finish(); }
 
     @Override
     protected void onDestroy() {
