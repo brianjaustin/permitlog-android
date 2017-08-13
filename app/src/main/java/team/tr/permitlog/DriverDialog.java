@@ -98,10 +98,6 @@ public class DriverDialog extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void onCancel(View view){
-        finish();
-    }
-
     public void onSaveClick(View view) {
         // Get values from the text fields
         EditText firstNameField = (EditText)findViewById(R.id.driver_firstname);
@@ -154,6 +150,11 @@ public class DriverDialog extends AppCompatActivity {
 
         // Close the dialog
         Toast.makeText(this, R.string.driver_dialog_deleted, Toast.LENGTH_SHORT).show();
+        finish();
+    }
+
+    //Close the dialog when someone presses the X in the top-left corner:
+    public void onCancel(View view) {
         finish();
     }
 }
