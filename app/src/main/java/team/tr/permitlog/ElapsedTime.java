@@ -33,7 +33,7 @@ public class ElapsedTime {
     private ArrayList<Long> logDurations = new ArrayList<>();
     private ArrayList<Boolean> logsAtNight = new ArrayList<>();
     //Store the total time, total time during day, and total time during night:
-    public long totalTime, dayTime, nightTime;
+    public long totalTime, dayTime, nightTime, weatherTime, adverseTime;
     //This is the callback called whenever there is a change to the above variables:
     private TriLongConsumer callback;
 
