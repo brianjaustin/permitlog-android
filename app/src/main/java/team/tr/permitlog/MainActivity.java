@@ -82,7 +82,16 @@ public class MainActivity extends AppCompatActivity {
         mDrawerList = (ListView) findViewById(R.id.left_drawer);
         mDrawerList.setAdapter(new ArrayAdapter<String>(this,
                 R.layout.drawer_list_item, menuItems));
-        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+        //When the user clicks on one of the items in the menu:
+        mDrawerList.setOnItemClickListener(new ListView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // Transition based off of position:
+                transitionFragment(position);
+                // Close the drawer
+                mDrawerLayout.closeDrawer(mDrawerList);
+            }
+        });
 
         // Show the menu button in the title bar
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -104,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
         // Log whether currentUser is null or not:
-        Log.d(TAG, "Is the user not signed in? "+Boolean.toString(currentUser == null));
+        Log.d(TAG, "Is the user not signed in? " + Boolean.toString(currentUser == null));
         if (savedInstanceState == null) navigateBasedOnUser();
 
         // Initialize ad network
@@ -130,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRestoreInstanceState(Bundle savedInstanceState) {
         // Get menuArgs from when we previously saved it during an orientation change:
-        menuArgs = (Bundle[])savedInstanceState.getParcelableArray("menuArgs");
+        menuArgs = (Bundle[]) savedInstanceState.getParcelableArray("menuArgs");
         super.onRestoreInstanceState(savedInstanceState);
     }
 
@@ -156,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
             // We need to instantiate the fragment and get the title based off position:
             String title = menuTitles[position];
             // This error message will be shown if there is an error with fragment:
-            Toast fragmentError = Toast.makeText(this, "There was an error when making the "+title+" part of the app. Sorry!", Toast.LENGTH_SHORT);
+            Toast fragmentError = Toast.makeText(this, "There was an error when making the " + title + " part of the app. Sorry!", Toast.LENGTH_SHORT);
             Fragment fragment;
             try {
                 fragment = (Fragment) menuFragmentClasses[position].newInstance();
@@ -164,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
             // If there is an error, notify the user, log it, and return:
             catch (IllegalAccessException | InstantiationException e) {
                 fragmentError.show();
-                Log.e(TAG, "While making "+title+" fragment: "+e);
+                Log.e(TAG, "While making " + title + " fragment: " + e);
                 return;
             }
             // Set fragment's arguments:
@@ -184,8 +193,11 @@ public class MainActivity extends AppCompatActivity {
         //Otherwise, force the user to sign in:
         else showSignIn();
     }
+
     // By default, push fragments onto the stack:
-    public void transitionFragment(int position) { transitionFragment(position, true); }
+    public void transitionFragment(int position) {
+        transitionFragment(position, true);
+    }
 
     public void saveArguments(int position, Bundle args) {
         /* Saves args for fragment where position represents the index of the fragment in the menu */
@@ -230,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         // If the home button is clicked and it is enabled, open/close the menu
         if (item.getItemId() == android.R.id.home) {
-            if(mDrawerLayout.isDrawerOpen(Gravity.LEFT)) {
+            if (mDrawerLayout.isDrawerOpen(Gravity.LEFT)) {
                 mDrawerLayout.closeDrawer(Gravity.LEFT);
             } else {
                 mDrawerLayout.openDrawer(Gravity.LEFT);
@@ -258,27 +270,14 @@ public class MainActivity extends AppCompatActivity {
                 else if (response.getErrorCode() == ErrorCodes.NO_NETWORK) {
                     Log.e(TAG, "Network connection error");
                     Toast.makeText(this, R.string.network_connection_error, Toast.LENGTH_SHORT).show();
-                }
-                else if (response.getErrorCode() == ErrorCodes.UNKNOWN_ERROR) {
+                } else if (response.getErrorCode() == ErrorCodes.UNKNOWN_ERROR) {
                     Log.e(TAG, "Unknown error");
                     Toast.makeText(this, R.string.unknown_auth_error, Toast.LENGTH_SHORT).show();
                     showSignIn();
-                }
-                else Log.e(TAG, "Unknown response");
+                } else Log.e(TAG, "Unknown response");
             }
             // Debug currentUser again:
-            Log.d(TAG, "Is the user not signed in? "+Boolean.toString(currentUser == null));
-        }
-    }
-
-    // Handle menu item clicks
-    private class DrawerItemClickListener implements ListView.OnItemClickListener {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            // Transition based off of position:
-            transitionFragment(position);
-            // Close the drawer
-            mDrawerLayout.closeDrawer(mDrawerList);
+            Log.d(TAG, "Is the user not signed in? " + Boolean.toString(currentUser == null));
         }
     }
 }

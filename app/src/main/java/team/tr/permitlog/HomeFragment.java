@@ -5,8 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.DataSetObserver;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -95,12 +93,41 @@ public class HomeFragment extends Fragment {
         }
     };
 
+    //Called when the user rotates the screen:
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        // Save values for rotate
+        // Save values so they can be restored after the screen finishes rotating:
         saveToBundle(outState);
+    }
+
+    private void saveToBundle(Bundle outState) {
+        /* Takes Bundle and sets info about autodrive in Bundle. */
+        outState.putBoolean("startEnabled", startButton.isEnabled());
+        outState.putBoolean("stopEnabled", stopButton.isEnabled());
+        outState.putLong("startTime", startingTime.getTime());
+        outState.putInt("spinnerPosition", driversSpinner.getSelectedItemPosition());
+        outState.putBoolean("showingTutorial", showingTutorial);
+    }
+
+    private void loadFromBundle(Bundle savedInstanceState) {
+        /* Takes Bundle and sets info about autodrive from Bundle. */
+        showingTutorial = savedInstanceState.getBoolean("showingTutorial");
+        // Only reset the buttons if the tutorial was not playing:
+        if (!showingTutorial) {
+            startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
+            stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
+        }
+        startingTime.setTime(savedInstanceState.getLong("startTime"));
+        spinnerPosition = savedInstanceState.getInt("spinnerPosition");
+        // Set spinnerPosition if possible:
+        if (spinnerData.driverIds.size() > spinnerPosition) driversSpinner.setSelection(spinnerPosition);
+            // Otherwise, keep listening to the adapter and set it when possible:
+        else spinnerData.driversAdapter.registerDataSetObserver(setSpinnerPosition);
+
+        // Start updating the label if the Stop Button is enabled:
+        if (stopButton.isEnabled()) timerUpdateLabel();
     }
 
     @Override
@@ -187,34 +214,6 @@ public class HomeFragment extends Fragment {
         return rootView;
     }
 
-    private void saveToBundle(Bundle outState) {
-        /* Takes Bundle and sets info about autodrive in Bundle. */
-        outState.putBoolean("startEnabled", startButton.isEnabled());
-        outState.putBoolean("stopEnabled", stopButton.isEnabled());
-        outState.putLong("startTime", startingTime.getTime());
-        outState.putInt("spinnerPosition", driversSpinner.getSelectedItemPosition());
-        outState.putBoolean("showingTutorial", showingTutorial);
-    }
-
-    private void loadFromBundle(Bundle savedInstanceState) {
-        /* Takes Bundle and sets info about autodrive from Bundle. */
-        showingTutorial = savedInstanceState.getBoolean("showingTutorial");
-        // Only reset the buttons if the tutorial was not playing:
-        if (!showingTutorial) {
-            startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
-            stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
-        }
-        startingTime.setTime(savedInstanceState.getLong("startTime"));
-        spinnerPosition = savedInstanceState.getInt("spinnerPosition");
-        // Set spinnerPosition if possible:
-        if (spinnerData.driverIds.size() > spinnerPosition) driversSpinner.setSelection(spinnerPosition);
-        // Otherwise, keep listening to the adapter and set it when possible:
-        else spinnerData.driversAdapter.registerDataSetObserver(setSpinnerPosition);
-
-        // Start updating the label if the Stop Button is enabled:
-        if (stopButton.isEnabled()) timerUpdateLabel();
-    };
-
     private DataSetObserver setSpinnerPosition = new DataSetObserver() { @Override public void onChanged() {
         // Set spinnerPosition if possible:
         if (spinnerData.driverIds.size() > spinnerPosition) {
@@ -225,6 +224,9 @@ public class HomeFragment extends Fragment {
     } };
 
     private void timerUpdateLabel() {
+        // Get the time label:
+        final TextView driveTime = (TextView) rootView.findViewById(R.id.drive_time);
+
         timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -235,7 +237,13 @@ public class HomeFragment extends Fragment {
                 formattedTime = DateUtils.formatElapsedTime(timeDiff);
                 // Remember to add hours:
                 if (timeDiff < 3600) formattedTime = "0:"+formattedTime;
-                mHandler.obtainMessage(1).sendToTarget();
+                // Update the label in the UI thread using post():
+                driveTime.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        driveTime.setText(formattedTime);
+                    }
+                });
             }
         }, 0, 1000);
     }
@@ -418,14 +426,6 @@ public class HomeFragment extends Fragment {
         timerUpdateLabel();
     } };
 
-    public Handler mHandler = new Handler() {
-        // Set the time
-        public void handleMessage(Message msg) {
-            TextView driveTime = (TextView) rootView.findViewById(R.id.drive_time);
-            driveTime.setText(formattedTime);
-        }
-    };
-
     //This is the listener for the "Stop Drive" button.
     private View.OnClickListener onStopDrive = new View.OnClickListener() { @Override public void onClick(View view) {
         // Stop the timer
@@ -543,11 +543,13 @@ public class HomeFragment extends Fragment {
         spinnerData.stopListening();
         timeUpdater.stopListening();
         goalsRef.removeEventListener(goalsListener);
-        // Save the state:
+
+        // Save the state in the activity so it will be passed into the arguments
         Bundle state = new Bundle();
         saveToBundle(state);
         MainActivity mainActivity = (MainActivity)getActivity();
         mainActivity.saveArguments(MainActivity.HOME_MENU_INDEX, state);
+
         super.onDestroyView();
     }
 }
