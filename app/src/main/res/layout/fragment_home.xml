@@ -120,6 +120,22 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:layout_gravity="center_horizontal" />
+
+                    <TextView
+                        style="@style/Base.TextAppearance.AppCompat.Headline"
+                        android:id="@+id/weather_elapsed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:layout_gravity="center_horizontal" />
+
+                    <TextView
+                        style="@style/Base.TextAppearance.AppCompat.Headline"
+                        android:id="@+id/adverse_elapsed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:layout_gravity="center_horizontal" />
                 </LinearLayout>
             </android.support.v7.widget.CardView>
         </LinearLayout>

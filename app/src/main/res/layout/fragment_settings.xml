@@ -11,49 +11,110 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
+
             <TextView
-                android:text="@string/settings_total_desc"
+                android:id="@+id/textView"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:text="@string/settings_top_desc" />
+
+            <Spinner
+                android:id="@+id/state_spinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="10dp"
+                android:paddingTop="10dp"
+                android:spinnerMode="dialog" />
+
+            <TextView
+                android:id="@+id/totalDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_total_desc" />
+
             <android.support.design.widget.TextInputLayout
+                android:id="@+id/totalInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
+
                 <android.support.design.widget.TextInputEditText
+                    android:id="@+id/totalEdit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:id="@+id/goal_total"
-                    android:hint="Total"/>
+                    android:hint="Total"
+                    android:inputType="number" />
             </android.support.design.widget.TextInputLayout>
 
             <TextView
-                android:text="@string/settings_day_desc"
+                android:id="@+id/dayDesc"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:text="@string/settings_day_desc" />
+
             <android.support.design.widget.TextInputLayout
+                android:id="@+id/dayInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
+
                 <android.support.design.widget.TextInputEditText
+                    android:id="@+id/dayEdit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:id="@+id/goal_day"
-                    android:hint="Day"/>
+                    android:hint="Day"
+                    android:inputType="number" />
             </android.support.design.widget.TextInputLayout>
 
             <TextView
+                android:id="@+id/nightDesc"
                 android:text="@string/settings_night_desc"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
             <android.support.design.widget.TextInputLayout
+                android:id="@+id/nightInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
                 <android.support.design.widget.TextInputEditText
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="number"
-                    android:id="@+id/goal_night"
+                    android:id="@+id/nightEdit"
                     android:hint="Night"/>
+            </android.support.design.widget.TextInputLayout>
+            <TextView
+                android:id="@+id/weatherDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_weather_desc" />
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/weatherInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/weatherEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Weather"
+                    android:inputType="number" />
+            </android.support.design.widget.TextInputLayout>
+            <TextView
+                android:id="@+id/adverseDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_adverse_desc" />
+
+            <android.support.design.widget.TextInputLayout
+                android:id="@+id/adverseInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/adverseEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Adverse"
+                    android:inputType="number" />
             </android.support.design.widget.TextInputLayout>
 
             <RelativeLayout

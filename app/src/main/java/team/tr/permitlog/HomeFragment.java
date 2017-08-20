@@ -43,6 +43,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -78,9 +80,9 @@ public class HomeFragment extends Fragment {
     private DriverAdapter spinnerData;
 
     // This holds the user's goals:
-    private long totalGoal, dayGoal, nightGoal;
+    private long totalGoal, dayGoal, nightGoal, weatherGoal, adverseGoal;
     // TextViews:
-    private TextView totalTimeView, dayTimeView, nightTimeView;
+    private TextView totalTimeView, dayTimeView, nightTimeView, weatherTimeView, adverseTimeView;
     // Object that updates totalTime, dayTime, and nightTime:
     private ElapsedTime timeUpdater;
     // Firebase reference for goals:
@@ -92,6 +94,7 @@ public class HomeFragment extends Fragment {
             updateGoalTextViews();
         }
     };
+    private final ArrayList<CharSequence> selections = new ArrayList<>();
 
     //Called when the user rotates the screen:
     @Override
@@ -165,6 +168,9 @@ public class HomeFragment extends Fragment {
         totalTimeView=(TextView)rootView.findViewById(R.id.time_elapsed);
         dayTimeView=(TextView)rootView.findViewById(R.id.day_elapsed);
         nightTimeView=(TextView)rootView.findViewById(R.id.night_elapsed);
+        weatherTimeView=(TextView)rootView.findViewById(R.id.weather_elapsed);
+        adverseTimeView=(TextView)rootView.findViewById(R.id.adverse_elapsed);
+
         // Start listening to logs:
         timeUpdater = new ElapsedTime(userId, timeCallback);
         // Get data about the goals, if available:
@@ -251,21 +257,21 @@ public class HomeFragment extends Fragment {
     private ValueEventListener goalsListener = new ValueEventListener() {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
+            // If they don't have goals and they have not seen the tutorial, assume they are a new user, so show the tutorial:
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+            if (!shownTutorial && prefs.getBoolean("tutorial", true)) showTutorial();
             // Set totalGoal, or set it to 0 if not present:
-            if (dataSnapshot.hasChild("total")) {
-                totalGoal = (long)dataSnapshot.child("total").getValue();
-            }
-            else {
-                totalGoal = 0;
-                // If they don't have goals and they have not seen the tutorial, assume they are a new user, so show the tutorial:
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-                if (!shownTutorial && prefs.getBoolean("tutorial", true)) showTutorial();
-            }
+            if (dataSnapshot.hasChild("total")) totalGoal = (long)dataSnapshot.child("total").getValue();
+            else totalGoal = 0;
             // Do the same for day and night:
             if (dataSnapshot.hasChild("day")) dayGoal = (long)dataSnapshot.child("day").getValue();
             else dayGoal = 0;
             if (dataSnapshot.hasChild("night")) nightGoal = (long)dataSnapshot.child("night").getValue();
             else nightGoal = 0;
+            if (dataSnapshot.hasChild("weather")) weatherGoal = (long)dataSnapshot.child("weather").getValue();
+            else weatherGoal = 0;
+            if (dataSnapshot.hasChild("adverse")) adverseGoal = (long)dataSnapshot.child("adverse").getValue();
+            else adverseGoal = 0;
             // Update the "Time Completed" section
             updateGoalTextViews();
         }
@@ -389,15 +395,37 @@ public class HomeFragment extends Fragment {
         // Convert the time to seconds and format appropriately:
         String totalTimeStr = ElapsedTime.formatSeconds(timeUpdater.totalTime/1000);
         // Show the goal if it is nonzero:
-        if (totalGoal == 0) totalTimeView.setText("Total: "+totalTimeStr);
-        else totalTimeView.setText("Total: "+totalTimeStr+"/"+padder.format(totalGoal)+":00");
+        Log.d(TAG, "updateGoal totalGoal: " + String.valueOf(totalGoal));
+        if (totalGoal == 0) totalTimeView.setVisibility(View.GONE);
+        else {
+            totalTimeView.setVisibility(View.VISIBLE);
+            totalTimeView.setText("Total: " + totalTimeStr + "/" + padder.format(totalGoal) + ":00");
+        }
         // Do the same for day and night:
         String dayTimeStr = ElapsedTime.formatSeconds(timeUpdater.dayTime/1000);
-        if (dayGoal == 0) dayTimeView.setText("Day: "+dayTimeStr);
-        else dayTimeView.setText("Day: "+dayTimeStr+"/"+padder.format(dayGoal)+":00");
+        if (dayGoal == 0) dayTimeView.setVisibility(View.GONE);
+        else{
+            dayTimeView.setVisibility(View.VISIBLE);
+            dayTimeView.setText("Day: "+dayTimeStr+"/"+padder.format(dayGoal)+":00");
+        }
         String nightTimeStr = ElapsedTime.formatSeconds(timeUpdater.nightTime/1000);
-        if (nightGoal == 0) nightTimeView.setText("Night: "+nightTimeStr);
-        else nightTimeView.setText("Night: "+nightTimeStr+"/"+padder.format(nightGoal)+":00");
+        if (nightGoal == 0) nightTimeView.setVisibility(View.GONE);
+        else{
+            nightTimeView.setVisibility(View.VISIBLE);
+            nightTimeView.setText("Night: "+nightTimeStr+"/"+padder.format(nightGoal)+":00");
+        }
+        String weatherTimeStr = ElapsedTime.formatSeconds(timeUpdater.weatherTime/1000);
+        if (weatherGoal == 0) weatherTimeView.setVisibility(View.GONE);
+        else{
+            weatherTimeView.setVisibility(View.VISIBLE);
+            weatherTimeView.setText("Poor Weather: "+weatherTimeStr+"/"+padder.format(weatherGoal)+":00");
+        }
+        String adverseTimeStr = ElapsedTime.formatSeconds(timeUpdater.adverseTime/1000);
+        if (adverseGoal == 0) adverseTimeView.setVisibility(View.GONE);
+        else{
+            adverseTimeView.setVisibility(View.VISIBLE);
+            adverseTimeView.setText("Adverse: "+adverseTimeStr+"/"+padder.format(adverseGoal)+":00");
+        }
     }
 
     //This is the listener for the "Start Drive" button.
@@ -453,37 +481,49 @@ public class HomeFragment extends Fragment {
         // Grab the stop time
         endingTime = new Date();
         Log.d(TAG, "endTime: " + endingTime);
+        //Figure out which checkboxes we want to show the user
+        final ArrayList<String> dialogOptions = new ArrayList<String>();
+        if(nightGoal != 0) dialogOptions.add("Night");
+        if(weatherGoal != 0) dialogOptions.add("Poor Weather");
+        if(adverseGoal != 0) dialogOptions.add("Adverse Conditions");
 
-        // Ask if the driving took place at night
-        new MaterialDialog.Builder(myContext)
-                .content(R.string.at_night_dialog_content)
-                .positiveText(R.string.yes)
-                .negativeText(R.string.no)
-                .neutralText(R.string.cancel)
-                .onPositive(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        // Save the drive (at night) and says success
-                        saveDrive(true, driverId);
-                        Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .onNegative(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        // Save the daytime drive and say success
-                        saveDrive(false, driverId);
-                        Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .onAny(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        // Set the timer label to zero
-                        resetLabel();
-                    }
-                })
-                .show();
+        if(dialogOptions.size() > 0) {
+            // Ask about the drive
+            new MaterialDialog.Builder(myContext)
+                    .content(R.string.save_dialog_content)
+                    .positiveText(R.string.save)
+                    .items(dialogOptions.toArray(new String[dialogOptions.size()]))
+                    .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
+                        @Override
+                        public boolean onSelection(MaterialDialog dialog, Integer[] indexes, CharSequence[] texts) {
+                            selections.clear();
+                            selections.addAll(new ArrayList<CharSequence>(Arrays.asList(texts)));
+                            return true;
+                        }
+                    })
+                    .onPositive(new MaterialDialog.SingleButtonCallback() {
+                        @Override
+                        public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                            Log.d(TAG, "onClick");
+                            // Save the drive (at night) and says success
+                            boolean duringNight = false, duringWeather = false, duringAdverse = false;
+                            for (CharSequence selection : selections) {
+                                if (selection.toString().equals("Night")) duringNight = true;
+                                if (selection.toString().equals("Poor Weather")) duringWeather = true;
+                                if (selection.toString().equals("Adverse Conditions"))duringAdverse = true;
+                            }
+                            saveDrive(duringNight, duringWeather, duringAdverse, driverId);
+                            resetLabel();
+                            Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .alwaysCallMultiChoiceCallback()
+                    .show();
+        } else { //They're not tracking anything other then total time
+            saveDrive(false, false, false, driverId);
+            resetLabel();
+            Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
+        }
     } };
 
     //This is the listener for the "Custom Drive" button.
@@ -519,7 +559,7 @@ public class HomeFragment extends Fragment {
         startActivity(intent);
     } };
 
-    public void saveDrive(boolean night, String driverId) {
+    public void saveDrive(boolean night, boolean weather, boolean adverse, String driverId) {
         // Check if the user is signed in:
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
         // Don't do anything if the user isn't signed in:
@@ -529,6 +569,8 @@ public class HomeFragment extends Fragment {
         driveRef.child("start").setValue(startingTime.getTime());
         driveRef.child("end").setValue(endingTime.getTime());
         driveRef.child("night").setValue(night);
+        driveRef.child("weather").setValue(weather);
+        driveRef.child("adverse").setValue(adverse);
         driveRef.child("driver_id").setValue(driverId);
     }
 
