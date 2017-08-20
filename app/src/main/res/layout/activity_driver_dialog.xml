@@ -54,9 +54,9 @@
                 <android.support.design.widget.TextInputEditText
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="number"
                     android:id="@+id/driver_license"
-                    android:hint="License Number"/>
+                    android:hint="License Number"
+                    android:inputType="textCapCharacters"/>
             </android.support.design.widget.TextInputLayout>
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"

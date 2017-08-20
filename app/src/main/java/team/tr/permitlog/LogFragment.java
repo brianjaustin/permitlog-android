@@ -28,6 +28,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
@@ -40,6 +41,7 @@ import java.text.DateFormatSymbols;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Formatter;
 import java.util.Locale;
 
@@ -53,6 +55,9 @@ import jxl.write.WritableSheet;
 import jxl.write.WritableWorkbook;
 import jxl.write.WriteException;
 
+import static android.text.format.DateUtils.FORMAT_NUMERIC_DATE;
+import static android.text.format.DateUtils.FORMAT_SHOW_YEAR;
+
 public class LogFragment extends ListFragment {
     //For logging:
     public static String TAG = "LogFragment";
@@ -63,6 +68,7 @@ public class LogFragment extends ListFragment {
     private String userId;
     //Firebase reference:
     private DatabaseReference timesRef;
+    private DatabaseReference goalsRef;
     //This holds all of the keys of the logs in the database:
     private ArrayList<String> logIds = new ArrayList<>();
     //This holds all of the summaries of the logs that we will show in the ListView:
@@ -85,6 +91,7 @@ public class LogFragment extends ListFragment {
             //Set the data, start listening to get data for this driver, and update the adapter:
             logSnapshots.add(dataSnapshot);
             logSummaries.add(genLogSummary(dataSnapshot));
+            //Collections.sort(logSnapshots, new snapshotComparator());
             listAdapter.notifyDataSetChanged();
         }
 
@@ -136,17 +143,10 @@ public class LogFragment extends ListFragment {
 
         //Format the time appropriately:
         String driveTimeString = ElapsedTime.formatSeconds(driveTimeInSec);
-
-        //This is the summary of the log shown to the user:
-        String logSummary = "Drove for "+driveTimeString;
-
-        //Was the drive at night? Add "at night"/"during the day" appropriately.
-        boolean isDriveAtNight = (boolean)(dataSnapshot.child("night").getValue());
-        if (isDriveAtNight) logSummary += " at night";
-        else logSummary += " during the day";
+        String driveDate = DateUtils.formatDateTime(getContext(), (long)(dataSnapshot.child("start").getValue()), FORMAT_NUMERIC_DATE | FORMAT_SHOW_YEAR);
 
         //Finally return the summary:
-        return logSummary;
+        return (driveTimeString + " on " + driveDate);
     }
 
     @Override
@@ -160,6 +160,7 @@ public class LogFragment extends ListFragment {
 
         //Initialize timesRef and start listening:
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
+        goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
         timesListener = FirebaseHelper.transformListener(timesListener, validLog, logIds);
         timesRef.addChildEventListener(timesListener);
 
@@ -179,6 +180,22 @@ public class LogFragment extends ListFragment {
         FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.export_maine);
         addDrive.setOnClickListener(onMaineExport);
 
+        goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.export_maine);
+                addDrive.setOnClickListener(onMaineExport);
+                if((boolean) dataSnapshot.child("needsForm").getValue()){
+                    addDrive.setLabelText(dataSnapshot.child("stateName").getValue().toString() + " Log Export");
+                } else {
+                    addDrive.setVisibility(View.GONE);
+                }
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.e(TAG, databaseError.getMessage());
+            }
+        });
         // Set add driver button click
         FloatingActionButton addDriver = (FloatingActionButton) rootView.findViewById(R.id.export_manual);
         addDriver.setOnClickListener(onManualExport);
@@ -310,7 +327,7 @@ public class LogFragment extends ListFragment {
             // Set the flags for formatDateRange():
             int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_TIME;
             // Show the year if showYear is set:
-            if (showYear) flags |= DateUtils.FORMAT_SHOW_YEAR;
+            if (showYear) flags |= FORMAT_SHOW_YEAR;
             // Clear fdrFormatter so the result is not appended on to previous results of formatDateRange():
             noAccumulate.setLength(0);
             // Format the Date/time field

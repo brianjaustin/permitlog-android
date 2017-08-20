@@ -62,7 +62,9 @@ public class CustomDriveDialog extends AppCompatActivity {
         outState.putLong("startTime", startingTime.getTimeInMillis());
         outState.putLong("endTime", endingTime.getTimeInMillis());
         outState.putString("driverId", spinnerData.driverIds.get(driversSpinner.getSelectedItemPosition()));
-        outState.putBoolean("night", ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).isChecked());
+        outState.putBoolean("night", ((CheckBox)findViewById(R.id.night_checkbox)).isChecked());
+        outState.putBoolean("weather", ((CheckBox) findViewById(R.id.weather_checkbox)).isChecked());
+        outState.putBoolean("adverse", ((CheckBox) findViewById(R.id.adverse_checkbox)).isChecked());
     }
 
     @Override
@@ -101,13 +103,19 @@ public class CustomDriveDialog extends AppCompatActivity {
             updateDateAndTime();
             // Select the driver in the spinner:
             selectDriver(savedInstanceState.getString("driverId"));
-            // Update the checkBox using .post() so it is done on the UI thread:
+            // Update the checkBoxes using .post() so it is done on the UI thread:
             final boolean nightChecked = savedInstanceState.getBoolean("night");
-            final CheckBox nightBox = (CheckBox)findViewById(R.id.drive_at_night_checkbox);
+            final boolean weatherChecked = savedInstanceState.getBoolean("weather");
+            final boolean adverseChecked = savedInstanceState.getBoolean("adverse");
+            final CheckBox nightBox = (CheckBox)findViewById(R.id.night_checkbox);
+            final CheckBox weatherBox = (CheckBox)findViewById(R.id.weather_checkbox);
+            final CheckBox adverseBox = (CheckBox)findViewById(R.id.adverse_checkbox);
             nightBox.post(new Runnable() {
                 @Override
                 public void run() {
                     nightBox.setChecked(nightChecked);
+                    weatherBox.setChecked(weatherChecked);
+                    adverseBox.setChecked(adverseChecked);
                 }
             });
             // Set the title and show the delete button if we are editing a log:
@@ -148,8 +156,14 @@ public class CustomDriveDialog extends AppCompatActivity {
             //Set the data and times according to the above:
             updateDateAndTime();
             //Set the night checkbox to whatever the log says:
-            ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).setChecked(
+            ((CheckBox)findViewById(R.id.night_checkbox)).setChecked(
                     (boolean)dataSnapshot.child("night").getValue()
+            );
+            ((CheckBox)findViewById(R.id.weather_checkbox)).setChecked(
+                    (boolean)dataSnapshot.child("weather").getValue()
+            );
+            ((CheckBox)findViewById(R.id.adverse_checkbox)).setChecked(
+                    (boolean)dataSnapshot.child("adverse").getValue()
             );
             //Adjust the spinner according to the driver:
             selectDriver(dataSnapshot.child("driver_id").getValue().toString());
@@ -310,8 +324,10 @@ public class CustomDriveDialog extends AppCompatActivity {
         }
         //Otherwise, get the driver id from the selected position:
         String driverId = spinnerData.driverIds.get(spinnerPosition);
-        //Get if this is at night or not:
-        boolean isDriveAtNight = ((CheckBox)findViewById(R.id.drive_at_night_checkbox)).isChecked();
+        //Get drive info:
+        boolean isDriveAtNight = ((CheckBox)findViewById(R.id.night_checkbox)).isChecked();
+        boolean isDriveBadWeather = ((CheckBox)findViewById(R.id.weather_checkbox)).isChecked();
+        boolean isDriveAdverse = ((CheckBox)findViewById(R.id.adverse_checkbox)).isChecked();
         //If the ending time is before the start time, add the ending time by one day:
         if (endingTime.before(startingTime)) endingTime.add(Calendar.DATE, 1);
         //Get the logRef from logId, or from push() if logId is null:
@@ -322,6 +338,8 @@ public class CustomDriveDialog extends AppCompatActivity {
         logRef.child("start").setValue(startingTime.getTimeInMillis());
         logRef.child("end").setValue(endingTime.getTimeInMillis());
         logRef.child("night").setValue(isDriveAtNight);
+        logRef.child("weather").setValue(isDriveBadWeather);
+        logRef.child("adverse").setValue(isDriveAdverse);
         logRef.child("driver_id").setValue(driverId);
         //Notify user of new log/edits and close the dialog
         Toast.makeText(this, (logId == null) ? "Custom drive saved successfully." : "Edits to drive log saved successfully.", Toast.LENGTH_SHORT).show();

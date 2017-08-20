@@ -104,14 +104,31 @@
                     android:id="@+id/time_notice"
                     android:text="Note that if the ending time is before the starting time, it will be assumed that the drive went into the next day." />
             </LinearLayout>
+
             <CheckBox
-                android:id="@+id/drive_at_night_checkbox"
+                android:id="@+id/night_checkbox"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="This drive was at night."
-                android:textSize="20sp"
+                android:paddingBottom="10dp"
                 android:paddingTop="10dp"
-                android:paddingBottom="10dp" />
+                android:text="Night"
+                android:textSize="20sp" />
+            <CheckBox
+                android:id="@+id/weather_checkbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="10dp"
+                android:paddingTop="10dp"
+                android:text="Poor Weather"
+                android:textSize="20sp" />
+            <CheckBox
+                android:id="@+id/adverse_checkbox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="10dp"
+                android:paddingTop="10dp"
+                android:text="Adverse Conditions"
+                android:textSize="20sp" />
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

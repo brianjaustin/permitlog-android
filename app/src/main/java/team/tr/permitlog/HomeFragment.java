@@ -5,8 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.DataSetObserver;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -46,6 +44,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -95,14 +94,43 @@ public class HomeFragment extends Fragment {
             updateGoalTextViews();
         }
     };
-    CharSequence selections[];
+    private final ArrayList<CharSequence> selections = new ArrayList<>();
 
+    //Called when the user rotates the screen:
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        // Save values for rotate
+        // Save values so they can be restored after the screen finishes rotating:
         saveToBundle(outState);
+    }
+
+    private void saveToBundle(Bundle outState) {
+        /* Takes Bundle and sets info about autodrive in Bundle. */
+        outState.putBoolean("startEnabled", startButton.isEnabled());
+        outState.putBoolean("stopEnabled", stopButton.isEnabled());
+        outState.putLong("startTime", startingTime.getTime());
+        outState.putInt("spinnerPosition", driversSpinner.getSelectedItemPosition());
+        outState.putBoolean("showingTutorial", showingTutorial);
+    }
+
+    private void loadFromBundle(Bundle savedInstanceState) {
+        /* Takes Bundle and sets info about autodrive from Bundle. */
+        showingTutorial = savedInstanceState.getBoolean("showingTutorial");
+        // Only reset the buttons if the tutorial was not playing:
+        if (!showingTutorial) {
+            startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
+            stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
+        }
+        startingTime.setTime(savedInstanceState.getLong("startTime"));
+        spinnerPosition = savedInstanceState.getInt("spinnerPosition");
+        // Set spinnerPosition if possible:
+        if (spinnerData.driverIds.size() > spinnerPosition) driversSpinner.setSelection(spinnerPosition);
+            // Otherwise, keep listening to the adapter and set it when possible:
+        else spinnerData.driversAdapter.registerDataSetObserver(setSpinnerPosition);
+
+        // Start updating the label if the Stop Button is enabled:
+        if (stopButton.isEnabled()) timerUpdateLabel();
     }
 
     @Override
@@ -192,34 +220,6 @@ public class HomeFragment extends Fragment {
         return rootView;
     }
 
-    private void saveToBundle(Bundle outState) {
-        /* Takes Bundle and sets info about autodrive in Bundle. */
-        outState.putBoolean("startEnabled", startButton.isEnabled());
-        outState.putBoolean("stopEnabled", stopButton.isEnabled());
-        outState.putLong("startTime", startingTime.getTime());
-        outState.putInt("spinnerPosition", driversSpinner.getSelectedItemPosition());
-        outState.putBoolean("showingTutorial", showingTutorial);
-    }
-
-    private void loadFromBundle(Bundle savedInstanceState) {
-        /* Takes Bundle and sets info about autodrive from Bundle. */
-        showingTutorial = savedInstanceState.getBoolean("showingTutorial");
-        // Only reset the buttons if the tutorial was not playing:
-        if (!showingTutorial) {
-            startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
-            stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
-        }
-        startingTime.setTime(savedInstanceState.getLong("startTime"));
-        spinnerPosition = savedInstanceState.getInt("spinnerPosition");
-        // Set spinnerPosition if possible:
-        if (spinnerData.driverIds.size() > spinnerPosition) driversSpinner.setSelection(spinnerPosition);
-        // Otherwise, keep listening to the adapter and set it when possible:
-        else spinnerData.driversAdapter.registerDataSetObserver(setSpinnerPosition);
-
-        // Start updating the label if the Stop Button is enabled:
-        if (stopButton.isEnabled()) timerUpdateLabel();
-    };
-
     private DataSetObserver setSpinnerPosition = new DataSetObserver() { @Override public void onChanged() {
         // Set spinnerPosition if possible:
         if (spinnerData.driverIds.size() > spinnerPosition) {
@@ -230,6 +230,9 @@ public class HomeFragment extends Fragment {
     } };
 
     private void timerUpdateLabel() {
+        // Get the time label:
+        final TextView driveTime = (TextView) rootView.findViewById(R.id.drive_time);
+
         timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -240,7 +243,13 @@ public class HomeFragment extends Fragment {
                 formattedTime = DateUtils.formatElapsedTime(timeDiff);
                 // Remember to add hours:
                 if (timeDiff < 3600) formattedTime = "0:"+formattedTime;
-                mHandler.obtainMessage(1).sendToTarget();
+                // Update the label in the UI thread using post():
+                driveTime.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        driveTime.setText(formattedTime);
+                    }
+                });
             }
         }, 0, 1000);
     }
@@ -259,9 +268,9 @@ public class HomeFragment extends Fragment {
             else dayGoal = 0;
             if (dataSnapshot.hasChild("night")) nightGoal = (long)dataSnapshot.child("night").getValue();
             else nightGoal = 0;
-            if (dataSnapshot.hasChild("weather")) nightGoal = (long)dataSnapshot.child("weather").getValue();
+            if (dataSnapshot.hasChild("weather")) weatherGoal = (long)dataSnapshot.child("weather").getValue();
             else weatherGoal = 0;
-            if (dataSnapshot.hasChild("adverse")) nightGoal = (long)dataSnapshot.child("adverse").getValue();
+            if (dataSnapshot.hasChild("adverse")) adverseGoal = (long)dataSnapshot.child("adverse").getValue();
             else adverseGoal = 0;
             // Update the "Time Completed" section
             updateGoalTextViews();
@@ -445,14 +454,6 @@ public class HomeFragment extends Fragment {
         timerUpdateLabel();
     } };
 
-    public Handler mHandler = new Handler() {
-        // Set the time
-        public void handleMessage(Message msg) {
-            TextView driveTime = (TextView) rootView.findViewById(R.id.drive_time);
-            driveTime.setText(formattedTime);
-        }
-    };
-
     //This is the listener for the "Stop Drive" button.
     private View.OnClickListener onStopDrive = new View.OnClickListener() { @Override public void onClick(View view) {
         // Stop the timer
@@ -480,52 +481,49 @@ public class HomeFragment extends Fragment {
         // Grab the stop time
         endingTime = new Date();
         Log.d(TAG, "endTime: " + endingTime);
+        //Figure out which checkboxes we want to show the user
         final ArrayList<String> dialogOptions = new ArrayList<String>();
         if(nightGoal != 0) dialogOptions.add("Night");
         if(weatherGoal != 0) dialogOptions.add("Poor Weather");
         if(adverseGoal != 0) dialogOptions.add("Adverse Conditions");
 
-        // Ask if the driving took place at night
-        new MaterialDialog.Builder(myContext)
-                .content(R.string.save_dialog_content)
-                .positiveText(R.string.yes)
-                .negativeText(R.string.cancel)
-                .items(dialogOptions.toArray(new String[dialogOptions.size()]))
-                .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
-                    @Override
-                    public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
-                        selections = text;
-                        return true;
-                    }
-                })
-                .onPositive(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        // Save the drive (at night) and says success
-                        boolean duringNight = false, duringWeather = false, duringAdverse = false;
-                        for(CharSequence selection:selections){
-                            if(selection.equals("Night")) duringNight = true;
-                            if(selection.equals("Poor Weather")) duringNight = true;
-                            if(selection.equals("Adverse Conditions")) duringAdverse = true;
+        if(dialogOptions.size() > 0) {
+            // Ask about the drive
+            new MaterialDialog.Builder(myContext)
+                    .content(R.string.save_dialog_content)
+                    .positiveText(R.string.save)
+                    .items(dialogOptions.toArray(new String[dialogOptions.size()]))
+                    .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
+                        @Override
+                        public boolean onSelection(MaterialDialog dialog, Integer[] indexes, CharSequence[] texts) {
+                            selections.clear();
+                            selections.addAll(new ArrayList<CharSequence>(Arrays.asList(texts)));
+                            return true;
                         }
-                        saveDrive(duringNight, duringWeather, duringAdverse, driverId);
-                        Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .onNegative(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        resetLabel();
-                    }
-                })
-                .onAny(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        // Set the timer label to zero
-                        resetLabel();
-                    }
-                })
-                .show();
+                    })
+                    .onPositive(new MaterialDialog.SingleButtonCallback() {
+                        @Override
+                        public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                            Log.d(TAG, "onClick");
+                            // Save the drive (at night) and says success
+                            boolean duringNight = false, duringWeather = false, duringAdverse = false;
+                            for (CharSequence selection : selections) {
+                                if (selection.toString().equals("Night")) duringNight = true;
+                                if (selection.toString().equals("Poor Weather")) duringWeather = true;
+                                if (selection.toString().equals("Adverse Conditions"))duringAdverse = true;
+                            }
+                            saveDrive(duringNight, duringWeather, duringAdverse, driverId);
+                            resetLabel();
+                            Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .alwaysCallMultiChoiceCallback()
+                    .show();
+        } else { //They're not tracking anything other then total time
+            saveDrive(false, false, false, driverId);
+            resetLabel();
+            Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
+        }
     } };
 
     //This is the listener for the "Custom Drive" button.
@@ -587,11 +585,13 @@ public class HomeFragment extends Fragment {
         spinnerData.stopListening();
         timeUpdater.stopListening();
         goalsRef.removeEventListener(goalsListener);
-        // Save the state:
+
+        // Save the state in the activity so it will be passed into the arguments
         Bundle state = new Bundle();
         saveToBundle(state);
         MainActivity mainActivity = (MainActivity)getActivity();
         mainActivity.saveArguments(MainActivity.HOME_MENU_INDEX, state);
+
         super.onDestroyView();
     }
 }

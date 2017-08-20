@@ -32,6 +32,8 @@ public class ElapsedTime {
     private ArrayList<String> logIds = new ArrayList<>();
     private ArrayList<Long> logDurations = new ArrayList<>();
     private ArrayList<Boolean> logsAtNight = new ArrayList<>();
+    private ArrayList<Boolean> logsBadWeather = new ArrayList<>();
+    private ArrayList<Boolean> logsAdverse = new ArrayList<>();
     //Store the total time, total time during day, and total time during night:
     public long totalTime, dayTime, nightTime, weatherTime, adverseTime;
     //This is the callback called whenever there is a change to the above variables:
@@ -44,12 +46,18 @@ public class ElapsedTime {
             //Add the data to logDurations and logsAtNight:
             long duration = (long)dataSnapshot.child("end").getValue() - (long)dataSnapshot.child("start").getValue();
             logDurations.add(duration);
-            boolean atNight = (boolean)dataSnapshot.child("night").getValue();
-            logsAtNight.add(atNight);
+            boolean night = (boolean)dataSnapshot.child("night").getValue();
+            boolean weather = (boolean)dataSnapshot.child("weather").getValue();
+            boolean adverse = (boolean)dataSnapshot.child("adverse").getValue();
+            logsAtNight.add(night);
+            logsBadWeather.add(weather);
+            logsAdverse.add(adverse);
             //Update totalTime and dayTime/nightTime:
             totalTime += duration;
-            if (atNight) nightTime += duration;
+            if (night) nightTime += duration;
             else dayTime += duration;
+            if (weather) weatherTime += duration;
+            if (adverse) adverseTime += duration;
             //Call the callback:
             if (callback != null) callback.accept(totalTime, dayTime, nightTime);
         }
@@ -61,15 +69,23 @@ public class ElapsedTime {
             totalTime -= logDurations.get(logIndex);
             if (logsAtNight.get(logIndex)) nightTime -= logDurations.get(logIndex);
             else dayTime -= logDurations.get(logIndex);
+            if (logsBadWeather.get(logIndex)) weatherTime -= logDurations.get(logIndex);
+            if (logsAdverse.get(logIndex)) adverseTime -= logDurations.get(logIndex);
             //Update the data in logDurations and logsAtNight:
             long duration = (long)dataSnapshot.child("end").getValue() - (long)dataSnapshot.child("start").getValue();
             logDurations.set(logIndex, duration);
             boolean atNight = (boolean)dataSnapshot.child("night").getValue();
+            boolean weather = (boolean)dataSnapshot.child("weather").getValue();
+            boolean adverse = (boolean)dataSnapshot.child("adverse").getValue();
             logsAtNight.set(logIndex, atNight);
+            logsBadWeather.set(logIndex, weather);
+            logsAdverse.set(logIndex, adverse);
             //Update totalTime and dayTime/nightTime:
             totalTime += duration;
             if (atNight) nightTime += duration;
             else dayTime += duration;
+            if (weather) weatherTime += duration;
+            if (adverse) adverseTime += duration;
             //Call the callback:
             if (callback != null) callback.accept(totalTime, dayTime, nightTime);
         }
@@ -81,9 +97,13 @@ public class ElapsedTime {
             totalTime -= logDurations.get(logIndex);
             if (logsAtNight.get(logIndex)) nightTime -= logDurations.get(logIndex);
             else dayTime -= logDurations.get(logIndex);
+            if (logsBadWeather.get(logIndex)) weatherTime -= logDurations.get(logIndex);
+            if (logsAdverse.get(logIndex)) adverseTime -= logDurations.get(logIndex);
             //Remove the data from logDurations and logsAtNight:
             logDurations.remove(logIndex);
             logsAtNight.remove(logIndex);
+            logsBadWeather.remove(logIndex);
+            logsAdverse.remove(logIndex);
             //Call the callback:
             if (callback != null) callback.accept(totalTime, dayTime, nightTime);
         }

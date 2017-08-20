@@ -111,21 +111,23 @@ public class SettingsFragment extends Fragment {
                         int curValue = state.getInt(curForm); //And the value for that key
                         goalsRef.child(curForm).setValue(curValue); //Save the current
                         int viewType;
-                        if(curValue == 0 && !stateName.equals("Custom"))
+                        if((curValue == 0 && !stateName.equals("Custom")))
                             viewType = View.GONE;
                         else
                             viewType = View.VISIBLE;
                         Resources res = getResources();
-                        int curView = res.getIdentifier(curForm + "Desc", "id", getContext().getPackageName());
-                        rootView.findViewById(curView).setVisibility(viewType);
-                        curView = res.getIdentifier(curForm + "Input", "id", getContext().getPackageName());
-                        rootView.findViewById(curView).setVisibility(viewType);
-                        curView = res.getIdentifier(curForm + "Edit", "id", getContext().getPackageName());
-                        EditText curEdit = (EditText) rootView.findViewById(curView);
-                        if(stateName.equals("Custom"))
-                            curEdit.setText("");
-                        else
-                            curEdit.setText(String.valueOf(curValue));
+                        if(!stateName.equals(spinner.getItemAtPosition(0))){
+                            int curView = res.getIdentifier(curForm + "Desc", "id", getContext().getPackageName());
+                            rootView.findViewById(curView).setVisibility(viewType);
+                            curView = res.getIdentifier(curForm + "Input", "id", getContext().getPackageName());
+                            rootView.findViewById(curView).setVisibility(viewType);
+                            curView = res.getIdentifier(curForm + "Edit", "id", getContext().getPackageName());
+                            EditText curEdit = (EditText) rootView.findViewById(curView);
+                            if(stateName.equals("Custom"))
+                                curEdit.setText("");
+                            else
+                                curEdit.setText(String.valueOf(curValue));
+                        }
                     }
                 } catch (JSONException ex) {
                     ex.printStackTrace();
@@ -136,11 +138,11 @@ public class SettingsFragment extends Fragment {
             public void onNothingSelected(AdapterView<?> parent) {}
         });
         // Get the EditText views
-        totalEdit = (EditText) rootView.findViewById(R.id.totalGoalEdit);
-        dayEdit = (EditText) rootView.findViewById(R.id.dayGoalEdit);
-        nightEdit = (EditText) rootView.findViewById(R.id.nightGoalEdit);
-        weatherEdit = (EditText) rootView.findViewById(R.id.weatherGoalEdit);
-        adverseEdit = (EditText) rootView.findViewById(R.id.adverseGoalEdit);
+        totalEdit = (EditText) rootView.findViewById(R.id.totalEdit);
+        dayEdit = (EditText) rootView.findViewById(R.id.dayEdit);
+        nightEdit = (EditText) rootView.findViewById(R.id.nightEdit);
+        weatherEdit = (EditText) rootView.findViewById(R.id.weatherEdit);
+        adverseEdit = (EditText) rootView.findViewById(R.id.adverseEdit);
 
         // Set the values
         if (savedInstanceState == null) {
