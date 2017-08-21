@@ -39,7 +39,14 @@ public class SettingsFragment extends Fragment {
     private View rootView;
     //Firebase Reference:
     private DatabaseReference goalsRef;
-    //The TextEdits:
+    //The current state name that the user has selected from the dropdown box:
+    private String stateName;
+    //Is this state just the first option that tells the user to select a state:
+    private boolean isFillerState;
+    //Does this state require a form?
+    private boolean needsForm;
+    //These are the goals of the users that they had before entering this page:
+    private DrivingTimes oldGoals = new DrivingTimes();
     //"The TextEdits": ABC's hit new sitcom, Tuesdays at 8/9c
     private EditText totalEdit;
     private EditText dayEdit;
@@ -93,41 +100,48 @@ public class SettingsFragment extends Fragment {
             statesList.add(statesIter.next());
 
         final Spinner spinner = (Spinner) rootView.findViewById(R.id.state_spinner);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getContext(),
+        final ArrayAdapter<String> adapter = new ArrayAdapter<String>(getContext(),
                 android.R.layout.simple_spinner_item, statesList); //Pass the state names to an array adapter
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); //May want it to be a dialog box instead
         spinner.setAdapter(adapter); //Set the adapter
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                String stateName = (String) parent.getItemAtPosition(pos); //Get Selection
+                stateName = (String) parent.getItemAtPosition(pos); //Get Selection
+                isFillerState = (pos == 0); //If this is the default position, set isFillerState
                 try {
                     JSONObject state = states.getJSONObject(stateName); //Get State Object
                     Iterator<String> stateIter = state.keys(); //So we can iterate through the keys
-                    goalsRef.child("stateName").setValue(stateName); //Record the stateName
-                    goalsRef.child("needsForm").setValue(state.getBoolean(stateIter.next()));
-                    while (stateIter.hasNext()) { //For each key
-                        String curForm = stateIter.next(); //Get the current key
-                        int curValue = state.getInt(curForm); //And the value for that key
-                        goalsRef.child(curForm).setValue(curValue); //Save the current
-                        int viewType;
-                        if((curValue == 0 && !stateName.equals("Custom")))
-                            viewType = View.GONE;
-                        else
-                            viewType = View.VISIBLE;
+                    //Get the Boolean value of the "needsForm" key for this state:
+                    needsForm = state.getBoolean(stateIter.next());
+                    while (stateIter.hasNext()) { //For each key ("total", "day", "night", "weather", "adverse")
+                        String curGoal = stateIter.next(); //Get the current goal
+                        int curValue = state.getInt(curGoal); //And the value for that goal
+
+                        int visibility; //This stores whether we want the views to be invisible or visible
+                        //If this is the "--Select a State--" option
+                        //or the goal for this state is 0 and it is not the Custom state,
+                        //hide the views related to this goal
+                        if((pos == 0) || ((curValue == 0) && !stateName.equals("Custom")))
+                            visibility = View.GONE;
+                        //Otherwise, make the views for this goal visible
+                        else visibility = View.VISIBLE;
+
                         Resources res = getResources();
-                        if(!stateName.equals(spinner.getItemAtPosition(0))){
-                            int curView = res.getIdentifier(curForm + "Desc", "id", getContext().getPackageName());
-                            rootView.findViewById(curView).setVisibility(viewType);
-                            curView = res.getIdentifier(curForm + "Input", "id", getContext().getPackageName());
-                            rootView.findViewById(curView).setVisibility(viewType);
-                            curView = res.getIdentifier(curForm + "Edit", "id", getContext().getPackageName());
-                            EditText curEdit = (EditText) rootView.findViewById(curView);
-                            if(stateName.equals("Custom"))
-                                curEdit.setText("");
-                            else
-                                curEdit.setText(String.valueOf(curValue));
+                        //Hide or show the inputs and descriptions based on visibility:
+                        int descViewId = res.getIdentifier(curGoal + "Desc", "id", getContext().getPackageName());
+                        rootView.findViewById(descViewId).setVisibility(visibility);
+                        int inputViewId = res.getIdentifier(curGoal + "Input", "id", getContext().getPackageName());
+                        rootView.findViewById(inputViewId).setVisibility(visibility);
+                        //Get the textbox for this goal:
+                        int editViewId = res.getIdentifier(curGoal + "Edit", "id", getContext().getPackageName());
+                        EditText editView = (EditText) rootView.findViewById(editViewId);
+                        //If this is the custom state, make the textbox whatever the old goal was:
+                        if(stateName.equals("Custom")) {
+                            editView.setText(Long.toString(oldGoals.getTime(curGoal)));
                         }
+                        //Otherwise, make it equal to whatever the goal is for this state:
+                        else editView.setText(String.valueOf(curValue));
                     }
                 } catch (JSONException ex) {
                     ex.printStackTrace();
@@ -149,28 +163,25 @@ public class SettingsFragment extends Fragment {
             goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
+                    //Record the user's goals prior to coming here:
                     if (dataSnapshot.hasChild("total")) {
-                        totalEdit.setText(dataSnapshot.child("total").getValue().toString());
+                        oldGoals.total = (long)dataSnapshot.child("total").getValue();
                     }
                     if (dataSnapshot.hasChild("day")) {
-                        dayEdit.setText(dataSnapshot.child("day").getValue().toString());
+                        oldGoals.day = (long)dataSnapshot.child("day").getValue();
                     }
                     if (dataSnapshot.hasChild("night")) {
-                        nightEdit.setText(dataSnapshot.child("night").getValue().toString());
+                        oldGoals.night = (long)dataSnapshot.child("night").getValue();
                     }
                     if (dataSnapshot.hasChild("weather")) {
-                        weatherEdit.setText(dataSnapshot.child("weather").getValue().toString());
+                        oldGoals.weather = (long)dataSnapshot.child("weather").getValue();
                     }
                     if (dataSnapshot.hasChild("adverse")) {
-                        adverseEdit.setText(dataSnapshot.child("adverse").getValue().toString());
+                        oldGoals.adverse = (long)dataSnapshot.child("weather").getValue();
                     }
+                    //If the user has a state, set the spinner to the position where the state is:
                     if (dataSnapshot.hasChild("stateName")) {
-                        for(int i = 0; i<spinner.getCount();i++){
-                            if(dataSnapshot.child("stateName").getValue().equals(spinner.getItemAtPosition(i))){
-                                spinner.setSelection(i);
-                                break;
-                            }
-                        }
+                        spinner.setSelection(adapter.getPosition(dataSnapshot.child("stateName").getValue().toString()));
                     }
                 }
 
@@ -181,11 +192,11 @@ public class SettingsFragment extends Fragment {
             });
         } else {
             // Get previous (but unsaved) values
-            totalEdit.setText(savedInstanceState.getString("total"));
-            dayEdit.setText(savedInstanceState.getString("day"));
-            nightEdit.setText(savedInstanceState.getString("night"));
-            weatherEdit.setText(savedInstanceState.getString("weather"));
-            adverseEdit.setText(savedInstanceState.getString("adverse"));
+            oldGoals.total = Long.parseLong(savedInstanceState.getString("total"));
+            oldGoals.day = Long.parseLong(savedInstanceState.getString("day"));
+            oldGoals.night = Long.parseLong(savedInstanceState.getString("night"));
+            oldGoals.weather = Long.parseLong(savedInstanceState.getString("weather"));
+            oldGoals.adverse = Long.parseLong(savedInstanceState.getString("adverse"));
         }
 
         // Save the goals when the button is clicked
@@ -201,6 +212,12 @@ public class SettingsFragment extends Fragment {
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
         // Don't do anything if the user isn't signed in:
         if (!isSignedIn) return;
+        // Give an error message if the user is literally on "--Select a State--":
+        if (isFillerState) {
+            Toast.makeText(getContext(), "Please select a state.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         // Get the values
         String totalGoal = totalEdit.getText().toString();
         String dayGoal = dayEdit.getText().toString();
@@ -226,6 +243,8 @@ public class SettingsFragment extends Fragment {
         }
 
         // Save the values
+        goalsRef.child("stateName").setValue(stateName);
+        goalsRef.child("needsForm").setValue(needsForm);
         goalsRef.child("total").setValue(Integer.parseInt(totalGoal));
         goalsRef.child("day").setValue(Integer.parseInt(dayGoal));
         goalsRef.child("night").setValue(Integer.parseInt(nightGoal));

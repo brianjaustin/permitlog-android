@@ -83,13 +83,13 @@ public class HomeFragment extends Fragment {
     private long totalGoal, dayGoal, nightGoal, weatherGoal, adverseGoal;
     // TextViews:
     private TextView totalTimeView, dayTimeView, nightTimeView, weatherTimeView, adverseTimeView;
-    // Object that updates totalTime, dayTime, and nightTime:
+    // Object that updates the time totals:
     private ElapsedTime timeUpdater;
     // Firebase reference for goals:
     private DatabaseReference goalsRef;
     // Callback for timesListener:
-    private TriLongConsumer timeCallback = new TriLongConsumer() {
-        @Override public void accept(long totalTimeP, long dayTimeP, long nightTimeP) {
+    private DrivingTimesConsumer timeCallback = new DrivingTimesConsumer() {
+        @Override public void accept(DrivingTimes timeObj) {
             // Update the "Time Completed" section:
             updateGoalTextViews();
         }
@@ -257,9 +257,10 @@ public class HomeFragment extends Fragment {
     private ValueEventListener goalsListener = new ValueEventListener() {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
-            // If they don't have goals and they have not seen the tutorial, assume they are a new user, so show the tutorial:
+            // If they have not seen the tutorial, assume they are a new user, so show the tutorial:
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
             if (!shownTutorial && prefs.getBoolean("tutorial", true)) showTutorial();
+
             // Set totalGoal, or set it to 0 if not present:
             if (dataSnapshot.hasChild("total")) totalGoal = (long)dataSnapshot.child("total").getValue();
             else totalGoal = 0;
@@ -393,7 +394,7 @@ public class HomeFragment extends Fragment {
         // Pads numbers with "0" if they are only one digit:
         DecimalFormat padder = new DecimalFormat("00");
         // Convert the time to seconds and format appropriately:
-        String totalTimeStr = ElapsedTime.formatSeconds(timeUpdater.totalTime/1000);
+        String totalTimeStr = ElapsedTime.formatSeconds(timeUpdater.timeTracker.total/1000);
         // Show the goal if it is nonzero:
         Log.d(TAG, "updateGoal totalGoal: " + String.valueOf(totalGoal));
         if (totalGoal == 0) totalTimeView.setVisibility(View.GONE);
@@ -402,25 +403,25 @@ public class HomeFragment extends Fragment {
             totalTimeView.setText("Total: " + totalTimeStr + "/" + padder.format(totalGoal) + ":00");
         }
         // Do the same for day and night:
-        String dayTimeStr = ElapsedTime.formatSeconds(timeUpdater.dayTime/1000);
+        String dayTimeStr = ElapsedTime.formatSeconds(timeUpdater.timeTracker.day/1000);
         if (dayGoal == 0) dayTimeView.setVisibility(View.GONE);
         else{
             dayTimeView.setVisibility(View.VISIBLE);
             dayTimeView.setText("Day: "+dayTimeStr+"/"+padder.format(dayGoal)+":00");
         }
-        String nightTimeStr = ElapsedTime.formatSeconds(timeUpdater.nightTime/1000);
+        String nightTimeStr = ElapsedTime.formatSeconds(timeUpdater.timeTracker.night/1000);
         if (nightGoal == 0) nightTimeView.setVisibility(View.GONE);
         else{
             nightTimeView.setVisibility(View.VISIBLE);
             nightTimeView.setText("Night: "+nightTimeStr+"/"+padder.format(nightGoal)+":00");
         }
-        String weatherTimeStr = ElapsedTime.formatSeconds(timeUpdater.weatherTime/1000);
+        String weatherTimeStr = ElapsedTime.formatSeconds(timeUpdater.timeTracker.weather/1000);
         if (weatherGoal == 0) weatherTimeView.setVisibility(View.GONE);
         else{
             weatherTimeView.setVisibility(View.VISIBLE);
             weatherTimeView.setText("Poor Weather: "+weatherTimeStr+"/"+padder.format(weatherGoal)+":00");
         }
-        String adverseTimeStr = ElapsedTime.formatSeconds(timeUpdater.adverseTime/1000);
+        String adverseTimeStr = ElapsedTime.formatSeconds(timeUpdater.timeTracker.adverse/1000);
         if (adverseGoal == 0) adverseTimeView.setVisibility(View.GONE);
         else{
             adverseTimeView.setVisibility(View.VISIBLE);

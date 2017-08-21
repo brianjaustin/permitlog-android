@@ -159,11 +159,12 @@ public class CustomDriveDialog extends AppCompatActivity {
             ((CheckBox)findViewById(R.id.night_checkbox)).setChecked(
                     (boolean)dataSnapshot.child("night").getValue()
             );
+            //Not all users have "weather" and "adverse", so make sure to use .hasChild() to check if they do:
             ((CheckBox)findViewById(R.id.weather_checkbox)).setChecked(
-                    (boolean)dataSnapshot.child("weather").getValue()
+                    dataSnapshot.hasChild("weather") && (boolean)dataSnapshot.child("weather").getValue()
             );
             ((CheckBox)findViewById(R.id.adverse_checkbox)).setChecked(
-                    (boolean)dataSnapshot.child("adverse").getValue()
+                    dataSnapshot.hasChild("adverse") && (boolean)dataSnapshot.child("adverse").getValue()
             );
             //Adjust the spinner according to the driver:
             selectDriver(dataSnapshot.child("driver_id").getValue().toString());

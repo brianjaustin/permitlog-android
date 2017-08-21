@@ -42,6 +42,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Formatter;
 import java.util.Locale;
 
@@ -91,7 +92,17 @@ public class LogFragment extends ListFragment {
             //Set the data, start listening to get data for this driver, and update the adapter:
             logSnapshots.add(dataSnapshot);
             logSummaries.add(genLogSummary(dataSnapshot));
-            //Collections.sort(logSnapshots, new snapshotComparator());
+
+            /*
+            //Sort the logs by starting value
+            Collections.sort(logSnapshots, new Comparator<DataSnapshot>() {
+                @Override
+                public int compare(DataSnapshot o1, DataSnapshot o2){
+                    return Long.compare((long) o1.child("start").getValue(), (long) o2.child("start").getValue());
+                }
+            });
+            */
+
             listAdapter.notifyDataSetChanged();
         }
 
@@ -143,9 +154,11 @@ public class LogFragment extends ListFragment {
 
         //Format the time appropriately:
         String driveTimeString = ElapsedTime.formatSeconds(driveTimeInSec);
-        String driveDate = DateUtils.formatDateTime(getContext(), (long)(dataSnapshot.child("start").getValue()), FORMAT_NUMERIC_DATE | FORMAT_SHOW_YEAR);
+        //Format the date based off the starting time:
+        String driveDate = DateUtils.formatDateTime(getContext(),
+                (long)(dataSnapshot.child("start").getValue()), FORMAT_NUMERIC_DATE | FORMAT_SHOW_YEAR);
 
-        //Finally return the summary:
+        //Finally return the time with the date:
         return (driveTimeString + " on " + driveDate);
     }
 
@@ -177,17 +190,33 @@ public class LogFragment extends ListFragment {
         setListAdapter(listAdapter);
 
         // Set add drive button click
-        FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.export_maine);
+        final FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.export_maine);
         addDrive.setOnClickListener(onMaineExport);
 
+        //Update the addDrive button based off the goals data:
         goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.export_maine);
-                addDrive.setOnClickListener(onMaineExport);
-                if((boolean) dataSnapshot.child("needsForm").getValue()){
-                    addDrive.setLabelText(dataSnapshot.child("stateName").getValue().toString() + " Log Export");
-                } else {
+                String stateName = ""; //Stores state of user and whether that state requires a form
+                boolean needsForm = false;
+
+                //If this is an old user, they might not have state data,
+                //in which case, we tell them to set their state:
+                if (!dataSnapshot.hasChild("stateName")) {
+                    Toast.makeText(getContext(), getString(R.string.no_state_error), Toast.LENGTH_LONG).show();
+                }
+                //Otherwise, just set stateName and needsForm:
+                else {
+                    needsForm = (boolean)dataSnapshot.child("needsForm").getValue();
+                    stateName = dataSnapshot.child("stateName").getValue().toString();
+                }
+
+                //If the user needs a form, add the option to export to the state log:
+                if(needsForm){
+                    addDrive.setLabelText(stateName + " Log Export");
+                }
+                //Otherwise, just hide the addDrive button:
+                else {
                     addDrive.setVisibility(View.GONE);
                 }
             }
@@ -196,6 +225,7 @@ public class LogFragment extends ListFragment {
                 Log.e(TAG, databaseError.getMessage());
             }
         });
+
         // Set add driver button click
         FloatingActionButton addDriver = (FloatingActionButton) rootView.findViewById(R.id.export_manual);
         addDriver.setOnClickListener(onManualExport);
@@ -397,8 +427,8 @@ public class LogFragment extends ListFragment {
         try {
             PDFieldTreeNode totalHoursField = acroForm.getField("TOTAL HOURS OF PRACTICE DRIVING");
             PDFieldTreeNode totalNightField = acroForm.getField("TOTAL HOURS OF NIGHT DRIVING");
-            if (totalHoursField != null) totalHoursField.setValue(df.format(totalUpdater.totalTime / (1000.0 * 3600.0)));
-            if (totalNightField != null) totalNightField.setValue(df.format(totalUpdater.nightTime / (1000.0 * 3600.0)));
+            if (totalHoursField != null) totalHoursField.setValue(df.format(totalUpdater.timeTracker.total / (1000.0 * 3600.0)));
+            if (totalNightField != null) totalNightField.setValue(df.format(totalUpdater.timeTracker.night / (1000.0 * 3600.0)));
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
         }

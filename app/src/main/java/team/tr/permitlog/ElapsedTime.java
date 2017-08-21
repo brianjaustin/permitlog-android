@@ -34,10 +34,10 @@ public class ElapsedTime {
     private ArrayList<Boolean> logsAtNight = new ArrayList<>();
     private ArrayList<Boolean> logsBadWeather = new ArrayList<>();
     private ArrayList<Boolean> logsAdverse = new ArrayList<>();
-    //Store the total time, total time during day, and total time during night:
-    public long totalTime, dayTime, nightTime, weatherTime, adverseTime;
+    //Store the total times for overall and different categories (i.e. day, night,
+    public DrivingTimes timeTracker = new DrivingTimes();
     //This is the callback called whenever there is a change to the above variables:
-    private TriLongConsumer callback;
+    private DrivingTimesConsumer callback;
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
@@ -46,66 +46,69 @@ public class ElapsedTime {
             //Add the data to logDurations and logsAtNight:
             long duration = (long)dataSnapshot.child("end").getValue() - (long)dataSnapshot.child("start").getValue();
             logDurations.add(duration);
+            //Add whether or not it is night/weather/adverse to the appropriate conditions:
             boolean night = (boolean)dataSnapshot.child("night").getValue();
-            boolean weather = (boolean)dataSnapshot.child("weather").getValue();
-            boolean adverse = (boolean)dataSnapshot.child("adverse").getValue();
             logsAtNight.add(night);
+            //For weather and adverse, outdated users may not have this property, so make sure to use .hasChild()
+            boolean weather = dataSnapshot.hasChild("weather") && (boolean)dataSnapshot.child("weather").getValue();
             logsBadWeather.add(weather);
+            boolean adverse = dataSnapshot.hasChild("adverse") && (boolean)dataSnapshot.child("adverse").getValue();
             logsAdverse.add(adverse);
-            //Update totalTime and dayTime/nightTime:
-            totalTime += duration;
-            if (night) nightTime += duration;
-            else dayTime += duration;
-            if (weather) weatherTime += duration;
-            if (adverse) adverseTime += duration;
+            //Update the time totals:
+            timeTracker.total += duration;
+            if (night) timeTracker.night += duration;
+            else timeTracker.day += duration;
+            if (weather) timeTracker.weather += duration;
+            if (adverse) timeTracker.adverse += duration;
             //Call the callback:
-            if (callback != null) callback.accept(totalTime, dayTime, nightTime);
+            if (callback != null) callback.accept(timeTracker);
         }
         @Override
         public void onChildChanged(DataSnapshot dataSnapshot, String s) {
             //Find the snapshot in logIds:
             int logIndex = logIds.indexOf(dataSnapshot.getKey());
             //Subtract totalTime and dayTime/nightTime by the time specified in logDurations:
-            totalTime -= logDurations.get(logIndex);
-            if (logsAtNight.get(logIndex)) nightTime -= logDurations.get(logIndex);
-            else dayTime -= logDurations.get(logIndex);
-            if (logsBadWeather.get(logIndex)) weatherTime -= logDurations.get(logIndex);
-            if (logsAdverse.get(logIndex)) adverseTime -= logDurations.get(logIndex);
+            timeTracker.total -= logDurations.get(logIndex);
+            if (logsAtNight.get(logIndex)) timeTracker.night -= logDurations.get(logIndex);
+            else timeTracker.day -= logDurations.get(logIndex);
+            if (logsBadWeather.get(logIndex)) timeTracker.weather -= logDurations.get(logIndex);
+            if (logsAdverse.get(logIndex)) timeTracker.adverse -= logDurations.get(logIndex);
             //Update the data in logDurations and logsAtNight:
             long duration = (long)dataSnapshot.child("end").getValue() - (long)dataSnapshot.child("start").getValue();
             logDurations.set(logIndex, duration);
             boolean atNight = (boolean)dataSnapshot.child("night").getValue();
-            boolean weather = (boolean)dataSnapshot.child("weather").getValue();
-            boolean adverse = (boolean)dataSnapshot.child("adverse").getValue();
+            //For weather and adverse, outdated users may not have this property, so make sure to use .hasChild()
+            boolean weather = dataSnapshot.hasChild("weather") && (boolean)dataSnapshot.child("weather").getValue();
+            boolean adverse = dataSnapshot.hasChild("adverse") && (boolean)dataSnapshot.child("adverse").getValue();
             logsAtNight.set(logIndex, atNight);
             logsBadWeather.set(logIndex, weather);
             logsAdverse.set(logIndex, adverse);
-            //Update totalTime and dayTime/nightTime:
-            totalTime += duration;
-            if (atNight) nightTime += duration;
-            else dayTime += duration;
-            if (weather) weatherTime += duration;
-            if (adverse) adverseTime += duration;
+            //Update the time totals:
+            timeTracker.total += duration;
+            if (atNight) timeTracker.night += duration;
+            else timeTracker.day += duration;
+            if (weather) timeTracker.weather += duration;
+            if (adverse) timeTracker.adverse += duration;
             //Call the callback:
-            if (callback != null) callback.accept(totalTime, dayTime, nightTime);
+            if (callback != null) callback.accept(timeTracker);
         }
         @Override
         public void onChildRemoved(DataSnapshot dataSnapshot) {
             //Find the snapshot in logIds:
             int logIndex = logIds.indexOf(dataSnapshot.getKey());
-            //Subtract totalTime and dayTime/nightTime by the time specified in logDurations:
-            totalTime -= logDurations.get(logIndex);
-            if (logsAtNight.get(logIndex)) nightTime -= logDurations.get(logIndex);
-            else dayTime -= logDurations.get(logIndex);
-            if (logsBadWeather.get(logIndex)) weatherTime -= logDurations.get(logIndex);
-            if (logsAdverse.get(logIndex)) adverseTime -= logDurations.get(logIndex);
+            //Subtract the time totals by the time specified in logDurations:
+            timeTracker.total -= logDurations.get(logIndex);
+            if (logsAtNight.get(logIndex)) timeTracker.night -= logDurations.get(logIndex);
+            else timeTracker.day -= logDurations.get(logIndex);
+            if (logsBadWeather.get(logIndex)) timeTracker.weather -= logDurations.get(logIndex);
+            if (logsAdverse.get(logIndex)) timeTracker.adverse -= logDurations.get(logIndex);
             //Remove the data from logDurations and logsAtNight:
             logDurations.remove(logIndex);
             logsAtNight.remove(logIndex);
             logsBadWeather.remove(logIndex);
             logsAdverse.remove(logIndex);
             //Call the callback:
-            if (callback != null) callback.accept(totalTime, dayTime, nightTime);
+            if (callback != null) callback.accept(timeTracker);
         }
         // The following must be implemented in order to complete the abstract class:
         @Override
@@ -116,7 +119,7 @@ public class ElapsedTime {
         }
     };
 
-    public ElapsedTime(String userId, TriLongConsumer callback) {
+    public ElapsedTime(String userId, DrivingTimesConsumer callback) {
         //Get the DatabaseReference:
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
         //Set the callback:
