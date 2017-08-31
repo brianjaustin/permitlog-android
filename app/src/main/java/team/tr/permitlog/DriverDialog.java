@@ -1,6 +1,8 @@
 package team.tr.permitlog;
 
+import android.content.Context;
 import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -12,6 +14,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -111,16 +115,44 @@ public class DriverDialog extends AppCompatActivity {
         String driverAge = ageField.getText().toString();
 
         // Check if any value is empty
-        if (firstName.trim().isEmpty() || lastName.trim().isEmpty() || licenseNumber.trim().isEmpty() || driverAge.trim().isEmpty()) {
+        if (firstName.trim().isEmpty() || lastName.trim().isEmpty() || driverAge.trim().isEmpty()) {
             Toast.makeText(this, R.string.driver_dialog_error, Toast.LENGTH_SHORT).show();
             return;
         }
-
         //Check to make sure the driver has a valid age
         if (Integer.parseInt(driverAge) < 21 || Integer.parseInt(driverAge) > 117) {
             Toast.makeText(this, R.string.driver_age_error, Toast.LENGTH_SHORT).show();
             return;
         }
+        // License number is optional, so if this value is empty,
+        // show the user a dialog and save the drive if they say yes:
+        if (licenseNumber.trim().isEmpty()) {
+            new MaterialDialog.Builder(this)
+                    .content("You did not enter a license number for this driver. Are you sure you do not want to save the license number?")
+                    .positiveText(R.string.yes)
+                    .negativeText(R.string.no)
+                    .onPositive(new MaterialDialog.SingleButtonCallback() {
+                        @Override
+                        public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                            // Save the drive if the user clicks "Yes":
+                            saveDrive();
+                        }
+                    })
+                    .show();
+        }
+    }
+
+    public void saveDrive() {
+        // Get values from the text fields
+        EditText firstNameField = (EditText)findViewById(R.id.driver_firstname);
+        EditText lastNameField = (EditText)findViewById(R.id.driver_lastname);
+        EditText licenseField = (EditText)findViewById(R.id.driver_license);
+        EditText ageField = (EditText)findViewById(R.id.driver_age);
+
+        String firstName = firstNameField.getText().toString();
+        String lastName = lastNameField.getText().toString();
+        String licenseNumber = licenseField.getText().toString();
+        String driverAge = ageField.getText().toString();
 
         if (editing) {
             // Update existing values

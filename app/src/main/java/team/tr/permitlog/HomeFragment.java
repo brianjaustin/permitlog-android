@@ -46,6 +46,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -94,7 +95,6 @@ public class HomeFragment extends Fragment {
             updateGoalTextViews();
         }
     };
-    private final ArrayList<CharSequence> selections = new ArrayList<>();
 
     //Called when the user rotates the screen:
     @Override
@@ -498,6 +498,8 @@ public class HomeFragment extends Fragment {
         if(nightGoal != 0) dialogOptions.add("Night");
         if(weatherGoal != 0) dialogOptions.add("Poor Weather");
         if(adverseGoal != 0) dialogOptions.add("Adverse Conditions");
+        //This is a list of the options the user selected:
+        final List<CharSequence> selections = new ArrayList<>();
 
         if(dialogOptions.size() > 0) {
             // Ask about the drive
@@ -509,7 +511,7 @@ public class HomeFragment extends Fragment {
                         @Override
                         public boolean onSelection(MaterialDialog dialog, Integer[] indexes, CharSequence[] texts) {
                             selections.clear();
-                            selections.addAll(new ArrayList<CharSequence>(Arrays.asList(texts)));
+                            selections.addAll(Arrays.asList(texts));
                             return true;
                         }
                     })
@@ -529,6 +531,8 @@ public class HomeFragment extends Fragment {
                             Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
                         }
                     })
+                    //Do not cancel the dialog if the user accidentally touches on the outside:
+                    .canceledOnTouchOutside(false)
                     .alwaysCallMultiChoiceCallback()
                     .show();
         } else { //They're not tracking anything other then total time
