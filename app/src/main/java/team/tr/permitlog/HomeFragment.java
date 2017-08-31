@@ -275,6 +275,17 @@ public class HomeFragment extends Fragment {
             else adverseGoal = 0;
             // Update the "Time Completed" section
             updateGoalTextViews();
+
+            //If the user does not have a state yet
+            if (!dataSnapshot.hasChild("stateName")) {
+                //If the user's goals match the state of Maine:
+                if ((totalGoal == 70) && (dayGoal == 0) && (nightGoal == 10) && (weatherGoal == 0) && (adverseGoal == 0)) {
+                    //Make the state Maine:
+                    goalsRef.child("stateName").setValue("Maine");
+                }
+                //Otherwise, make the state Custom:
+                else goalsRef.child("stateName").setValue("Custom");
+            }
         }
         @Override
         public void onCancelled(DatabaseError databaseError) {

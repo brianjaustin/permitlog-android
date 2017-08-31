@@ -138,7 +138,7 @@ public class SettingsFragment extends Fragment {
                         EditText editView = (EditText) rootView.findViewById(editViewId);
                         //If this is the custom state, make the textbox whatever the old goal was:
                         if(stateName.equals("Custom")) {
-                            editView.setText(Long.toString(oldGoals.getTime(curGoal)));
+                            editView.setText(String.valueOf(oldGoals.getTime(curGoal)));
                         }
                         //Otherwise, make it equal to whatever the goal is for this state:
                         else editView.setText(String.valueOf(curValue));
@@ -177,7 +177,7 @@ public class SettingsFragment extends Fragment {
                         oldGoals.weather = (long)dataSnapshot.child("weather").getValue();
                     }
                     if (dataSnapshot.hasChild("adverse")) {
-                        oldGoals.adverse = (long)dataSnapshot.child("weather").getValue();
+                        oldGoals.adverse = (long)dataSnapshot.child("adverse").getValue();
                     }
                     //If the user has a state, set the spinner to the position where the state is:
                     if (dataSnapshot.hasChild("stateName")) {
