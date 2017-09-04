@@ -9,6 +9,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -53,6 +54,8 @@ public class CustomDriveDialog extends AppCompatActivity {
     private LinearLayout timeNoticeContainer, ddNoticeContainer;
     //The TextViews that are the notices:
     private TextView timeNotice, ddNotice;
+    //Stores if we should show the notice based on if it was shown previously:
+    private boolean showNotice = false;
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -61,7 +64,11 @@ public class CustomDriveDialog extends AppCompatActivity {
         // Save the current data
         outState.putLong("startTime", startingTime.getTimeInMillis());
         outState.putLong("endTime", endingTime.getTimeInMillis());
-        outState.putString("driverId", spinnerData.driverIds.get(driversSpinner.getSelectedItemPosition()));
+        // If the user has no drivers, save the driver ID as null:
+        if (spinnerData.driverIds.isEmpty()) outState.putString("driverId", null);
+        //Otherwise, just save the driver ID from the spinner:
+        else outState.putString("driverId", spinnerData.driverIds.get(driversSpinner.getSelectedItemPosition()));
+        outState.putBoolean("showNotice", ddNotice.getParent() == ddNoticeContainer);
         outState.putBoolean("night", ((CheckBox)findViewById(R.id.night_checkbox)).isChecked());
         outState.putBoolean("weather", ((CheckBox) findViewById(R.id.weather_checkbox)).isChecked());
         outState.putBoolean("adverse", ((CheckBox) findViewById(R.id.adverse_checkbox)).isChecked());
@@ -101,8 +108,11 @@ public class CustomDriveDialog extends AppCompatActivity {
             startingTime.setTimeInMillis(savedInstanceState.getLong("startTime"));
             endingTime.setTimeInMillis(savedInstanceState.getLong("endTime"));
             updateDateAndTime();
-            // Select the driver in the spinner:
-            selectDriver(savedInstanceState.getString("driverId"));
+            // Set showNotice:
+            showNotice = savedInstanceState.getBoolean("showNotice");
+            // Select the driver in the spinner if the user had selected such a driver:
+            String driverSaved = savedInstanceState.getString("driverId");
+            if (driverSaved != null) selectDriver(driverSaved);
             // Update the checkBoxes using .post() so it is done on the UI thread:
             final boolean nightChecked = savedInstanceState.getBoolean("night");
             final boolean weatherChecked = savedInstanceState.getBoolean("weather");
@@ -179,10 +189,12 @@ public class CustomDriveDialog extends AppCompatActivity {
         /* Selects the driver in driversSpinner corresponding to driverId. */
         //Set the instance property:
         this.driverId = driverId;
-        //If the driver from the log has been found, then select it and remove the deleted driver notice:
+        //If the driver from the log has been found:
         if (spinnerData.driverIds.contains(driverId)) {
+            //Select the driver:
             driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverId));
-            ddNoticeContainer.removeView(ddNotice);
+            //Remove the deleted driver notice if it was not shown before:
+            if (!showNotice) ddNoticeContainer.removeView(ddNotice);
         }
         //Otherwise, listen to data changes and select the driver from the log when it comes up:
         else spinnerData.driversAdapter.registerDataSetObserver(observeDrivers);
@@ -190,10 +202,13 @@ public class CustomDriveDialog extends AppCompatActivity {
 
     private DataSetObserver observeDrivers = new DataSetObserver() { @Override public void onChanged() {
         Log.d(TAG, "Have we found "+driverId+" yet? "+spinnerData.driverIds.contains(driverId));
-        //If the driver from the log has been found, select it, remove the deleted driver notice, and stop listening to data changes:
+        //If the driver from the log has been found:
         if (spinnerData.driverIds.contains(driverId)) {
+            //Select the driver:
             driversSpinner.setSelection(spinnerData.driverIds.indexOf(driverId));
-            ddNoticeContainer.removeView(ddNotice);
+            //Remove the notice if it was not shown before:
+            if (!showNotice) ddNoticeContainer.removeView(ddNotice);
+            //Stop listening for data changes:
             spinnerData.driversAdapter.unregisterDataSetObserver(observeDrivers);
         }
     } };
@@ -315,16 +330,13 @@ public class CustomDriveDialog extends AppCompatActivity {
     }
 
     public void onSaveClick(View view) {
-        //Get the position of the spinner:
-        Spinner driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
-        int spinnerPosition = driversSpinner.getSelectedItemPosition();
         //If there are no driver ids, then show an error to the user and do not proceed:
         if (spinnerData.driverIds.isEmpty()) {
             Toast.makeText(this, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
             return;
         }
-        //Otherwise, get the driver id from the selected position:
-        String driverId = spinnerData.driverIds.get(spinnerPosition);
+        //Get the selected driver:
+        driverId = spinnerData.driverIds.get(driversSpinner.getSelectedItemPosition());
         //Get drive info:
         boolean isDriveAtNight = ((CheckBox)findViewById(R.id.night_checkbox)).isChecked();
         boolean isDriveBadWeather = ((CheckBox)findViewById(R.id.weather_checkbox)).isChecked();
