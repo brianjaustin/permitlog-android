@@ -105,11 +105,21 @@ public class HomeFragment extends Fragment {
         saveToBundle(outState);
     }
 
+    @Override
+    public void onPause() {
+        //If we are not showing the tutorial and the stop button is enabled,
+        //then there is an ongoing drive that is being paused:
+        if (!showingTutorial && stopButton.isEnabled()) {
+            //Store the incomplete drive in /ongoing
+            DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing");
+            //Just set the starting time:
+            driveRef.child("start").setValue(startingTime.getTime());
+        }
+        super.onPause();
+    }
+
     private void saveToBundle(Bundle outState) {
         /* Takes Bundle and sets info about autodrive in Bundle. */
-        outState.putBoolean("startEnabled", startButton.isEnabled());
-        outState.putBoolean("stopEnabled", stopButton.isEnabled());
-        outState.putLong("startTime", startingTime.getTime());
         outState.putInt("spinnerPosition", driversSpinner.getSelectedItemPosition());
         outState.putBoolean("showingTutorial", showingTutorial);
     }
@@ -117,21 +127,39 @@ public class HomeFragment extends Fragment {
     private void loadFromBundle(Bundle savedInstanceState) {
         /* Takes Bundle and sets info about autodrive from Bundle. */
         showingTutorial = savedInstanceState.getBoolean("showingTutorial");
-        // Only reset the buttons if the tutorial was not playing:
-        if (!showingTutorial) {
-            startButton.setEnabled(savedInstanceState.getBoolean("startEnabled"));
-            stopButton.setEnabled(savedInstanceState.getBoolean("stopEnabled"));
-        }
-        startingTime.setTime(savedInstanceState.getLong("startTime"));
         spinnerPosition = savedInstanceState.getInt("spinnerPosition");
         // Set spinnerPosition if possible:
         if (spinnerData.driverIds.size() > spinnerPosition) driversSpinner.setSelection(spinnerPosition);
             // Otherwise, keep listening to the adapter and set it when possible:
         else spinnerData.driversAdapter.registerDataSetObserver(setSpinnerPosition);
-
-        // Start updating the label if the Stop Button is enabled:
-        if (stopButton.isEnabled()) timerUpdateLabel();
     }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        DatabaseReference incompleteRef = FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing");
+        incompleteRef.addListenerForSingleValueEvent(resumeIncompleteDrive);
+    }
+
+    private ValueEventListener resumeIncompleteDrive = new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+            //If there is an incomplete drive:
+            if (dataSnapshot.exists()) {
+                Log.d(TAG, "There's an incomplete drive in Firebase!");
+                //Get the starting time from the incomplete value:
+                startingTime.setTime((long)dataSnapshot.child("start").getValue());
+                //Enable the start button and update the timer label:
+                startButton.setEnabled(false);
+                stopButton.setEnabled(true);
+                timerUpdateLabel();
+            }
+        }
+
+        //Empty method needed to complete abstract class
+        @Override
+        public void onCancelled(DatabaseError databaseError) {}
+    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -580,6 +608,8 @@ public class HomeFragment extends Fragment {
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
         // Don't do anything if the user isn't signed in:
         if (!isSignedIn) return;
+        //Remove the ongoing drive:
+        FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing").removeValue();
         // Connect to the database
         DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times").push();
         driveRef.child("start").setValue(startingTime.getTime());

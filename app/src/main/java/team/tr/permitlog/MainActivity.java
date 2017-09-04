@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -139,7 +140,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRestoreInstanceState(Bundle savedInstanceState) {
         // Get menuArgs from when we previously saved it during an orientation change:
-        menuArgs = (Bundle[]) savedInstanceState.getParcelableArray("menuArgs");
+        Parcelable savedMenuArgs[] = savedInstanceState.getParcelableArray("menuArgs");
+        // Try to cast this Parceable[] to a Bundle[]:
+        try {
+            menuArgs = (Bundle[])savedMenuArgs;
+        }
+        //If this cast fails for some unknown reason, log the error:
+        catch (ClassCastException e) {
+            Log.e(TAG, e.getMessage());
+        }
         super.onRestoreInstanceState(savedInstanceState);
     }
 
