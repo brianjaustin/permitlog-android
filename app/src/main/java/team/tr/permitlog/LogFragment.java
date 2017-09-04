@@ -1,6 +1,8 @@
 package team.tr.permitlog;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -44,6 +46,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Formatter;
+import java.util.List;
 import java.util.Locale;
 
 import jxl.Workbook;
@@ -502,8 +505,8 @@ public class LogFragment extends ListFragment {
                     headerFormat.setAlignment(Alignment.CENTRE);
                     // Create header cells:
                     String headers[] = {
-                            "Month", "Date", "Year", "Duration", "Day/Night",
-                            "Supervising Driver", "Age", "License Number"
+                            "Month", "Date", "Year", "Duration", "Day/Night","Poor Weather",
+                            "Adverse Conditions", "Supervising Driver", "Age", "License Number"
                     };
                     for (int i = 0; i < headers.length; i++) {
                         // Put this cell in the top row and ith column:
@@ -541,6 +544,12 @@ public class LogFragment extends ListFragment {
                         Label nightCell = new Label(4, i+1, ((boolean)logSnapshot.child("night").getValue()) ? "Night" : "Day");
                         sheet.addCell(nightCell);
 
+                        Label weatherCell = new Label(5, i+1, logSnapshot.child("weather").getValue().toString());
+                        sheet.addCell(weatherCell);
+
+                        Label adverseCell = new Label(6, i+1, logSnapshot.child("adverse").getValue().toString());
+                        sheet.addCell(adverseCell);
+
                         // Get the driver info if possible:
                         String driverName = "DELETED DRIVER", driverAge = "DELETED", driverLicense = "DELETED DRIVER";
                         if (driversInfo.driverIds.contains(driverId)) {
@@ -552,11 +561,11 @@ public class LogFragment extends ListFragment {
                         }
 
                         // Add it to the sheet:
-                        Label nameCell = new Label(5, i+1, driverName);
+                        Label nameCell = new Label(7, i+1, driverName);
                         sheet.addCell(nameCell);
-                        Label ageCell = new Label(6, i+1, driverAge);
+                        Label ageCell = new Label(8, i+1, driverAge);
                         sheet.addCell(ageCell);
-                        Label licenseCell = new Label(7, i+1, driverLicense);
+                        Label licenseCell = new Label(9, i+1, driverLicense);
                         sheet.addCell(licenseCell);
                     }
 
@@ -571,6 +580,7 @@ public class LogFragment extends ListFragment {
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.setType("application/vnd.ms-excel");
                 intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(sheetFile));
+                
                 try {
                     startActivity(Intent.createChooser(intent, "Send Driving Log"));
                 } catch (android.content.ActivityNotFoundException exception) {
