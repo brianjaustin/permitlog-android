@@ -304,15 +304,21 @@ public class HomeFragment extends Fragment {
             // Update the "Time Completed" section
             updateGoalTextViews();
 
-            //If the user does not have a state yet
-            if (!dataSnapshot.hasChild("stateName")) {
+            //If the user does not have a state yet but they have some goal:
+            if (!dataSnapshot.hasChild("stateName") &&
+                ((totalGoal != 0) || (dayGoal != 0) || (nightGoal != 0) || (weatherGoal != 0) || (adverseGoal != 0))) {
+                Log.d(TAG, "Adding stateName for this user");
                 //If the user's goals match the state of Maine:
                 if ((totalGoal == 70) && (dayGoal == 0) && (nightGoal == 10) && (weatherGoal == 0) && (adverseGoal == 0)) {
-                    //Make the state Maine:
+                    //Make the state Maine and set the needsForm flag:
                     goalsRef.child("stateName").setValue("Maine");
+                    goalsRef.child("needsForm").setValue(true);
                 }
-                //Otherwise, make the state Custom:
-                else goalsRef.child("stateName").setValue("Custom");
+                //Otherwise, make the state Custom and unset the needsForm flag:
+                else {
+                    goalsRef.child("stateName").setValue("Custom");
+                    goalsRef.child("needsForm").setValue(false);
+                }
             }
         }
         @Override

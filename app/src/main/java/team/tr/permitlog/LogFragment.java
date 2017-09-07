@@ -210,8 +210,16 @@ public class LogFragment extends ListFragment {
                 }
                 //Otherwise, just set stateName and needsForm:
                 else {
-                    needsForm = (boolean)dataSnapshot.child("needsForm").getValue();
                     stateName = dataSnapshot.child("stateName").getValue().toString();
+                    if (dataSnapshot.hasChild("needsForm")) needsForm = (boolean)dataSnapshot.child("needsForm").getValue();
+                    //If the user has "stateName" but not "needsForm",
+                    //then this is one of the few users who had a buggy version of the app:
+                    else {
+                        Log.d(TAG, "The weird buggy situation in LogFragment.");
+                        //On this buggy, edge-case situation, needsForm is true iff the state is Maine:
+                        if (stateName.equals("Maine")) needsForm = true;
+                        else needsForm = false;
+                    }
                 }
 
                 //If the user needs a form, add the option to export to the state log:
