@@ -552,10 +552,13 @@ public class LogFragment extends ListFragment {
                         Label nightCell = new Label(4, i+1, ((boolean)logSnapshot.child("night").getValue()) ? "Night" : "Day");
                         sheet.addCell(nightCell);
 
-                        Label weatherCell = new Label(5, i+1, logSnapshot.child("weather").getValue().toString());
+                        //Assume that the "weather" property is false if not present
+                        //since older logs will not have "weather" or "adverse" property:
+                        Label weatherCell = new Label(5, i+1, logSnapshot.hasChild("weather") ? logSnapshot.child("weather").getValue().toString() : "false");
                         sheet.addCell(weatherCell);
 
-                        Label adverseCell = new Label(6, i+1, logSnapshot.child("adverse").getValue().toString());
+                        //Assume the "adverse" property is false if not present:
+                        Label adverseCell = new Label(6, i+1, logSnapshot.hasChild("adverse") ? logSnapshot.child("adverse").getValue().toString() : "false");
                         sheet.addCell(adverseCell);
 
                         // Get the driver info if possible:
