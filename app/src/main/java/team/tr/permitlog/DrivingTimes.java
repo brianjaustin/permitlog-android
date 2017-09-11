@@ -1,6 +1,12 @@
 package team.tr.permitlog;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class DrivingTimes {
+    //Stores different types of goals:
+    public static final List<String> TIME_TYPES = Arrays.asList("total", "day", "night", "weather", "adverse");
+
     //A class with different properties representing different types of driving times:
     public long total, day, night, weather, adverse;
 

@@ -39,6 +39,8 @@ public class SettingsFragment extends Fragment {
     private View rootView;
     //Firebase Reference:
     private DatabaseReference goalsRef;
+    //The old state the user had before coming to this page:
+    private String oldStateName;
     //The current state name that the user has selected from the dropdown box:
     private String stateName;
     //Is this state just the first option that tells the user to select a state:
@@ -53,17 +55,61 @@ public class SettingsFragment extends Fragment {
     private EditText nightEdit;
     private EditText weatherEdit;
     private EditText adverseEdit;
+    //Spinner holding all the different states:
+    private Spinner spinner;
+    //Adapter holding data for spinner:
+    private ArrayAdapter<String> adapter;
+
+    private DrivingTimes getGoals() {
+        /* Gets goals from TextEdits */
+
+        // Get the values
+        String totalGoal = totalEdit.getText().toString();
+        String dayGoal = dayEdit.getText().toString();
+        String nightGoal = nightEdit.getText().toString();
+        String weatherGoal = weatherEdit.getText().toString();
+        String adverseGoal = adverseEdit.getText().toString();
+
+        // Check to see if any is empty; if so, set it to zero
+        if (totalGoal.trim().equals("")) {
+            totalGoal = "0";
+        }
+        if (dayGoal.trim().equals("")) {
+            dayGoal = "0";
+        }
+        if (nightGoal.trim().equals("")) {
+            nightGoal = "0";
+        }
+        if (weatherGoal.trim().equals("")) {
+            weatherGoal = "0";
+        }
+        if (adverseGoal.trim().equals("")) {
+            adverseGoal = "0";
+        }
+
+        DrivingTimes goalsObj = new DrivingTimes(); //This will store all of the goals
+        //Parse all of the strings into a long:
+        goalsObj.total = Long.parseLong(totalGoal);
+        goalsObj.day = Long.parseLong(dayGoal);
+        goalsObj.night = Long.parseLong(nightGoal);
+        goalsObj.weather = Long.parseLong(weatherGoal);
+        goalsObj.adverse = Long.parseLong(adverseGoal);
+        //Finally, return the DrivingTimes object:
+        return goalsObj;
+    }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        // Save current values (persist for rotation)
-        outState.putString("total", totalEdit.getText().toString());
-        outState.putString("day", dayEdit.getText().toString());
-        outState.putString("night", nightEdit.getText().toString());
-        outState.putString("weather", weatherEdit.getText().toString());
-        outState.putString("adverse", adverseEdit.getText().toString());
+        // Get current goals from text edits:
+        DrivingTimes curGoals = getGoals();
+        // Save current values for each goal type (persist for rotation)
+        for (String goalType : DrivingTimes.TIME_TYPES) {
+            outState.putLong(goalType, curGoals.getTime(goalType));
+        }
+        // Also, save oldStateName as whatever state the user is currently on:
+        outState.putString("oldStateName", adapter.getItem(spinner.getSelectedItemPosition()));
     }
 
     @Override
@@ -99,8 +145,8 @@ public class SettingsFragment extends Fragment {
         while(statesIter.hasNext())
             statesList.add(statesIter.next());
 
-        final Spinner spinner = (Spinner) rootView.findViewById(R.id.state_spinner);
-        final ArrayAdapter<String> adapter = new ArrayAdapter<String>(getContext(),
+        spinner = (Spinner) rootView.findViewById(R.id.state_spinner);
+        adapter = new ArrayAdapter<String>(getContext(),
                 android.R.layout.simple_spinner_item, statesList); //Pass the state names to an array adapter
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); //May want it to be a dialog box instead
         spinner.setAdapter(adapter); //Set the adapter
@@ -137,7 +183,7 @@ public class SettingsFragment extends Fragment {
                         int editViewId = res.getIdentifier(curGoal + "Edit", "id", getContext().getPackageName());
                         EditText editView = (EditText) rootView.findViewById(editViewId);
                         //If this is the custom state, make the textbox whatever the old goal was:
-                        if(stateName.equals("Custom")) {
+                        if(stateName.equals("Custom") || stateName.equals(oldStateName)) {
                             editView.setText(String.valueOf(oldGoals.getTime(curGoal)));
                         }
                         //Otherwise, make it equal to whatever the goal is for this state:
@@ -181,7 +227,8 @@ public class SettingsFragment extends Fragment {
                     }
                     //If the user has a state, set the spinner to the position where the state is:
                     if (dataSnapshot.hasChild("stateName")) {
-                        spinner.setSelection(adapter.getPosition(dataSnapshot.child("stateName").getValue().toString()));
+                        oldStateName = dataSnapshot.child("stateName").getValue().toString();
+                        spinner.setSelection(adapter.getPosition(oldStateName));
                     }
                 }
 
@@ -192,11 +239,12 @@ public class SettingsFragment extends Fragment {
             });
         } else {
             // Get previous (but unsaved) values
-            oldGoals.total = Long.parseLong(savedInstanceState.getString("total"));
-            oldGoals.day = Long.parseLong(savedInstanceState.getString("day"));
-            oldGoals.night = Long.parseLong(savedInstanceState.getString("night"));
-            oldGoals.weather = Long.parseLong(savedInstanceState.getString("weather"));
-            oldGoals.adverse = Long.parseLong(savedInstanceState.getString("adverse"));
+            oldGoals.total = savedInstanceState.getLong("total");
+            oldGoals.day = savedInstanceState.getLong("day");
+            oldGoals.night = savedInstanceState.getLong("night");
+            oldGoals.weather = savedInstanceState.getLong("weather");
+            oldGoals.adverse = savedInstanceState.getLong("adverse");
+            oldStateName = savedInstanceState.getString("oldStateName");
         }
 
         // Save the goals when the button is clicked
@@ -218,38 +266,16 @@ public class SettingsFragment extends Fragment {
             return;
         }
 
-        // Get the values
-        String totalGoal = totalEdit.getText().toString();
-        String dayGoal = dayEdit.getText().toString();
-        String nightGoal = nightEdit.getText().toString();
-        String weatherGoal = weatherEdit.getText().toString();
-        String adverseGoal = adverseEdit.getText().toString();
-
-        // Check to see if any is empty; if so, set it to zero
-        if (totalGoal.trim().equals("")) {
-            totalGoal = "0";
-        }
-        if (dayGoal.trim().equals("")) {
-            dayGoal = "0";
-        }
-        if (nightGoal.trim().equals("")) {
-            nightGoal = "0";
-        }
-        if (weatherGoal.trim().equals("")) {
-            weatherGoal = "0";
-        }
-        if (adverseGoal.trim().equals("")) {
-            adverseGoal = "0";
-        }
+        //Get the goals from the text edit:
+        DrivingTimes userGoals = getGoals();
 
         // Save the values
         goalsRef.child("stateName").setValue(stateName);
         goalsRef.child("needsForm").setValue(needsForm);
-        goalsRef.child("total").setValue(Integer.parseInt(totalGoal));
-        goalsRef.child("day").setValue(Integer.parseInt(dayGoal));
-        goalsRef.child("night").setValue(Integer.parseInt(nightGoal));
-        goalsRef.child("weather").setValue(Integer.parseInt(weatherGoal));
-        goalsRef.child("adverse").setValue(Integer.parseInt(adverseGoal));
+        //Loop through all goal types and save the data accordingly:
+        for (String goalType : DrivingTimes.TIME_TYPES) {
+            goalsRef.child(goalType).setValue(userGoals.getTime(goalType));
+        }
 
         // Hide the keyboard
         hideKeyboard(getContext(), rootView);
