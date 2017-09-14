@@ -110,6 +110,8 @@ public class HomeFragment extends Fragment {
         //If we are not showing the tutorial and the stop button is enabled,
         //then there is an ongoing drive that is being paused:
         if (!showingTutorial && stopButton.isEnabled()) {
+            //Stop the timer since we will restart it once the app resumes:
+            timer.cancel();
             //Store the incomplete drive in /ongoing
             DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing");
             //Just set the starting time:
@@ -262,6 +264,7 @@ public class HomeFragment extends Fragment {
         final TextView driveTime = (TextView) rootView.findViewById(R.id.drive_time);
 
         timer = new Timer();
+        final String timerStr = timer.toString();
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -278,6 +281,7 @@ public class HomeFragment extends Fragment {
                         driveTime.setText(formattedTime);
                     }
                 });
+                Log.d(TAG, timerStr);
             }
         }, 0, 1000);
     }
