@@ -6,6 +6,7 @@ import android.content.pm.ResolveInfo;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -467,13 +468,17 @@ public class LogFragment extends ListFragment {
                 // Send the PDF file to the user
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.setType("application/pdf");
-                intent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(getActivity(),
-                        getString(R.string.file_provider_authority), file));
-                Log.d(TAG, "Listing intents:");
+                Uri fileUri = FileProvider.getUriForFile(getActivity(), getString(R.string.file_provider_authority), file);
+                intent.putExtra(Intent.EXTRA_STREAM, fileUri);
+
+                // Log the different kind of intents that can handle PDFs:
+                Log.d(TAG, "Listing intents for PDF:");
                 for(ResolveInfo info : getContext().getPackageManager().queryIntentActivities(intent,PackageManager.MATCH_ALL)){
                     Log.d(TAG, "Intent: " + info.toString());
                 }
+
                 try {
+                    //Show the user the dialog of apps that can handle PDFs:
                     startActivity(Intent.createChooser(intent, "Send Driving Log"));
                 } catch (android.content.ActivityNotFoundException exception) {
                     // There is no app installed that can send this, so show an error:
@@ -591,9 +596,17 @@ public class LogFragment extends ListFragment {
                     return;
                 }
 
+                // Create an intent in order to send the spreadsheet to another app:
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.setType("application/vnd.ms-excel");
-                intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(sheetFile));
+                Uri fileUri = FileProvider.getUriForFile(getActivity(), getString(R.string.file_provider_authority), sheetFile);
+                intent.putExtra(Intent.EXTRA_STREAM, fileUri);
+
+                // Log the different kind of intents that can handle Excel spreadsheets:
+                Log.d(TAG, "Listing intents for spreadsheet:");
+                for(ResolveInfo info : getContext().getPackageManager().queryIntentActivities(intent,PackageManager.MATCH_ALL)){
+                    Log.d(TAG, "Intent: " + info.toString());
+                }
                 
                 try {
                     startActivity(Intent.createChooser(intent, "Send Driving Log"));
