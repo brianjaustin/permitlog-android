@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ListFragment;
+import android.support.v4.content.FileProvider;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -43,10 +44,7 @@ import java.text.DateFormatSymbols;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Formatter;
-import java.util.List;
 import java.util.Locale;
 
 import jxl.Workbook;
@@ -469,7 +467,12 @@ public class LogFragment extends ListFragment {
                 // Send the PDF file to the user
                 Intent intent = new Intent(Intent.ACTION_SEND);
                 intent.setType("application/pdf");
-                intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+                intent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(getActivity(),
+                        getString(R.string.file_provider_authority), file));
+                Log.d(TAG, "Listing intents:");
+                for(ResolveInfo info : getContext().getPackageManager().queryIntentActivities(intent,PackageManager.MATCH_ALL)){
+                    Log.d(TAG, "Intent: " + info.toString());
+                }
                 try {
                     startActivity(Intent.createChooser(intent, "Send Driving Log"));
                 } catch (android.content.ActivityNotFoundException exception) {
