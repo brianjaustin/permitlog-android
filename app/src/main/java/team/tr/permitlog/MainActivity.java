@@ -269,10 +269,10 @@ public class MainActivity extends AppCompatActivity {
             IdpResponse response = IdpResponse.fromResultIntent(data);
             if (resultCode == ResultCodes.OK) {
                 Log.d(TAG, "Login was successful");
-                // Transition to the home/settings fragment based on what the user needs to do from here:
-                navigateBasedOnUser();
                 // Now that the user is signed in, update currentUser:
                 currentUser = mAuth.getCurrentUser();
+                // Transition to the home/settings fragment based on what the user needs to do from here:
+                navigateBasedOnUser();
             } else {
                 // If there is not a success, try to figure out what went wrong:
                 if (response == null) Log.e(TAG, "User pressed back button");
