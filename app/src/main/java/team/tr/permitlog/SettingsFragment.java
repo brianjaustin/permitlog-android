@@ -39,6 +39,8 @@ public class SettingsFragment extends Fragment {
     private View rootView;
     //Firebase Reference:
     private DatabaseReference goalsRef;
+    //JSON object holding information about all the states:
+    private JSONObject states;
     //The old state the user had before coming to this page:
     private String oldStateName;
     //The current state name that the user has selected from the dropdown box:
@@ -122,7 +124,6 @@ public class SettingsFragment extends Fragment {
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
 
-        final JSONObject states; //Final so we can access it inside the try loop
         try {
             //Open the data file from the Assets folder
             InputStream is = getContext().getAssets().open("states.json");
@@ -139,6 +140,7 @@ public class SettingsFragment extends Fragment {
             ex.printStackTrace(); //Crash
             throw new RuntimeException("Can't parse states.json");
         } //TODO: Better way of handling these unlikely errors?
+
         //We get the state names in an iterator, but we need an array, so this converts it
         Iterator<String> statesIter = states.keys();
         List<String> statesList = new ArrayList<>();
@@ -150,53 +152,8 @@ public class SettingsFragment extends Fragment {
                 android.R.layout.simple_spinner_item, statesList); //Pass the state names to an array adapter
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); //May want it to be a dialog box instead
         spinner.setAdapter(adapter); //Set the adapter
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-                stateName = (String) parent.getItemAtPosition(pos); //Get Selection
-                isFillerState = (pos == 0); //If this is the default position, set isFillerState
-                try {
-                    JSONObject state = states.getJSONObject(stateName); //Get State Object
-                    Iterator<String> stateIter = state.keys(); //So we can iterate through the keys
-                    //Get the Boolean value of the "needsForm" key for this state:
-                    needsForm = state.getBoolean(stateIter.next());
-                    while (stateIter.hasNext()) { //For each key ("total", "day", "night", "weather", "adverse")
-                        String curGoal = stateIter.next(); //Get the current goal
-                        int curValue = state.getInt(curGoal); //And the value for that goal
-
-                        int visibility; //This stores whether we want the views to be invisible or visible
-                        //If this is the "--Select a State--" option
-                        //or the goal for this state is 0 and it is not the Custom state,
-                        //hide the views related to this goal
-                        if((pos == 0) || ((curValue == 0) && !stateName.equals("Custom")))
-                            visibility = View.GONE;
-                        //Otherwise, make the views for this goal visible
-                        else visibility = View.VISIBLE;
-
-                        Resources res = getResources();
-                        //Hide or show the inputs and descriptions based on visibility:
-                        int descViewId = res.getIdentifier(curGoal + "Desc", "id", getContext().getPackageName());
-                        rootView.findViewById(descViewId).setVisibility(visibility);
-                        int inputViewId = res.getIdentifier(curGoal + "Input", "id", getContext().getPackageName());
-                        rootView.findViewById(inputViewId).setVisibility(visibility);
-                        //Get the textbox for this goal:
-                        int editViewId = res.getIdentifier(curGoal + "Edit", "id", getContext().getPackageName());
-                        EditText editView = (EditText) rootView.findViewById(editViewId);
-                        //If this is the custom state, make the textbox whatever the old goal was:
-                        if(stateName.equals("Custom") || stateName.equals(oldStateName)) {
-                            editView.setText(String.valueOf(oldGoals.getTime(curGoal)));
-                        }
-                        //Otherwise, make it equal to whatever the goal is for this state:
-                        else editView.setText(String.valueOf(curValue));
-                    }
-                } catch (JSONException ex) {
-                    ex.printStackTrace();
-                    throw new RuntimeException("Inner JSON parsing error");
-                }
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
+        //Call onStateSelect when the user picks a new state:
+        spinner.setOnItemSelectedListener(onStateSelect);
         // Get the EditText views
         totalEdit = (EditText) rootView.findViewById(R.id.totalEdit);
         dayEdit = (EditText) rootView.findViewById(R.id.dayEdit);
@@ -210,20 +167,10 @@ public class SettingsFragment extends Fragment {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     //Record the user's goals prior to coming here:
-                    if (dataSnapshot.hasChild("total")) {
-                        oldGoals.total = (long)dataSnapshot.child("total").getValue();
-                    }
-                    if (dataSnapshot.hasChild("day")) {
-                        oldGoals.day = (long)dataSnapshot.child("day").getValue();
-                    }
-                    if (dataSnapshot.hasChild("night")) {
-                        oldGoals.night = (long)dataSnapshot.child("night").getValue();
-                    }
-                    if (dataSnapshot.hasChild("weather")) {
-                        oldGoals.weather = (long)dataSnapshot.child("weather").getValue();
-                    }
-                    if (dataSnapshot.hasChild("adverse")) {
-                        oldGoals.adverse = (long)dataSnapshot.child("adverse").getValue();
+                    for (String goalType : DrivingTimes.TIME_TYPES) {
+                        if (dataSnapshot.hasChild(goalType)) {
+                            oldGoals.setTime(goalType, (long)dataSnapshot.child(goalType).getValue());
+                        }
                     }
                     //If the user has a state, set the spinner to the position where the state is:
                     if (dataSnapshot.hasChild("stateName")) {
@@ -239,11 +186,9 @@ public class SettingsFragment extends Fragment {
             });
         } else {
             // Get previous (but unsaved) values
-            oldGoals.total = savedInstanceState.getLong("total");
-            oldGoals.day = savedInstanceState.getLong("day");
-            oldGoals.night = savedInstanceState.getLong("night");
-            oldGoals.weather = savedInstanceState.getLong("weather");
-            oldGoals.adverse = savedInstanceState.getLong("adverse");
+            for (String goalType : DrivingTimes.TIME_TYPES) {
+                oldGoals.setTime(goalType, savedInstanceState.getLong(goalType));
+            }
             oldStateName = savedInstanceState.getString("oldStateName");
         }
 
@@ -253,6 +198,60 @@ public class SettingsFragment extends Fragment {
 
         return rootView;
     }
+
+    private AdapterView.OnItemSelectedListener onStateSelect = new AdapterView.OnItemSelectedListener() {
+        @Override
+        public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+            /* This is called when the user picks a new state from the spinner */
+
+            //Get the state the user selected:
+            stateName = (String) parent.getItemAtPosition(pos);
+            //If this is the default position, set isFillerState:
+            isFillerState = (pos == 0);
+            try {
+                //Get the object containing info about this state:
+                JSONObject state = states.getJSONObject(stateName);
+                //Get the Boolean value of the "needsForm" key for this state:
+                needsForm = state.getBoolean("needsForm");
+                //For each type of goal ("total", "day", "night", "weather", "adverse")
+                for (String curGoal : DrivingTimes.TIME_TYPES) {
+                    //Get the required number of hours for this goal in this state
+                    int curValue = state.getInt(curGoal);
+
+                    //This stores whether we want the views to be invisible or visible
+                    int visibility;
+                    //If this is the default state
+                    //or the goal for this state is 0 and it is not the Custom state,
+                    //hide the views related to this goal
+                    if(isFillerState || ((curValue == 0) && !stateName.equals("Custom")))
+                        visibility = View.GONE;
+                    //Otherwise, make the views for this goal visible
+                    else visibility = View.VISIBLE;
+
+                    Resources res = getResources();
+                    //Hide or show the inputs and descriptions based on visibility:
+                    int descViewId = res.getIdentifier(curGoal + "Desc", "id", getContext().getPackageName());
+                    rootView.findViewById(descViewId).setVisibility(visibility);
+                    int inputViewId = res.getIdentifier(curGoal + "Input", "id", getContext().getPackageName());
+                    rootView.findViewById(inputViewId).setVisibility(visibility);
+                    //Get the textbox for this goal:
+                    int editViewId = res.getIdentifier(curGoal + "Edit", "id", getContext().getPackageName());
+                    EditText editView = (EditText) rootView.findViewById(editViewId);
+                    //If this is the custom state, make the textbox whatever the old goal was:
+                    if(stateName.equals("Custom") || stateName.equals(oldStateName)) {
+                        editView.setText(String.valueOf(oldGoals.getTime(curGoal)));
+                    }
+                    //Otherwise, make it equal to whatever the goal is for this state:
+                    else editView.setText(String.valueOf(curValue));
+                }
+            } catch (JSONException ex) {
+                ex.printStackTrace();
+                throw new RuntimeException("Inner JSON parsing error");
+            }
+        }
+        @Override
+        public void onNothingSelected(AdapterView<?> parent) {}
+    };
 
     //This weird one-liner is done so that onSaveClick looks like a regular function:
     private View.OnClickListener onSaveClick = new View.OnClickListener() { @Override public void onClick(View view) {

@@ -6,6 +6,9 @@
     <string name="first_name">First Name</string>
     <string name="last_name">Last Name</string>
     <string name="license_number">License Number</string>
+    <string name="driver_age">Driver Age</string>
+    <string name="cl_notice">This page is to add information about the supervising drivers. These are the drivers accompanying the permit holder on their practices. Do not enter information about the permit holder here.</string>
+    <string name="nl_notice">For privacy reasons, the license number can be left blank.</string>
     <string name="driver_dialog_success">Driver successfully saved.</string>
     <string name="driver_dialog_deleted">Driver successfully deleted.</string>
     <string name="driver_dialog_error">Please complete all fields.</string>
@@ -27,7 +30,9 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="save">Save</string>
+    <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
     <string name="no_state_error">Please choose a state in the Goals page before exporting your log.</string>
     <string name="save_pdf_error">Unable to export using the Maine format: could not save the PDF.</string>
     <string name="export_pdf_error">Unable to export log using the Maine format: an app that can open PDFs is required.</string>

@@ -28,6 +28,16 @@
             android:layout_marginEnd="15dp"
             android:layout_marginStart="15dp"
             android:layout_marginTop="15dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/cl_notice_container">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/cl_notice"
+                    android:text="@string/cl_notice" />
+            </LinearLayout>
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -35,7 +45,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:id="@+id/driver_firstname"
-                    android:hint="First Name"
+                    android:hint="@string/first_name"
                     android:inputType="textCapWords|textPersonName" />
             </android.support.design.widget.TextInputLayout>
             <android.support.design.widget.TextInputLayout
@@ -45,7 +55,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:id="@+id/driver_lastname"
-                    android:hint="Last Name"
+                    android:hint="@string/last_name"
                     android:inputType="textCapWords|textPersonName" />
             </android.support.design.widget.TextInputLayout>
             <LinearLayout
@@ -56,7 +66,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:id="@+id/nl_notice"
-                    android:text="For privacy reasons, the license number can be left blank." />
+                    android:text="@string/nl_notice" />
             </LinearLayout>
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
@@ -65,7 +75,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:id="@+id/driver_license"
-                    android:hint="License Number"
+                    android:hint="@string/license_number"
                     android:inputType="textCapCharacters"/>
             </android.support.design.widget.TextInputLayout>
             <android.support.design.widget.TextInputLayout
@@ -76,7 +86,7 @@
                     android:layout_height="wrap_content"
                     android:inputType="number"
                     android:id="@+id/driver_age"
-                    android:hint="Driver Age" />
+                    android:hint="@string/driver_age" />
             </android.support.design.widget.TextInputLayout>
             <RelativeLayout
                 android:layout_width="wrap_content"
@@ -85,7 +95,7 @@
 
                 <Button
                     style="@style/Widget.AppCompat.Button.Colored"
-                    android:text="OK"
+                    android:text="@string/ok"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/driver_ok"
@@ -96,7 +106,7 @@
 
                 <Button
                     style="@style/Widget.AppCompat.Button.Colored"
-                    android:text="Cancel"
+                    android:text="@string/cancel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/driver_cancel"
@@ -107,7 +117,7 @@
 
                 <Button
                     style="@style/Widget.AppCompat.Button.Colored"
-                    android:text="Delete"
+                    android:text="@string/delete"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/driver_delete"
