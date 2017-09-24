@@ -59,7 +59,7 @@ public class DriverAdapter {
             driverNames.remove(driverIndex);
             driverSnapshots.remove(driverIndex);
             // Add "No drivers" if driverNames is empty:
-            if (driverNames.isEmpty()) driverNames.add("No drivers");
+            if (driverNames.isEmpty()) driverNames.add("No supervisors");
             // Update adapter:
             driversAdapter.notifyDataSetChanged();
         }
@@ -110,7 +110,7 @@ public class DriverAdapter {
         if (!isListening) {
             //Remember to reset the adapter so that things aren't added twice:
             driverNames.clear();
-            driverNames.add("No drivers");
+            driverNames.add("No supervisors");
             driverIds.clear();
             driversAdapter.notifyDataSetChanged();
             driversRef.addChildEventListener(driversListener);

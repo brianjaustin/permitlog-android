@@ -42,14 +42,14 @@
                         android:layout_gravity="center">
                     <Button
                         style="@style/Widget.AppCompat.Button.Colored"
-                        android:text="Start Drive"
+                        android:text="@string/start_drive"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:id="@+id/start_drive"
                         android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored" />
                     <Button
                         style="@style/Widget.AppCompat.Button.Colored"
-                        android:text="Stop Drive"
+                        android:text="@string/stop_drive"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:id="@+id/stop_drive"
@@ -86,7 +86,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="Time Completed"
+                        android:text="@string/time_completed"
                         android:layout_gravity="center_horizontal" />
 
                     <ProgressBar
@@ -176,7 +176,7 @@
                 android:layout_height="wrap_content"
                 android:src="@drawable/ic_car"
                 fab:fab_size="mini"
-                fab:fab_label="Custom Drive"
+                fab:fab_label="@string/custom_drive_title"
                 app:fab_colorNormal="@color/colorAccent"/>
             <com.github.clans.fab.FloatingActionButton
                 android:id="@+id/add_driver"
@@ -184,7 +184,7 @@
                 android:layout_height="wrap_content"
                 android:src="@drawable/ic_person"
                 fab:fab_size="mini"
-                fab:fab_label="Add Driver"
+                fab:fab_label="@string/driver_add_title"
                 app:fab_colorNormal="@color/colorAccent"/>
         </com.github.clans.fab.FloatingActionMenu>
     </GridLayout>

@@ -41,7 +41,7 @@
                     android:id="@+id/totalEdit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Total"
+                    android:hint="@string/total"
                     android:inputType="number" />
             </android.support.design.widget.TextInputLayout>
 
@@ -60,7 +60,7 @@
                     android:id="@+id/dayEdit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Day"
+                    android:hint="@string/day"
                     android:inputType="number" />
             </android.support.design.widget.TextInputLayout>
 
@@ -78,7 +78,7 @@
                     android:layout_height="wrap_content"
                     android:inputType="number"
                     android:id="@+id/nightEdit"
-                    android:hint="Night"/>
+                    android:hint="@string/night"/>
             </android.support.design.widget.TextInputLayout>
             <TextView
                 android:id="@+id/weatherDesc"
@@ -95,7 +95,7 @@
                     android:id="@+id/weatherEdit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Weather"
+                    android:hint="@string/poor_weather"
                     android:inputType="number" />
             </android.support.design.widget.TextInputLayout>
             <TextView
@@ -113,7 +113,7 @@
                     android:id="@+id/adverseEdit"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Adverse"
+                    android:hint="@string/adverse_conds"
                     android:inputType="number" />
             </android.support.design.widget.TextInputLayout>
 

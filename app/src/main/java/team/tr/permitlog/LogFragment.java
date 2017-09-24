@@ -417,8 +417,8 @@ public class LogFragment extends ListFragment {
                 PDFieldTreeNode dateTimeField = acroForm.getField("Date and TimeRow" + Integer.toString(rowNum));
                 PDFieldTreeNode hoursField = acroForm.getField("Number of Driving HoursRow" + Integer.toString(rowNum));
                 PDFieldTreeNode nightField = acroForm.getField("Number of After Dark Driving HoursRow" + Integer.toString(rowNum));
-                PDFieldTreeNode driverField = acroForm.getField("Supervising Drivers Name and AgeRow" + Integer.toString(rowNum));
-                PDFieldTreeNode licenseField = acroForm.getField("License Number of Supervising DriverRow" + Integer.toString(rowNum));
+                PDFieldTreeNode driverField = acroForm.getField("Supervisor Name and AgeRow" + Integer.toString(rowNum));
+                PDFieldTreeNode licenseField = acroForm.getField("License Number of SupervisorRow" + Integer.toString(rowNum));
                 if (dateTimeField != null) dateTimeField.setValue(dateTimeString);
                 if (hoursField != null) hoursField.setValue(stringElapsed);
                 if (nightField != null && (boolean) logSnapshot.child("night").getValue()) {
@@ -522,15 +522,17 @@ public class LogFragment extends ListFragment {
                     // Create header cells:
                     String headers[] = {
                             "Month", "Date", "Year", "Duration", "Day/Night","Poor Weather",
-                            "Adverse Conditions", "Supervising Driver", "Age", "License Number"
+                            "Adverse Conditions", "Supervisor", "Age", "License Number"
                     };
                     for (int i = 0; i < headers.length; i++) {
                         // Put this cell in the top row and ith column:
                         Label headerCell = new Label(i, 0, headers[i]);
                         headerCell.setCellFormat(headerFormat);
                         sheet.addCell(headerCell);
-                        // Set the column width according to the header:
-                        sheet.setColumnView(i, Math.max(10, headers[i].length()+3));
+                        // For Supervisor and License Number, make the columns wide enough to fit "DELETED SUPERVSIOR"
+                        if ((i == 7) || (i == 9)) sheet.setColumnView(i, 19);
+                        // However, for most columns, set the column width according to the header:
+                        else sheet.setColumnView(i, Math.max(10, headers[i].length()+3));
                     }
 
                     // Loop through the logs:
@@ -570,7 +572,7 @@ public class LogFragment extends ListFragment {
                         sheet.addCell(adverseCell);
 
                         // Get the driver info if possible:
-                        String driverName = "DELETED DRIVER", driverAge = "DELETED", driverLicense = "DELETED DRIVER";
+                        String driverName = "DELETED SUPERVISOR", driverAge = "DELETED", driverLicense = "DELETED SUPERVISOR";
                         if (driversInfo.driverIds.contains(driverId)) {
                             int driverIndex = driversInfo.driverIds.indexOf(driverId);
                             DataSnapshot driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);

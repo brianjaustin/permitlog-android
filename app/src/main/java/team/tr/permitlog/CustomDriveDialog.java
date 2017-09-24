@@ -9,7 +9,6 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -132,7 +131,7 @@ public class CustomDriveDialog extends AppCompatActivity {
             logId = getIntent().getStringExtra("logId");
             if (logId != null) {
                 findViewById(R.id.custom_drive_delete).setVisibility(View.VISIBLE);
-                ab.setTitle("Edit Drive Log");
+                ab.setTitle(getString(R.string.edit_drive_title));
             }
         }
         //Otherwise, look at the intent to see what we should set:
@@ -152,7 +151,7 @@ public class CustomDriveDialog extends AppCompatActivity {
                 //Show the Delete button:
                 findViewById(R.id.custom_drive_delete).setVisibility(View.VISIBLE);
                 //Change the title at the top:
-                ab.setTitle("Edit Drive Log");
+                ab.setTitle(getString(R.string.edit_drive_title));
             }
         }
     }

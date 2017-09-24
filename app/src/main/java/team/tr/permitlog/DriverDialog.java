@@ -127,7 +127,7 @@ public class DriverDialog extends AppCompatActivity {
         // show the user a dialog and save the drive if they say yes:
         if (licenseNumber.trim().isEmpty()) {
             new MaterialDialog.Builder(this)
-                    .content("You did not enter a license number for this driver. Are you sure you do not want to save the license number?")
+                    .content(getString(R.string.no_license_warning))
                     .positiveText(R.string.yes)
                     .negativeText(R.string.no)
                     .onPositive(new MaterialDialog.SingleButtonCallback() {
@@ -139,6 +139,8 @@ public class DriverDialog extends AppCompatActivity {
                     })
                     .show();
         }
+        // Otherwise, if they have a license number, just save the drive:
+        else saveDrive();
     }
 
     public void saveDrive() {

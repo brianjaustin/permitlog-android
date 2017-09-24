@@ -2,11 +2,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/activity_driver_dialog"
+    android:id="@+id/activity_custom_dialog"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:theme="@style/Theme.AppTheme.Light.NoActionBar"
-    tools:context="team.tr.permitlog.DriverDialog"
+    tools:context="team.tr.permitlog.CustomDriveDialog"
     android:orientation="vertical">
     <android.support.v7.widget.Toolbar
         xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -18,7 +18,7 @@
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
         android:layout_gravity="top"
         app:titleTextColor="@android:color/white"
-        android:label="Custom Drive"/>
+        android:label="@string/custom_drive_title"/>
     <ScrollView
         android:layout_height="match_parent"
         android:layout_width="match_parent">
@@ -35,7 +35,7 @@
                     style="@style/Base.TextAppearance.AppCompat.Headline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Date: "
+                    android:text="@string/date_label"
                     android:textSize="20sp"
                     android:paddingTop="5dp"
                     android:paddingBottom="5dp"
@@ -57,7 +57,7 @@
                     style="@style/Base.TextAppearance.AppCompat.Headline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Start Time: "
+                    android:text="@string/start_time_label"
                     android:id="@+id/drive_start_time_text"
                     android:textSize="20sp"
                     android:paddingTop="5dp"
@@ -79,7 +79,7 @@
                     style="@style/Base.TextAppearance.AppCompat.Headline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Stop Time: "
+                    android:text="@string/stop_time_label"
                     android:id="@+id/drive_end_time_text"
                     android:textSize="20sp"
                     android:paddingTop="5dp"
@@ -102,7 +102,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:id="@+id/time_notice"
-                    android:text="Note that if the ending time is before the starting time, it will be assumed that the drive went into the next day." />
+                    android:text="@string/time_notice" />
             </LinearLayout>
 
             <CheckBox
@@ -111,7 +111,7 @@
                 android:layout_height="wrap_content"
                 android:paddingBottom="10dp"
                 android:paddingTop="10dp"
-                android:text="Night"
+                android:text="@string/night"
                 android:textSize="20sp" />
             <CheckBox
                 android:id="@+id/weather_checkbox"
@@ -119,7 +119,7 @@
                 android:layout_height="wrap_content"
                 android:paddingBottom="10dp"
                 android:paddingTop="10dp"
-                android:text="Poor Weather"
+                android:text="@string/poor_weather"
                 android:textSize="20sp" />
             <CheckBox
                 android:id="@+id/adverse_checkbox"
@@ -127,7 +127,7 @@
                 android:layout_height="wrap_content"
                 android:paddingBottom="10dp"
                 android:paddingTop="10dp"
-                android:text="Adverse Conditions"
+                android:text="@string/adverse_conds"
                 android:textSize="20sp" />
             <LinearLayout
                 android:layout_width="match_parent"
@@ -137,13 +137,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:id="@+id/dd_notice"
-                    android:text="It seems that the driver that you originally set for this log has been deleted. Please set a new driver." />
+                    android:text="@string/deleted_driver_notice" />
             </LinearLayout>
             <TextView
                 style="@style/Base.TextAppearance.AppCompat.Headline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Accompanying Driver:"
+                android:text="@string/driver_label"
                 android:textSize="20sp"
                 android:paddingTop="5dp"
                 android:paddingBottom="5dp" />
@@ -158,7 +158,7 @@
                 android:paddingTop="5dp">
                 <Button
                     style="@style/Widget.AppCompat.Button.Colored"
-                    android:text="OK"
+                    android:text="@string/ok"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/custom_drive_ok"
@@ -168,7 +168,7 @@
                     android:layout_alignParentEnd="true" />
                 <Button
                     style="@style/Widget.AppCompat.Button.Colored"
-                    android:text="Cancel"
+                    android:text="@string/cancel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/custom_drive_cancel"
@@ -178,7 +178,7 @@
                     android:layout_toStartOf="@+id/custom_drive_ok" />
                 <Button
                     style="@style/Widget.AppCompat.Button.Colored"
-                    android:text="Delete"
+                    android:text="@string/delete"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/custom_drive_delete"
