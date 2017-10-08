@@ -119,9 +119,12 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize ad network
         MobileAds.initialize(getApplicationContext(), "ca-app-pub-1631603318674332~4854746404");
-        // If we are testing the tutorial, delete the goals and set the tutorial preference to true:
+        // If we are testing the tutorial,
+        // delete the goals (if user is logged in) and set the tutorial preference to true:
         if (testingTutorial) {
-            FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals").removeValue();
+            if (currentUser != null) {
+                FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals").removeValue();
+            }
 
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
             SharedPreferences.Editor editor = prefs.edit();
