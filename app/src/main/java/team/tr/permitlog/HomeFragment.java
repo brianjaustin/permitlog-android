@@ -320,7 +320,7 @@ public class HomeFragment extends Fragment {
                 ((totalGoal != 0) || (dayGoal != 0) || (nightGoal != 0) || (weatherGoal != 0) || (adverseGoal != 0))) {
                 Log.d(TAG, "Adding stateName for this user");
                 //If the user's goals match the state of Maine:
-                if ((totalGoal == 70) && (dayGoal == 0) && (nightGoal == 10) && (weatherGoal == 0) && (adverseGoal == 0)) {
+                if ((totalGoal == 70) && (dayGoal == 60) && (nightGoal == 10) && (weatherGoal == 0) && (adverseGoal == 0)) {
                     //Make the state Maine and set the needsForm flag:
                     goalsRef.child("stateName").setValue("Maine");
                     goalsRef.child("needsForm").setValue(true);
