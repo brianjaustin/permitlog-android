@@ -145,7 +145,7 @@ public class HomeFragment extends Fragment {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
             //If there is an incomplete drive:
-            if (dataSnapshot.exists()) {
+            if (dataSnapshot.hasChild("start")) {
                 Log.d(TAG, "There's an incomplete drive in Firebase!");
                 //Get the starting time from the incomplete value:
                 startingTime.setTimeInMillis((long)dataSnapshot.child("start").getValue());
