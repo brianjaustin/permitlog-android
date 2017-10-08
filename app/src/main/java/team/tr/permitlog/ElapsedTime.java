@@ -16,7 +16,7 @@ public class ElapsedTime {
     public static String TAG = "ElapsedTime";
 
     public static String formatSeconds(long seconds) {
-        /* Takes number of seconds and returns a String with format HH:MM. */
+        /* Takes number of seconds and returns a String with format HH:MM:SS. */
         String timeString = DateUtils.formatElapsedTime(seconds);
         //If the time is less than an hour, then add "00:" to the beginning:
         if (seconds < 3600) timeString = "00:" + timeString;
@@ -34,7 +34,7 @@ public class ElapsedTime {
     private ArrayList<Boolean> logsAtNight = new ArrayList<>();
     private ArrayList<Boolean> logsBadWeather = new ArrayList<>();
     private ArrayList<Boolean> logsAdverse = new ArrayList<>();
-    //Store the total times for overall and different categories (i.e. day, night,
+    //Store the total times for overall and different categories (i.e. day, night)
     public DrivingTimes timeTracker = new DrivingTimes();
     //This is the callback called whenever there is a change to the above variables:
     private DrivingTimesConsumer callback;

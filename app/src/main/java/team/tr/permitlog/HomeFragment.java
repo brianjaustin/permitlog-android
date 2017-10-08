@@ -509,6 +509,8 @@ public class HomeFragment extends Fragment {
     private View.OnClickListener onStopDrive = new View.OnClickListener() { @Override public void onClick(View view) {
         // Stop the timer
         timer.cancel();
+        //Remove the ongoing drive:
+        FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing").removeValue();
 
         // Disable this button
         Button stopButton = (Button) view;
@@ -619,8 +621,6 @@ public class HomeFragment extends Fragment {
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
         // Don't do anything if the user isn't signed in:
         if (!isSignedIn) return;
-        //Remove the ongoing drive:
-        FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing").removeValue();
         // Connect to the database
         DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times").push();
         driveRef.child("start").setValue(startingTime.getTime());
