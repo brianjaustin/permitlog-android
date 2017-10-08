@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.FileProvider;
 import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -46,6 +45,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Timer;
@@ -63,8 +63,8 @@ public class HomeFragment extends Fragment {
     private boolean showingTutorial = false;
 
     // Store drive start/stop times
-    private Date startingTime = new Date();
-    private Date endingTime = new Date();
+    private Calendar startingTime = Calendar.getInstance();
+    private Calendar endingTime = Calendar.getInstance();
 
     // Start/stop buttons
     private Button startButton;
@@ -87,8 +87,8 @@ public class HomeFragment extends Fragment {
     private TextView totalTimeView, dayTimeView, nightTimeView, weatherTimeView, adverseTimeView;
     // Object that updates the time totals:
     private ElapsedTime timeUpdater;
-    // Firebase reference for goals:
-    private DatabaseReference goalsRef;
+    // Firebase reference for goals and ongoing drive:
+    private DatabaseReference goalsRef, ongoingRef;
     // Callback for timesListener:
     private DrivingTimesConsumer timeCallback = new DrivingTimesConsumer() {
         @Override public void accept(DrivingTimes timeObj) {
@@ -113,10 +113,8 @@ public class HomeFragment extends Fragment {
         if (!showingTutorial && stopButton.isEnabled()) {
             //Stop the timer since we will restart it once the app resumes:
             timer.cancel();
-            //Store the incomplete drive in /ongoing
-            DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing");
             //Just set the starting time:
-            driveRef.child("start").setValue(startingTime.getTime());
+            ongoingRef.child("start").setValue(startingTime.getTimeInMillis());
         }
         super.onPause();
     }
@@ -140,8 +138,7 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        DatabaseReference incompleteRef = FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing");
-        incompleteRef.addListenerForSingleValueEvent(resumeIncompleteDrive);
+        ongoingRef.addListenerForSingleValueEvent(resumeIncompleteDrive);
     }
 
     private ValueEventListener resumeIncompleteDrive = new ValueEventListener() {
@@ -151,11 +148,19 @@ public class HomeFragment extends Fragment {
             if (dataSnapshot.exists()) {
                 Log.d(TAG, "There's an incomplete drive in Firebase!");
                 //Get the starting time from the incomplete value:
-                startingTime.setTime((long)dataSnapshot.child("start").getValue());
-                //Enable the start button and update the timer label:
-                startButton.setEnabled(false);
-                stopButton.setEnabled(true);
-                timerUpdateLabel();
+                startingTime.setTimeInMillis((long)dataSnapshot.child("start").getValue());
+                //If the user has completed the ongoing drive and just needs to go to the dialog
+                if (dataSnapshot.hasChild("end")) {
+                    //Get the ending time:
+                    endingTime.setTimeInMillis((long)dataSnapshot.child("end").getValue());
+                    //Show the dialog using the driver ID:
+                    showDialog(dataSnapshot.child("driver_id").getValue().toString());
+                } else { //Otherwise, if the drive is still ongoing:
+                    //Enable the start button and update the timer label:
+                    startButton.setEnabled(false);
+                    stopButton.setEnabled(true);
+                    timerUpdateLabel();
+                }
             }
         }
 
@@ -207,6 +212,8 @@ public class HomeFragment extends Fragment {
         // Get data about the goals, if available:
         goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
         goalsRef.addValueEventListener(goalsListener);
+        // Get reference to ongoing drive:
+        ongoingRef = FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing");
 
         //Initialize the ad:
         final NativeExpressAdView adView = new NativeExpressAdView(getContext());
@@ -270,7 +277,7 @@ public class HomeFragment extends Fragment {
             @Override
             public void run() {
                 // Get the difference between the start and current time in seconds
-                long timeDiff = ((new Date()).getTime()-startingTime.getTime())/1000;
+                long timeDiff = ((new Date()).getTime()-startingTime.getTimeInMillis())/1000;
                 // Format this time appropriately:
                 formattedTime = DateUtils.formatElapsedTime(timeDiff);
                 // Remember to add hours:
@@ -282,7 +289,6 @@ public class HomeFragment extends Fragment {
                         driveTime.setText(formattedTime);
                     }
                 });
-                Log.d(TAG, timerStr);
             }
         }, 0, 1000);
     }
@@ -498,7 +504,7 @@ public class HomeFragment extends Fragment {
         stopButton.setEnabled(true);
 
         // Grab the start time
-        startingTime = new Date();
+        startingTime.setTime(new Date());
         Log.d(TAG, "startingTime: " + startingTime);
 
         // Start updating the label
@@ -509,8 +515,6 @@ public class HomeFragment extends Fragment {
     private View.OnClickListener onStopDrive = new View.OnClickListener() { @Override public void onClick(View view) {
         // Stop the timer
         timer.cancel();
-        //Remove the ongoing drive:
-        FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing").removeValue();
 
         // Disable this button
         Button stopButton = (Button) view;
@@ -520,20 +524,30 @@ public class HomeFragment extends Fragment {
         Button startButton = (Button) rootView.findViewById(R.id.start_drive);
         startButton.setEnabled(true);
 
-        final Context myContext = rootView.getContext();
-
         // Check if the driver field is empty
         int spinnerPosition = driversSpinner.getSelectedItemPosition();
         if (spinnerData.driverIds.isEmpty()) {
-            Toast.makeText(myContext, getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), getResources().getString(R.string.go_to_add_driver_menu), Toast.LENGTH_LONG).show();
             return;
         }
         // If it is not empty, get the driver
         final String driverId = spinnerData.driverIds.get(spinnerPosition);
+        //Save driver ID in Firebase:
+        ongoingRef.child("driver_id").setValue(driverId);
 
         // Grab the stop time
-        endingTime = new Date();
+        endingTime.setTime(new Date());
+        // Save the ending time in Firebase:
+        ongoingRef.child("end").setValue(endingTime.getTimeInMillis());
         Log.d(TAG, "endTime: " + endingTime);
+
+        showDialog(driverId);
+    } };
+
+    private void showDialog(final String driverId) {
+        /* Shows dialog to user asking them to select if the drive was at night, in poor weather, or in adverse conditions
+           and saves drive with startingTime, endingTime, and driverId */
+
         //Figure out which checkboxes we want to show the user
         final ArrayList<String> dialogOptions = new ArrayList<String>();
         if(nightGoal != 0) dialogOptions.add("Night");
@@ -544,7 +558,7 @@ public class HomeFragment extends Fragment {
 
         if(dialogOptions.size() > 0) {
             // Ask about the drive
-            new MaterialDialog.Builder(myContext)
+            new MaterialDialog.Builder(getContext())
                     .content(R.string.save_dialog_content)
                     .positiveText(R.string.save)
                     .items(dialogOptions.toArray(new String[dialogOptions.size()]))
@@ -559,7 +573,6 @@ public class HomeFragment extends Fragment {
                     .onPositive(new MaterialDialog.SingleButtonCallback() {
                         @Override
                         public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                            Log.d(TAG, "onClick");
                             // Save the drive (at night) and says success
                             boolean duringNight = false, duringWeather = false, duringAdverse = false;
                             for (CharSequence selection : selections) {
@@ -569,7 +582,7 @@ public class HomeFragment extends Fragment {
                             }
                             saveDrive(duringNight, duringWeather, duringAdverse, driverId);
                             resetLabel();
-                            Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), R.string.drive_saved, Toast.LENGTH_SHORT).show();
                         }
                     })
                     //Do not cancel the dialog if the user accidentally touches on the outside:
@@ -579,9 +592,9 @@ public class HomeFragment extends Fragment {
         } else { //They're not tracking anything other then total time
             saveDrive(false, false, false, driverId);
             resetLabel();
-            Toast.makeText(myContext, R.string.drive_saved, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), R.string.drive_saved, Toast.LENGTH_SHORT).show();
         }
-    } };
+    }
 
     //This is the listener for the "Custom Drive" button.
     private View.OnClickListener onAddDrive = new View.OnClickListener() { @Override public void onClick(View view) {
@@ -621,10 +634,17 @@ public class HomeFragment extends Fragment {
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
         // Don't do anything if the user isn't signed in:
         if (!isSignedIn) return;
+        // Delete the ongoing drive now that it's over:
+        ongoingRef.removeValue();
+
+        // Set the ending time so that startingTime-endingTime is exact in minutes:
+        endingTime.set(Calendar.SECOND, startingTime.get(Calendar.SECOND));
+        endingTime.set(Calendar.MILLISECOND, startingTime.get(Calendar.MILLISECOND));
+
         // Connect to the database
         DatabaseReference driveRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times").push();
-        driveRef.child("start").setValue(startingTime.getTime());
-        driveRef.child("end").setValue(endingTime.getTime());
+        driveRef.child("start").setValue(startingTime.getTimeInMillis());
+        driveRef.child("end").setValue(endingTime.getTimeInMillis());
         driveRef.child("night").setValue(night);
         driveRef.child("weather").setValue(weather);
         driveRef.child("adverse").setValue(adverse);

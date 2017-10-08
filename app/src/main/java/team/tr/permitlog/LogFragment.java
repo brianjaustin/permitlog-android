@@ -6,7 +6,6 @@ import android.content.pm.ResolveInfo;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -84,6 +83,8 @@ public class LogFragment extends ListFragment {
     private DriverAdapter driversInfo;
     // Object that keeps track of total time and total time during night:
     private ElapsedTime totalUpdater;
+    // Buttons for adding
+    private FloatingActionButton maineBtn, manualBtn;
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
@@ -191,11 +192,29 @@ public class LogFragment extends ListFragment {
         listAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, logSummaries);
         setListAdapter(listAdapter);
 
-        // Set add drive button click
-        final FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.export_maine);
-        addDrive.setOnClickListener(onMaineExport);
+        // Set add Maine drive button click
+        maineBtn = (FloatingActionButton) rootView.findViewById(R.id.export_maine);
+        maineBtn.setOnClickListener(onMaineExport);
 
-        //Update the addDrive button based off the goals data:
+        // Set add manual drive button click
+        manualBtn = (FloatingActionButton) rootView.findViewById(R.id.export_manual);
+        manualBtn.setOnClickListener(onManualExport);
+
+        // Load PDF export resources
+        PDFBoxResourceLoader.init(getContext());
+
+        //Inflate the layout for this fragment
+        return rootView;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        //This is in the onStart method and not the onCreateView method above
+        //in order to avoid an IllegalStateException
+        //that happens when trying to use getString() before the fragment is ready.
+
+        //Update the maineBtn button based off the goals data:
         goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -211,8 +230,8 @@ public class LogFragment extends ListFragment {
                 else {
                     stateName = dataSnapshot.child("stateName").getValue().toString();
                     if (dataSnapshot.hasChild("needsForm")) needsForm = (boolean)dataSnapshot.child("needsForm").getValue();
-                    //If the user has "stateName" but not "needsForm",
-                    //then this is one of the few users who had a buggy version of the app:
+                        //If the user has "stateName" but not "needsForm",
+                        //then this is one of the few users who had a buggy version of the app:
                     else {
                         Log.d(TAG, "The weird buggy situation in LogFragment.");
                         //On this buggy, edge-case situation, needsForm is true iff the state is Maine:
@@ -223,11 +242,11 @@ public class LogFragment extends ListFragment {
 
                 //If the user needs a form, add the option to export to the state log:
                 if(needsForm){
-                    addDrive.setLabelText(stateName + " Log Export");
+                    maineBtn.setLabelText(stateName + " Log Export");
                 }
-                //Otherwise, just hide the addDrive button:
+                //Otherwise, just hide the maineBtn button:
                 else {
-                    addDrive.setVisibility(View.GONE);
+                    maineBtn.setVisibility(View.GONE);
                 }
             }
             @Override
@@ -235,16 +254,6 @@ public class LogFragment extends ListFragment {
                 Log.e(TAG, databaseError.getMessage());
             }
         });
-
-        // Set add driver button click
-        FloatingActionButton addDriver = (FloatingActionButton) rootView.findViewById(R.id.export_manual);
-        addDriver.setOnClickListener(onManualExport);
-
-        // Load PDF export resources
-        PDFBoxResourceLoader.init(getContext());
-
-        //Inflate the layout for this fragment
-        return rootView;
     }
 
     @Override

@@ -16,7 +16,7 @@ public class ElapsedTime {
     public static String TAG = "ElapsedTime";
 
     public static String formatSeconds(long seconds) {
-        /* Takes number of seconds and returns a String with format HH:MM:SS. */
+        /* Takes number of seconds and returns a String with format HH:MM. */
         String timeString = DateUtils.formatElapsedTime(seconds);
         //If the time is less than an hour, then add "00:" to the beginning:
         if (seconds < 3600) timeString = "00:" + timeString;
