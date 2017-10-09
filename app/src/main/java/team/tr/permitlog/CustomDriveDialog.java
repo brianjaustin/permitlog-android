@@ -31,8 +31,9 @@ public class CustomDriveDialog extends AppCompatActivity {
     //TAG for logging:
     public static String TAG = "CustomDriveDialog";
 
-    // Firebase listener
+    // Firebase listeners
     private DatabaseReference timesRef;
+    private DatabaseReference goalsRef;
     // The spinner for selecting drivers:
     private Spinner driversSpinner;
     // Object that holds all data relevant to the driver spinner:
@@ -81,6 +82,7 @@ public class CustomDriveDialog extends AppCompatActivity {
         // Setup the Firebase reference
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
+        goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
 
         // Get the spinner:
         driversSpinner = (Spinner)findViewById(R.id.drivers_spinner);
@@ -100,6 +102,8 @@ public class CustomDriveDialog extends AppCompatActivity {
         timeNotice = (TextView)findViewById(R.id.time_notice);
         ddNoticeContainer = (LinearLayout)findViewById(R.id.dd_notice_container);
         ddNotice = (TextView)findViewById(R.id.dd_notice);
+
+        goalsRef.addListenerForSingleValueEvent(setGoalData);
 
         // Load the current values if possible:
         if (savedInstanceState != null) {
@@ -166,7 +170,7 @@ public class CustomDriveDialog extends AppCompatActivity {
             updateDateAndTime();
             //Set the night checkbox to whatever the log says:
             ((CheckBox)findViewById(R.id.night_checkbox)).setChecked(
-                    (boolean)dataSnapshot.child("night").getValue()
+                    dataSnapshot.hasChild("night") && (boolean)dataSnapshot.child("weather").getValue()
             );
             //Not all users have "weather" and "adverse", so make sure to use .hasChild() to check if they do:
             ((CheckBox)findViewById(R.id.weather_checkbox)).setChecked(
@@ -175,12 +179,33 @@ public class CustomDriveDialog extends AppCompatActivity {
             ((CheckBox)findViewById(R.id.adverse_checkbox)).setChecked(
                     dataSnapshot.hasChild("adverse") && (boolean)dataSnapshot.child("adverse").getValue()
             );
+
             //Adjust the spinner according to the driver:
             selectDriver(dataSnapshot.child("driver_id").getValue().toString());
         }
         @Override
         public void onCancelled(DatabaseError databaseError) {
             Log.e(TAG, "While trying to get data from /times/"+logId+"/: "+databaseError.getMessage());
+        }
+    };
+
+    private ValueEventListener setGoalData = new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+            if(dataSnapshot.child("night").getValue().toString().equals("0")){
+                findViewById(R.id.night_checkbox).setVisibility(View.GONE);
+            }
+            if(dataSnapshot.child("weather").getValue().toString().equals("0")){
+                findViewById(R.id.weather_checkbox).setVisibility(View.GONE);
+            }
+            if(dataSnapshot.child("adverse").getValue().toString().equals("0")){
+                findViewById(R.id.adverse_checkbox).setVisibility(View.GONE);
+            }
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+            Log.e(TAG, "While trying to get data from /goals/"+logId+"/: "+databaseError.getMessage());
         }
     };
 
