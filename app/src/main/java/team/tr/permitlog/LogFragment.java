@@ -241,8 +241,12 @@ public class LogFragment extends ListFragment {
                 }
 
                 //If the user needs a form, add the option to export to the state log:
-                if(needsForm){
-                    maineBtn.setLabelText(stateName + " Log Export");
+                if(needsForm || stateName.equals("Custom")) {
+                    if (stateName.equals("Custom")) {
+                        maineBtn.setLabelText("PDF Log Export");
+                    } else {
+                        maineBtn.setLabelText(stateName + " Log Export");
+                    }
                 }
                 //Otherwise, just hide the maineBtn button:
                 else {
