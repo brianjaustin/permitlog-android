@@ -85,6 +85,8 @@ public class LogFragment extends ListFragment {
     private ElapsedTime totalUpdater;
     // Buttons for adding
     private FloatingActionButton maineBtn, manualBtn;
+    //Progress dialog for log generation
+    private MaterialDialog proDialog;
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
@@ -289,8 +291,6 @@ public class LogFragment extends ListFragment {
             boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
             if (!isSignedIn) return;
 
-            // This Toast, when shown, will tell the user creating the PDF could take a while:
-            final Toast notice = Toast.makeText(getContext(), "Creating the PDF for the Maine log may take a few minutes. Please wait. You will be asked to send the driving log to another app when it's finished.", Toast.LENGTH_LONG);
             // Turn createPdfLog into an AsyncTask:
             // Note that this can not just be an instance member because it needs to be created every time the method runs
             // since one AsyncTask can only be executed once.
@@ -309,8 +309,12 @@ public class LogFragment extends ListFragment {
                         public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                             // Create the PDF log asynchronously while showing the year:
                             createPdfLogAsync.execute(true);
-                            // Tell the user it might be a while:
-                            notice.show();
+                            // Show the progress dialog
+                            proDialog = new MaterialDialog.Builder(getContext())
+                                    .title("Generating PDF Log")
+                                    .content("Please wait")
+                                    .progress(false, logSnapshots.size())
+                                    .show();
                         }
                     })
                     .onNegative(new MaterialDialog.SingleButtonCallback() {
@@ -318,8 +322,12 @@ public class LogFragment extends ListFragment {
                         public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                             // Create the PDF log asynchronously while not showing the year:
                             createPdfLogAsync.execute(false);
-                            // Tell the user it might be a while:
-                            notice.show();
+                            // Show the progress dialog
+                            proDialog = new MaterialDialog.Builder(getContext())
+                                    .title("Generating PDF Log")
+                                    .content("Please wait")
+                                    .progress(false, logSnapshots.size())
+                                    .show();
                         }
                     })
                     .show();
@@ -444,6 +452,7 @@ public class LogFragment extends ListFragment {
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
             }
+            proDialog.incrementProgress(1);
         }
 
         // Add the totals
@@ -489,7 +498,7 @@ public class LogFragment extends ListFragment {
                 for(ResolveInfo info : getContext().getPackageManager().queryIntentActivities(intent,PackageManager.MATCH_ALL)){
                     Log.d(TAG, "Intent: " + info.toString());
                 }
-
+                proDialog.dismiss();
                 try {
                     //Show the user the dialog of apps that can handle PDFs:
                     startActivity(Intent.createChooser(intent, "Send Driving Log"));
