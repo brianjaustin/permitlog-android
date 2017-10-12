@@ -298,38 +298,13 @@ public class LogFragment extends ListFragment {
                 createPdfLog(bools[0]);
                 return null;
             } };
-
-            new MaterialDialog.Builder(getContext())
-                    .content("Do you want the log to include the year in its dates?")
-                    .positiveText(R.string.yes)
-                    .negativeText(R.string.no)
-                    .neutralText(R.string.cancel)
-                    .onPositive(new MaterialDialog.SingleButtonCallback() {
-                        @Override
-                        public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                            // Create the PDF log asynchronously while showing the year:
-                            createPdfLogAsync.execute(true);
-                            // Show the progress dialog
-                            proDialog = new MaterialDialog.Builder(getContext())
-                                    .title("Generating PDF Log")
-                                    .content("Please wait")
-                                    .progress(false, logSnapshots.size())
-                                    .show();
-                        }
-                    })
-                    .onNegative(new MaterialDialog.SingleButtonCallback() {
-                        @Override
-                        public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                            // Create the PDF log asynchronously while not showing the year:
-                            createPdfLogAsync.execute(false);
-                            // Show the progress dialog
-                            proDialog = new MaterialDialog.Builder(getContext())
-                                    .title("Generating PDF Log")
-                                    .content("Please wait")
-                                    .progress(false, logSnapshots.size())
-                                    .show();
-                        }
-                    })
+            // Create the PDF log asynchronously while showing the year:
+            createPdfLogAsync.execute(true);
+            // Show the progress dialog
+            proDialog = new MaterialDialog.Builder(getContext())
+                    .title("Generating PDF Log")
+                    .content("Please wait")
+                    .progress(false, logSnapshots.size())
                     .show();
         }
     };

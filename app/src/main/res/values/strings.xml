@@ -20,7 +20,7 @@
     <string name="last_name">Last Name</string>
     <string name="license_number">License Number</string>
     <string name="driver_age">Supervisor Age</string>
-    <string name="no_license_warning">You did not enter a license number for this supervisor. Are you sure you do not want to save the license number?</string>
+    <string name="no_license_warning">You did not enter a license number for this supervisor. Are you sure you do not want to save the supervisor?</string>
     <string name="no_license_notice">For privacy reasons, the license number can be left blank.</string>
     <string name="driver_dialog_success">Supervisor successfully saved.</string>
     <string name="driver_dialog_deleted">Supervisor successfully deleted.</string>
