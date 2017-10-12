@@ -12,7 +12,7 @@
     <string name="night">Night</string>
     <string name="poor_weather">Poor Weather</string>
     <string name="adverse_conds">Adverse Conditions</string>
-    <string name="deleted_driver_notice">It seems that the supervisor that you originally set for this log has been deleted. Please set a new supervisor.</string>
+    <string name="deleted_driver_notice">The supervisor that was originally set for this log has been deleted. Please set a new supervisor.</string>
     <string name="time_notice">Note that if the ending time is before the starting time, it will be assumed that the drive went into the next day.</string>
     <string name="driver_add_title">Add Supervisor</string>
     <string name="driver_edit_title">Edit Supervisor</string>
@@ -65,8 +65,8 @@
         <item>About</item>
         <item>Sign Out</item>
     </array>
-    <string name="network_connection_error">Please connect to the Internet and come back to this app to sign in.</string>
-    <string name="unknown_auth_error">For some reason, authentication failed. Please try again.</string>
+    <string name="network_connection_error">Please connect to the Internet to sign in.</string>
+    <string name="unknown_auth_error">Authentication failed. Please try again.</string>
     <string name="file_provider_authority" translatable="false">team.tr.permitlog.fileprovider</string>
 
     <!-- Ad unit id -->
