@@ -192,13 +192,13 @@ public class CustomDriveDialog extends AppCompatActivity {
     private ValueEventListener setGoalData = new ValueEventListener() {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
-            if(dataSnapshot.child("night").getValue().toString().equals("0")){
+            if(dataSnapshot.hasChild("night") && ((long)dataSnapshot.child("night").getValue() == 0)){
                 findViewById(R.id.night_checkbox).setVisibility(View.GONE);
             }
-            if(dataSnapshot.child("weather").getValue().toString().equals("0")){
+            if(dataSnapshot.hasChild("weather") && ((long)dataSnapshot.child("weather").getValue() == 0)){
                 findViewById(R.id.weather_checkbox).setVisibility(View.GONE);
             }
-            if(dataSnapshot.child("adverse").getValue().toString().equals("0")){
+            if(dataSnapshot.hasChild("adverse") && ((long)dataSnapshot.child("adverse").getValue() == 0)){
                 findViewById(R.id.adverse_checkbox).setVisibility(View.GONE);
             }
         }
