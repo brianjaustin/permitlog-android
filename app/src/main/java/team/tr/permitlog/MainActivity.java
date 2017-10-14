@@ -29,6 +29,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import android.support.multidex.*;
 
@@ -123,7 +124,11 @@ public class MainActivity extends AppCompatActivity {
         // delete the goals (if user is logged in) and set the tutorial preference to true:
         if (testingTutorial) {
             if (currentUser != null) {
-                FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals").removeValue();
+                DatabaseReference goalsRef = FirebaseDatabase.getInstance().getReference().child(currentUser.getUid()).child("goals");
+                goalsRef.removeValue();
+                /*goalsRef.child("total").setValue(70); //For testing
+                goalsRef.child("day").setValue(60);
+                goalsRef.child("night").setValue(10);*/
             }
 
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);

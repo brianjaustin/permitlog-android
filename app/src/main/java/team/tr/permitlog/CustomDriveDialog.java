@@ -79,7 +79,7 @@ public class CustomDriveDialog extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_custom_dialog);
 
-        // Setup the Firebase reference
+        // Setup the Firebase references:
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");
         goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
@@ -103,6 +103,7 @@ public class CustomDriveDialog extends AppCompatActivity {
         ddNoticeContainer = (LinearLayout)findViewById(R.id.dd_notice_container);
         ddNotice = (TextView)findViewById(R.id.dd_notice);
 
+        //Listen to get data about the user's goals:
         goalsRef.addListenerForSingleValueEvent(setGoalData);
 
         // Load the current values if possible:
@@ -170,7 +171,7 @@ public class CustomDriveDialog extends AppCompatActivity {
             updateDateAndTime();
             //Set the night checkbox to whatever the log says:
             ((CheckBox)findViewById(R.id.night_checkbox)).setChecked(
-                    dataSnapshot.hasChild("night") && (boolean)dataSnapshot.child("weather").getValue()
+                    dataSnapshot.hasChild("night") && (boolean)dataSnapshot.child("night").getValue()
             );
             //Not all users have "weather" and "adverse", so make sure to use .hasChild() to check if they do:
             ((CheckBox)findViewById(R.id.weather_checkbox)).setChecked(
@@ -189,20 +190,24 @@ public class CustomDriveDialog extends AppCompatActivity {
         }
     };
 
+    //This listener adjusts the checkboxes based off the user's goal data:
     private ValueEventListener setGoalData = new ValueEventListener() {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
-            if(dataSnapshot.hasChild("night") && ((long)dataSnapshot.child("night").getValue() == 0)){
+            //If the user does not have a day/night goal or both of them 0, hide the night checkbox:
+            if ((!dataSnapshot.hasChild("day") || ((long)dataSnapshot.child("day").getValue() == 0)) &&
+                (!dataSnapshot.hasChild("night") || ((long)dataSnapshot.child("night").getValue() == 0))) {
                 findViewById(R.id.night_checkbox).setVisibility(View.GONE);
             }
-            if(dataSnapshot.hasChild("weather") && ((long)dataSnapshot.child("weather").getValue() == 0)){
+            //Do the same thing for weather and adverse
+            if(!dataSnapshot.hasChild("weather") || ((long)dataSnapshot.child("weather").getValue() == 0)){
                 findViewById(R.id.weather_checkbox).setVisibility(View.GONE);
             }
-            if(dataSnapshot.hasChild("adverse") && ((long)dataSnapshot.child("adverse").getValue() == 0)){
+            if(!dataSnapshot.hasChild("adverse") || ((long)dataSnapshot.child("adverse").getValue() == 0)){
                 findViewById(R.id.adverse_checkbox).setVisibility(View.GONE);
             }
         }
-
+        //If something goes wrong while getting the data, log an error message:
         @Override
         public void onCancelled(DatabaseError databaseError) {
             Log.e(TAG, "While trying to get data from /goals/"+logId+"/: "+databaseError.getMessage());
