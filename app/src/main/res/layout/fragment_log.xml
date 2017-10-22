@@ -24,6 +24,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_account_balance_white_24px"
+            android:visibility="gone"
             fab:fab_size="mini"
             fab:fab_label="Maine Log Export"
             app:fab_colorNormal="@color/colorAccent"/>

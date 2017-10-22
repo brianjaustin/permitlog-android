@@ -43,8 +43,10 @@ import java.io.IOException;
 import java.text.DateFormatSymbols;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Formatter;
+import java.util.List;
 import java.util.Locale;
 
 import jxl.Workbook;
@@ -71,6 +73,8 @@ public class LogFragment extends ListFragment {
     //Firebase reference:
     private DatabaseReference timesRef;
     private DatabaseReference goalsRef;
+    //Does the user have day/night or weather or adverse goals?
+    private boolean hasNightGoals, hasWeatherGoals, hasAdverseGoals;
     //This holds all of the keys of the logs in the database:
     private ArrayList<String> logIds = new ArrayList<>();
     //This holds all of the summaries of the logs that we will show in the ListView:
@@ -222,6 +226,12 @@ public class LogFragment extends ListFragment {
         goalsRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
+                //Store if the user has day/night goals, weather goals or adverse goals:
+                hasNightGoals = ((dataSnapshot.hasChild("day") && ((long)dataSnapshot.child("day").getValue() != 0)) ||
+                        (dataSnapshot.hasChild("night") && ((long)dataSnapshot.child("night").getValue() != 0)));
+                hasWeatherGoals = (dataSnapshot.hasChild("weather") && ((long)dataSnapshot.child("weather").getValue() != 0));
+                hasAdverseGoals = (dataSnapshot.hasChild("adverse") && ((long)dataSnapshot.child("adverse").getValue() != 0));
+
                 String stateName = ""; //Stores state of user and whether that state requires a form
                 boolean needsForm = false;
 
@@ -234,8 +244,8 @@ public class LogFragment extends ListFragment {
                 else {
                     stateName = dataSnapshot.child("stateName").getValue().toString();
                     if (dataSnapshot.hasChild("needsForm")) needsForm = (boolean)dataSnapshot.child("needsForm").getValue();
-                        //If the user has "stateName" but not "needsForm",
-                        //then this is one of the few users who had a buggy version of the app:
+                    //If the user has "stateName" but not "needsForm",
+                    //then this is one of the few users who had a buggy version of the app:
                     else {
                         Log.d(TAG, "The weird buggy situation in LogFragment.");
                         //On this buggy, edge-case situation, needsForm is true iff the state is Maine:
@@ -247,15 +257,12 @@ public class LogFragment extends ListFragment {
                 //If the user needs a form for their state or this is the custom state,
                 //add the option to export to the state log:
                 if(needsForm || stateName.equals("Custom")) {
+                    maineBtn.setVisibility(View.VISIBLE);
                     if (stateName.equals("Custom")) {
                         maineBtn.setLabelText("PDF Log Export");
                     } else {
                         maineBtn.setLabelText(stateName + " Log Export");
                     }
-                }
-                //Otherwise, just hide the maineBtn button:
-                else {
-                    maineBtn.setVisibility(View.GONE);
                 }
             }
             @Override
@@ -544,19 +551,42 @@ public class LogFragment extends ListFragment {
                     WritableCellFormat headerFormat = new WritableCellFormat(headerFont);
                     headerFormat.setAlignment(Alignment.CENTRE);
                     // Create header cells:
-                    String headers[] = {
-                            "Month", "Date", "Year", "Duration", "Day/Night","Poor Weather",
-                            "Adverse Conditions", "Supervisor", "Age", "License Number"
-                    };
-                    for (int i = 0; i < headers.length; i++) {
+                    String supervisorLit = "Supervisor";
+                    String licenseNumberLit = "License Number";
+                    ArrayList<String> headers = new ArrayList<>(
+                            Arrays.asList("Month", "Date", "Year", "Duration", supervisorLit, "Age", licenseNumberLit)
+                    );
+
+                    //This represents the number of special goal types the user has:
+                    int numSpecialGoals = 0;
+                    //For each goal type, if the user has it, add it to the headers and then increment numSpecialGoals:
+                    String adverseLit = "Adverse Conditions";
+                    if (hasAdverseGoals) {
+                        headers.add(4, adverseLit);
+                        numSpecialGoals++;
+                    }
+                    String weatherLit = "Poor Weather";
+                    if (hasWeatherGoals) {
+                        headers.add(4, weatherLit);
+                        numSpecialGoals++;
+                    }
+                    String nightLit = "Day/Night";
+                    if (hasNightGoals) {
+                        headers.add(4, nightLit);
+                        numSpecialGoals++;
+                    }
+
+                    for (int i = 0; i < headers.size(); i++) {
                         // Put this cell in the top row and ith column:
-                        Label headerCell = new Label(i, 0, headers[i]);
+                        Label headerCell = new Label(i, 0, headers.get(i));
                         headerCell.setCellFormat(headerFormat);
                         sheet.addCell(headerCell);
                         // For Supervisor and License Number, make the columns wide enough to fit "DELETED SUPERVSIOR"
-                        if ((i == 7) || (i == 9)) sheet.setColumnView(i, 19);
+                        if (headers.get(i).equals(supervisorLit) || headers.get(i).equals(licenseNumberLit)) {
+                            sheet.setColumnView(i, 19);
+                        }
                         // However, for most columns, set the column width according to the header:
-                        else sheet.setColumnView(i, Math.max(10, headers[i].length()+3));
+                        else sheet.setColumnView(i, Math.max(10, headers.get(i).length()+3));
                     }
 
                     // Loop through the logs:
@@ -582,18 +612,30 @@ public class LogFragment extends ListFragment {
                         long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
                         Label durationCell = new Label(3, i+1, ElapsedTime.formatSeconds(timeElapsed/1000));
                         sheet.addCell(durationCell);
-                        // Add the day/night
-                        Label nightCell = new Label(4, i+1, ((boolean)logSnapshot.child("night").getValue()) ? "Night" : "Day");
-                        sheet.addCell(nightCell);
 
-                        //Assume that the "weather" property is false if not present
-                        //since older logs will not have "weather" or "adverse" property:
-                        Label weatherCell = new Label(5, i+1, logSnapshot.hasChild("weather") ? logSnapshot.child("weather").getValue().toString() : "false");
-                        sheet.addCell(weatherCell);
+                        // Add the day/night if the user has day/night goals:
+                        if (hasNightGoals) {
+                            Label nightCell = new Label(headers.indexOf(nightLit), i + 1,
+                                    ((boolean) logSnapshot.child("night").getValue()) ? "Night" : "Day");
+                            sheet.addCell(nightCell);
+                        }
 
-                        //Assume the "adverse" property is false if not present:
-                        Label adverseCell = new Label(6, i+1, logSnapshot.hasChild("adverse") ? logSnapshot.child("adverse").getValue().toString() : "false");
-                        sheet.addCell(adverseCell);
+                        // Add the weather if the user has weather goals:
+                        if (hasWeatherGoals) {
+                            //Assume that the "weather" property is false if not present
+                            //since older logs will not have "weather" or "adverse" property:
+                            Label weatherCell = new Label(headers.indexOf(weatherLit), i + 1,
+                                    logSnapshot.hasChild("weather") ? logSnapshot.child("weather").getValue().toString() : "false");
+                            sheet.addCell(weatherCell);
+                        }
+
+                        // Add the adverse if the user has adverse goals:
+                        if (hasAdverseGoals) {
+                            //Assume the "adverse" property is false if not present:
+                            Label adverseCell = new Label(headers.indexOf(adverseLit), i + 1,
+                                    logSnapshot.hasChild("adverse") ? logSnapshot.child("adverse").getValue().toString() : "false");
+                            sheet.addCell(adverseCell);
+                        }
 
                         // Get the driver info if possible:
                         String driverName = "DELETED SUPERVISOR", driverAge = "DELETED", driverLicense = "DELETED SUPERVISOR";
@@ -605,12 +647,12 @@ public class LogFragment extends ListFragment {
                             if (driverSnapshot.hasChild("license_number")) driverLicense = driverSnapshot.child("license_number").getValue().toString();
                         }
 
-                        // Add it to the sheet:
-                        Label nameCell = new Label(7, i+1, driverName);
+                        // Add it to the sheet, using numSpecialGoals to make sure it comes after all of the goal types:
+                        Label nameCell = new Label(4+numSpecialGoals, i+1, driverName);
                         sheet.addCell(nameCell);
-                        Label ageCell = new Label(8, i+1, driverAge);
+                        Label ageCell = new Label(5+numSpecialGoals, i+1, driverAge);
                         sheet.addCell(ageCell);
-                        Label licenseCell = new Label(9, i+1, driverLicense);
+                        Label licenseCell = new Label(6+numSpecialGoals, i+1, driverLicense);
                         sheet.addCell(licenseCell);
                     }
 
