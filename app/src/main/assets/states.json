@@ -159,6 +159,14 @@
         "weather":0,
         "adverse":0
     },
+    "North Carolina": {
+        "needsForm": true,
+        "total": 60,
+        "day": 0,
+        "night": 10,
+        "weather": 0,
+        "adverse": 0
+    },
     "North Dakota":{
         "needsForm":false,
         "total":50,

@@ -3,15 +3,12 @@ package team.tr.permitlog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.annotation.NonNull;
 import android.support.v4.app.ListFragment;
 import android.support.v4.content.FileProvider;
-import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -21,7 +18,6 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
@@ -45,9 +41,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Formatter;
 import java.util.List;
-import java.util.Locale;
 
 import jxl.Workbook;
 import jxl.WorkbookSettings;
@@ -88,11 +82,13 @@ public class LogFragment extends ListFragment {
     // Object that keeps track of total time and total time during night:
     private ElapsedTime totalUpdater;
     // Buttons for adding
-    private FloatingActionButton maineBtn, manualBtn;
+    private FloatingActionButton maineBtn, northCarolinaBtn, manualBtn;
     //AsyncTask for generating PDF log in separate thread:
     private AsyncTask<Void, Void, Void> createPdfLogAsync;
     //Progress dialog for PDF log generation:
     private MaterialDialog proDialog;
+    //Used to format numbers in logs:
+    private DecimalFormat twoDecimalPlaces = new DecimalFormat("0.00");
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
@@ -200,9 +196,11 @@ public class LogFragment extends ListFragment {
         listAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, logSummaries);
         setListAdapter(listAdapter);
 
-        // Set add Maine drive button click
+        // Set add the drive button clicks for each state that needs a specific form:
         maineBtn = (FloatingActionButton) rootView.findViewById(R.id.export_maine);
         maineBtn.setOnClickListener(onMaineExport);
+        northCarolinaBtn = (FloatingActionButton)rootView.findViewById(R.id.export_north_carolina);
+        northCarolinaBtn.setOnClickListener(onNorthCarolinaExport);
 
         // Set add manual drive button click
         manualBtn = (FloatingActionButton) rootView.findViewById(R.id.export_manual);
@@ -254,15 +252,26 @@ public class LogFragment extends ListFragment {
                     }
                 }
 
+                //This is the button for the user's state, or null if this state does not have a button:
+                FloatingActionButton stateBtn = null;
                 //If the user needs a form for their state or this is the custom state,
                 //add the option to export to the state log:
                 if(needsForm || stateName.equals("Custom")) {
-                    maineBtn.setVisibility(View.VISIBLE);
-                    if (stateName.equals("Custom")) {
-                        maineBtn.setLabelText("PDF Log Export");
-                    } else {
-                        maineBtn.setLabelText(stateName + " Log Export");
+                    //Set the correct button for each state:
+                    if (stateName.equals("Maine")) stateBtn = maineBtn;
+                    else if (stateName.equals("North Carolina")) stateBtn = northCarolinaBtn;
+                    //By default, use Maine's button and call it "PDF Log Export":
+                    else  {
+                        stateBtn = maineBtn;
+                        stateBtn.setLabelText("PDF Log Export");
                     }
+                }
+
+                //This is all of the state buttons:
+                FloatingActionButton allStateBtns[] = {maineBtn, northCarolinaBtn};
+                //Make all of the state buttons gone accept for the user's:
+                for (FloatingActionButton button : allStateBtns) {
+                    if (button != stateBtn) button.setVisibility(View.GONE);
                 }
             }
             @Override
@@ -299,6 +308,159 @@ public class LogFragment extends ListFragment {
         if (proDialog != null) proDialog.cancel();
     }
 
+    private void startProgressDialog() {
+        // Show the progress dialog
+        proDialog = new MaterialDialog.Builder(getContext())
+                .title("Generating PDF Log")
+                .content("Please wait, do not rotate the screen or leave the app.")
+                //The progress is incremented for every log plus 1 more for saving the PDF at the end:
+                .progress(false, logSnapshots.size() + 1)
+                .canceledOnTouchOutside(false)
+                .show();
+    }
+
+    private PDAcroForm createNewPdf(String pdfName, List<PDDocument> pdfList) {
+        //Since the following will use getActivity(),
+        //check isCancelled() before continuing:
+        if (createPdfLogAsync.isCancelled()) return null;
+
+        // Create a new PDF:
+        PDDocument pdfDocument;
+        try {
+            pdfDocument = PDDocument.load(getActivity().getAssets().open(pdfName));
+        } catch (IOException e) {
+            Log.e(TAG, e.getMessage());
+            return null;
+        }
+        //Add this PDF to the list:
+        pdfList.add(pdfDocument);
+
+        // Get the form:
+        PDAcroForm acroForm = pdfDocument.getDocumentCatalog().getAcroForm();
+        // Check if the form was found
+        if (acroForm == null) {
+            Log.e(TAG, "FORM NOT FOUND");
+            return null;
+        }
+        // Otherwise, return acroForm:
+        return acroForm;
+    }
+
+    private void savePDFs(List<PDDocument> pdfList) {
+        // Merge the files into one
+        PDDocument totalDocument = new PDDocument();
+        PDFMergerUtility mt = new PDFMergerUtility();
+        for (PDDocument document : pdfList) {
+            try {
+                mt.appendDocument(totalDocument, document);
+                //Close the old documents since they are merged in totalDocument
+                document.close();
+            } catch (IOException e) {
+                Log.e(TAG, e.getMessage());
+                return;
+            }
+        }
+
+        //Since the following will use getContext(),
+        //check isCancelled() before continuing:
+        if (createPdfLogAsync.isCancelled()) return;
+
+        // If we can write to external storage, save the PDF:
+        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            File file = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "log.pdf");
+            try {
+                //Save and close the PDF file:
+                totalDocument.save(file);
+                totalDocument.close();
+            } catch (IOException e) {
+                // When there is an error, log it and notify the user:
+                Log.e(TAG, e.getMessage());
+                //Since the following is going to use getContext(),
+                //check isCancelled() before continuing:
+                if (createPdfLogAsync.isCancelled()) return;
+                Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
+            }
+            //Increment the progress bar to 100%:
+            proDialog.incrementProgress(1);
+
+            //Since the following is going to use getActivity(),
+            //check isCancelled() before continuing:
+            if (createPdfLogAsync.isCancelled()) return;
+
+            // Send the PDF file to the user
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("application/pdf");
+            Uri fileUri = FileProvider.getUriForFile(getActivity(), getString(R.string.file_provider_authority), file);
+            intent.putExtra(Intent.EXTRA_STREAM, fileUri);
+
+                /*// This is for debugging the different kind of intents that can handle PDFs:
+                Log.d(TAG, "Listing intents for PDF:");
+                for(ResolveInfo info : getContext().getPackageManager().queryIntentActivities(intent,PackageManager.MATCH_ALL)){
+                    Log.d(TAG, "Intent: " + info.toString());
+                }*/
+            //Get rid of the progress bar now that we're finished:
+            proDialog.dismiss();
+
+            //Since the following is going to use startActivity() or getContext(),
+            //check isCancelled() before continuing:
+            if (createPdfLogAsync.isCancelled()) return;
+            try {
+                //Show the user the dialog of apps that can handle PDFs:
+                startActivity(Intent.createChooser(intent, "Send Driving Log"));
+            } catch (android.content.ActivityNotFoundException exception) {
+                // There is no app installed that can send this, so show an error:
+                Toast.makeText(getContext(), R.string.export_pdf_error, Toast.LENGTH_LONG).show();
+            }
+        }
+        // Otherwise, show the user an error message:
+        else {
+            Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
+            try {
+                //Don't forget to close the PDF file:
+                totalDocument.close();
+            } catch (IOException e) {}
+        }
+    }
+
+    private String getElapsedTime(DataSnapshot logSnapshot) {
+        long timeElapsed = (long) (logSnapshot.child("end").getValue()) - (long) (logSnapshot.child("start").getValue());
+        double hoursElapsed = (double) timeElapsed / (1000.0 * 3600.0);
+        String elapsedTimeStr = twoDecimalPlaces.format(hoursElapsed);
+        return elapsedTimeStr;
+    }
+
+    private List<String> getDriverInfo(DataSnapshot logSnapshot) {
+        // The following variables hold info about the drivers. These are their default values:
+        String driverId = logSnapshot.child("driver_id").getValue().toString();
+        int driverIndex = -1;
+        DataSnapshot driverSnapshot = null;
+        String driverName = "DELETED DRIVER";
+        String driverAge = "";
+        String driverLicense = "DELETED DRIVER";
+        // If possible, get driver index and info:
+        if (driversInfo.driverIds.contains(driverId)) {
+            driverIndex = driversInfo.driverIds.indexOf(driverId);
+            driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
+            // Get the driver's name
+            if (DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
+                driverName = driversInfo.driverNames.get(driverIndex);
+            }
+            // Get the driver's age
+            if (driverSnapshot.hasChild("age"))
+                driverAge += ", " + driverSnapshot.child("age").getValue().toString();
+            // Get the driver's license number
+            if (driverSnapshot.hasChild("license_number"))
+                driverLicense = driverSnapshot.child("license_number").getValue().toString();
+        }
+        //Return the info:
+        return Arrays.asList(driverName, driverAge, driverLicense);
+    }
+
+    private String getGoalTotal(String goalType) {
+        //Convert goal to hours and format with two decimal places:
+        return twoDecimalPlaces.format(totalUpdater.timeTracker.getTime(goalType) / (1000.0 * 3600.0));
+    }
+
     private View.OnClickListener onMaineExport = new View.OnClickListener() { @Override public void onClick(View view) {
         // Close the floating menu
         FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.export_menu);
@@ -308,52 +470,22 @@ public class LogFragment extends ListFragment {
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity) getActivity());
         if (!isSignedIn) return;
 
-        // Turn create the PDF log in an AsyncTask:
+        // Create the PDF log in an AsyncTask:
         // Note that this can not just be a constant instance member
         // because it needs to be created every time the method runs
         // since one AsyncTask can only be executed once.
         createPdfLogAsync = new AsyncTask<Void, Void, Void>() { @Override public Void doInBackground(Void... args) {
+            //Stores all of the PDFs:
             ArrayList<PDDocument> logPages = new ArrayList<>();
+            // Stores the current PDF form:
+            PDAcroForm acroForm = null;
 
-            // Get the PDF template
-            AssetManager assetManager = getActivity().getAssets();
-            PDDocument pdfDocument;
-            try {
-                pdfDocument = PDDocument.load(assetManager.open("maine_log.pdf"));
-            } catch (IOException e) {
-                Log.d(TAG, e.getMessage());
-                return null;
-            }
-
-            // Get the PDF form
-            PDAcroForm acroForm = pdfDocument.getDocumentCatalog().getAcroForm();
-
-            // Check if the form was found
-            if (acroForm == null) {
-                Log.e(TAG, "FORM NOT FOUND");
-                return null;
-            }
-
-            // Fill the fields
-            int subtraction = 0;
-            // For formatting doubles:
-            DecimalFormat df = new DecimalFormat("0.00");
             //Loop through all the logs:
             for (int i = 0; i < logSnapshots.size(); i++) {
-                if (i % 50 == 0 && i != 0 && i != logSnapshots.size()) { // Begin a new page for every 50 logs:
-                    // Save this section
-                    logPages.add(pdfDocument);
-
-                    // Start a new section
-                    try {
-                        pdfDocument = PDDocument.load(assetManager.open("maine_log.pdf"));
-                    } catch (IOException e) {
-                        Log.e(TAG, e.getMessage());
-                        return null;
-                    }
-                    acroForm = pdfDocument.getDocumentCatalog().getAcroForm();
-
-                    subtraction += 50;
+                if (i % 50 == 0) { // Begin a new page for every 50 logs:
+                    acroForm = createNewPdf("maine_log.pdf", logPages);
+                    //Abort if acroForm is null:
+                    if (acroForm == null) return null;
                 }
 
                 // Get the log info:
@@ -371,44 +503,28 @@ public class LogFragment extends ListFragment {
                 String dateTimeString = DateUtils.formatDateTime(getContext(), startMillis, flags);
 
                 // Get the elapsed time
-                long timeElapsed = (long) (logSnapshot.child("end").getValue()) - (long) (logSnapshot.child("start").getValue());
-                double hoursElapsed = (double) timeElapsed / (1000.0 * 3600.0);
-                String stringElapsed = df.format(hoursElapsed);
+                String elapsedTimeString = getElapsedTime(logSnapshot);
 
-                // The following variables hold info about the drivers. These are their default values:
-                String driverId = logSnapshot.child("driver_id").getValue().toString();
-                int driverIndex = -1;
-                DataSnapshot driverSnapshot = null;
-                String driverNameAndAge = "DELETED DRIVER";
-                String driverLicense = "DELETED DRIVER";
-                // If possible, get driver index and info:
-                if (driversInfo.driverIds.contains(driverId)) {
-                    driverIndex = driversInfo.driverIds.indexOf(driverId);
-                    driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
-                    // Get the driver's name
-                    if (DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
-                        driverNameAndAge = driversInfo.driverNames.get(driverIndex);
-                    }
-                    // Get the driver's age
-                    if (driverSnapshot.hasChild("age"))
-                        driverNameAndAge += ", " + driverSnapshot.child("age").getValue().toString();
-                    // Get the driver's license number
-                    if (driverSnapshot.hasChild("license_number"))
-                        driverLicense = driverSnapshot.child("license_number").getValue().toString();
-                }
+                // Get info about the drivers:
+                List<String> driverInfo = getDriverInfo(logSnapshot);
+                // Extract the necessary info:
+                String driverNameAndAge = driverInfo.get(0);
+                String driverLicense = driverInfo.get(2);
+                // Add the age if this is not a deleted driver:
+                if (!driverNameAndAge.equals("DELETED DRIVER")) driverNameAndAge += ", "+driverInfo.get(1);
 
                 try {
                     // Add the values to the PDF
-                    int rowNum = (i + 1) - subtraction;
+                    int rowNum = (i % 50)+1;
                     PDFieldTreeNode dateTimeField = acroForm.getField("Date and TimeRow" + Integer.toString(rowNum));
                     PDFieldTreeNode hoursField = acroForm.getField("Number of Driving HoursRow" + Integer.toString(rowNum));
                     PDFieldTreeNode nightField = acroForm.getField("Number of After Dark Driving HoursRow" + Integer.toString(rowNum));
-                    PDFieldTreeNode driverField = acroForm.getField("Supervisor Name and AgeRow" + Integer.toString(rowNum));
-                    PDFieldTreeNode licenseField = acroForm.getField("License Number of SupervisorRow" + Integer.toString(rowNum));
+                    PDFieldTreeNode driverField = acroForm.getField("Supervising Drivers Name and AgeRow" + Integer.toString(rowNum));
+                    PDFieldTreeNode licenseField = acroForm.getField("License Number of Supervising DriverRow" + Integer.toString(rowNum));
                     if (dateTimeField != null) dateTimeField.setValue(dateTimeString);
-                    if (hoursField != null) hoursField.setValue(stringElapsed);
+                    if (hoursField != null) hoursField.setValue(elapsedTimeString);
                     if (nightField != null && (boolean) logSnapshot.child("night").getValue()) {
-                        nightField.setValue(stringElapsed);
+                        nightField.setValue(elapsedTimeString);
                     } else if (nightField != null) {
                         nightField.setValue("0");
                     }
@@ -425,266 +541,280 @@ public class LogFragment extends ListFragment {
             try {
                 PDFieldTreeNode totalHoursField = acroForm.getField("TOTAL HOURS OF PRACTICE DRIVING");
                 PDFieldTreeNode totalNightField = acroForm.getField("TOTAL HOURS OF NIGHT DRIVING");
-                if (totalHoursField != null)
-                    totalHoursField.setValue(df.format(totalUpdater.timeTracker.total / (1000.0 * 3600.0)));
-                if (totalNightField != null)
-                    totalNightField.setValue(df.format(totalUpdater.timeTracker.night / (1000.0 * 3600.0)));
+                if (totalHoursField != null) totalHoursField.setValue(getGoalTotal("total"));
+                if (totalNightField != null) totalNightField.setValue(getGoalTotal("night"));
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
             }
 
-            // Save the last page
-            logPages.add(pdfDocument);
-
-            // Merge the files into one
-            PDDocument totalDocument = new PDDocument();
-            PDFMergerUtility mt = new PDFMergerUtility();
-            for (PDDocument document : logPages) {
-                try {
-                    mt.appendDocument(totalDocument, document);
-                    //Close the old documents since they are merged in totalDocument
-                    document.close();
-                } catch (IOException e) {
-                    Log.e(TAG, e.getMessage());
-                    return null;
-                }
-            }
-
-            //Since the following will use getContext(),
-            //check isCancelled() before continuing:
-            if (isCancelled()) return null;
-
-            // If we can write to external storage, save the PDF:
-            if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-                File file = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "log.pdf");
-                try {
-                    //Save and close the PDF file:
-                    totalDocument.save(file);
-                    totalDocument.close();
-                } catch (IOException e) {
-                    // When there is an error, log it and notify the user:
-                    Log.e(TAG, e.getMessage());
-                    //Since the following is going to use getContext(),
-                    //check isCancelled() before continuing:
-                    if (isCancelled()) return null;
-                    Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
-                }
-                //Increment the progress bar to 100%:
-                proDialog.incrementProgress(1);
-
-                //Since the following is going to use getActivity(),
-                //check isCancelled() before continuing:
-                if (isCancelled()) return null;
-
-                // Send the PDF file to the user
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.setType("application/pdf");
-                Uri fileUri = FileProvider.getUriForFile(getActivity(), getString(R.string.file_provider_authority), file);
-                intent.putExtra(Intent.EXTRA_STREAM, fileUri);
-
-                /*// This is for debugging the different kind of intents that can handle PDFs:
-                Log.d(TAG, "Listing intents for PDF:");
-                for(ResolveInfo info : getContext().getPackageManager().queryIntentActivities(intent,PackageManager.MATCH_ALL)){
-                    Log.d(TAG, "Intent: " + info.toString());
-                }*/
-                //Get rid of the progress bar now that we're finished:
-                proDialog.dismiss();
-
-                //Since the following is going to use startActivity() or getContext(),
-                //check isCancelled() before continuing:
-                if (isCancelled()) return null;
-                try {
-                    //Show the user the dialog of apps that can handle PDFs:
-                    startActivity(Intent.createChooser(intent, "Send Driving Log"));
-                } catch (android.content.ActivityNotFoundException exception) {
-                    // There is no app installed that can send this, so show an error:
-                    Toast.makeText(getContext(), R.string.export_pdf_error, Toast.LENGTH_LONG).show();
-                }
-            }
-            // Otherwise, show the user an error message:
-            else {
-                Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
-                try {
-                    //Don't forget to close the PDF file:
-                    totalDocument.close();
-                } catch (IOException e) {}
-            }
+            //Finally, save the documents and present it to the user:
+            savePDFs(logPages);
 
             return null;
         } };
 
-        // Create the PDF log asynchronously while showing the year:
-        createPdfLogAsync.execute();
         // Show the progress dialog
-        proDialog = new MaterialDialog.Builder(getContext())
-                .title("Generating PDF Log")
-                .content("Please wait, do not rotate the screen or leave the app.")
-                //The progress is incremented for every log plus 1 more for saving the PDF at the end:
-                .progress(false, logSnapshots.size() + 1)
-                .canceledOnTouchOutside(false)
-                .show();
+        startProgressDialog();
+        // Create the PDF log asynchronously:
+        createPdfLogAsync.execute();
     } };
 
-    private View.OnClickListener onManualExport = new View.OnClickListener() {
-        @Override
-        public void onClick(View view) {
-            // Close the floating menu
-            FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.export_menu);
-            floatingMenu.close(false);
 
-            // Don't do anything if the user isn't signed in
-            boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
-            if (!isSignedIn) return;
 
-            if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-                File sheetFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "log.xls");
+    private View.OnClickListener onNorthCarolinaExport = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Close the floating menu
+        FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.export_menu);
+        floatingMenu.close(false);
+
+        // Don't do anything if the user isn't signed in
+        boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity) getActivity());
+        if (!isSignedIn) return;
+
+        // Create the PDF log in an AsyncTask:
+        createPdfLogAsync = new AsyncTask<Void, Void, Void>() { @Override public Void doInBackground(Void... args) {
+            //Stores all of the PDFs:
+            ArrayList<PDDocument> logPages = new ArrayList<>();
+            // Stores the current PDF form:
+            PDAcroForm acroForm = null;
+
+            //Loop through all the logs:
+            for (int i = 0; i < logSnapshots.size(); i++) {
+                if (i % 20 == 0) { // Begin a new page for every 20 logs:
+                    acroForm = createNewPdf("north_carolina_log.pdf", logPages);
+                    //Abort if acroForm is null:
+                    if (acroForm == null) return null;
+                }
+
+                // Get the log info:
+                DataSnapshot logSnapshot = logSnapshots.get(i);
+                long startMillis = (long) logSnapshot.child("start").getValue();
+                //long endMillis = (long) logSnapshot.child("end").getValue();
+
+                // Set the flags for formatDateTime():
+                int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR;
+                //Since we are about to use getContext(), make sure the AsyncTask is still running:
+                if (isCancelled()) return null;
+                // Format the Date field
+                String dateString = DateUtils.formatDateTime(getContext(), startMillis, flags);
+
+                // Get the elapsed time
+                String elapsedTimeString = getElapsedTime(logSnapshot);
+
+                // Get info about the drivers:
+                List<String> driverInfo = getDriverInfo(logSnapshot);
+                // Extract the necessary info:
+                String driverName = driverInfo.get(0);
+                String driverLicense = driverInfo.get(2);
+
+                //Put all of this info into the form:
                 try {
-                    // This is needed to conserve memory:
-                    WorkbookSettings wbSettings = new WorkbookSettings();
-                    wbSettings.setUseTemporaryFileDuringWrite(true);
-                    // Create workbook and sheet in above file:
-                    WritableWorkbook wb = Workbook.createWorkbook(sheetFile, wbSettings);
-                    WritableSheet sheet = wb.createSheet("Sheet1", 0);
-
-                    // Create header format:
-                    WritableFont headerFont = new WritableFont(WritableFont.ARIAL, 10, WritableFont.BOLD);
-                    WritableCellFormat headerFormat = new WritableCellFormat(headerFont);
-                    headerFormat.setAlignment(Alignment.CENTRE);
-                    // Create header cells:
-                    String supervisorLit = "Supervisor";
-                    String licenseNumberLit = "License Number";
-                    ArrayList<String> headers = new ArrayList<>(
-                            Arrays.asList("Month", "Date", "Year", "Duration", supervisorLit, "Age", licenseNumberLit)
-                    );
-
-                    //This represents the number of special goal types the user has:
-                    int numSpecialGoals = 0;
-                    //For each goal type, if the user has it, add it to the headers and then increment numSpecialGoals:
-                    String adverseLit = "Adverse Conditions";
-                    if (hasAdverseGoals) {
-                        headers.add(4, adverseLit);
-                        numSpecialGoals++;
+                    int curRow = (i % 20)+1;
+                    PDFieldTreeNode dateField = acroForm.getField("DATERow"+curRow);
+                    PDFieldTreeNode timeOfDayField = acroForm.getField("TIME OF DAYRow"+curRow);
+                    PDFieldTreeNode timeOfNightField = acroForm.getField("TIME OF NIGHTRow"+curRow);
+                    //Yes, this is quite an odd name for a field, but that's what the actual field name is:
+                    PDFieldTreeNode elapsedTimeField = acroForm.getField("fill_"+(6*curRow+2));
+                    PDFieldTreeNode driverNameField = acroForm.getField("SUPERVISING DRIVERS PRINTED NAMERow"+curRow);
+                    PDFieldTreeNode driverLicenseField = acroForm.getField("SUPERVISING DRIVERS DL Number and StateRow"+curRow);
+                    if (dateField != null) dateField.setValue(dateString);
+                    //For time of day/time of night, mark the box depending on if this log was at day or night:
+                    if ((boolean) logSnapshot.child("night").getValue()) {
+                        if (timeOfNightField != null) timeOfNightField.setValue("X");
                     }
-                    String weatherLit = "Poor Weather";
-                    if (hasWeatherGoals) {
-                        headers.add(4, weatherLit);
-                        numSpecialGoals++;
+                    else {
+                        if (timeOfDayField != null) timeOfDayField.setValue("X");
                     }
-                    String nightLit = "Day/Night";
+                    if (elapsedTimeField != null) elapsedTimeField.setValue(elapsedTimeString);
+                    if (driverNameField != null) driverNameField.setValue(driverName);
+                    if (driverLicenseField != null) driverLicenseField.setValue(driverLicense);
+                } catch (IOException e) {
+                    Log.e(TAG, e.getMessage());
+                }
+                //After each log is finished, increment the progress bar:
+                proDialog.incrementProgress(1);
+            }
+
+            // Add the totals
+            try {
+                PDFieldTreeNode totalHoursField = acroForm.getField("Gr a n d To t a l");
+                PDFieldTreeNode totalDayField = acroForm.getField("To t a l Da y Ho u r s Driv en");
+                PDFieldTreeNode totalNightField = acroForm.getField("To t a l Ni g h t Ho u r s Dr iv e n");
+                if (totalHoursField != null) totalHoursField.setValue(getGoalTotal("total"));
+                if (totalDayField != null) totalDayField.setValue(getGoalTotal("day"));
+                if (totalNightField != null) totalNightField.setValue(getGoalTotal("night"));
+            } catch (IOException e) {
+                Log.e(TAG, e.getMessage());
+            }
+
+            //Save all the documents and present it to the user:
+            savePDFs(logPages);
+            
+            return null;
+        } };
+
+        // Show the progress dialog
+        startProgressDialog();
+        // Create the PDF log asynchronously:
+        createPdfLogAsync.execute();
+    } };
+
+    private View.OnClickListener onManualExport = new View.OnClickListener() { @Override public void onClick(View view) {
+        // Close the floating menu
+        FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.export_menu);
+        floatingMenu.close(false);
+
+        // Don't do anything if the user isn't signed in
+        boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
+        if (!isSignedIn) return;
+
+        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            File sheetFile = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "log.xls");
+            try {
+                // This is needed to conserve memory:
+                WorkbookSettings wbSettings = new WorkbookSettings();
+                wbSettings.setUseTemporaryFileDuringWrite(true);
+                // Create workbook and sheet in above file:
+                WritableWorkbook wb = Workbook.createWorkbook(sheetFile, wbSettings);
+                WritableSheet sheet = wb.createSheet("Sheet1", 0);
+
+                // Create header format:
+                WritableFont headerFont = new WritableFont(WritableFont.ARIAL, 10, WritableFont.BOLD);
+                WritableCellFormat headerFormat = new WritableCellFormat(headerFont);
+                headerFormat.setAlignment(Alignment.CENTRE);
+                // Create header cells:
+                String supervisorLit = "Supervisor";
+                String licenseNumberLit = "License Number";
+                ArrayList<String> headers = new ArrayList<>(
+                        Arrays.asList("Month", "Date", "Year", "Duration", supervisorLit, "Age", licenseNumberLit)
+                );
+
+                //This represents the number of special goal types the user has:
+                int numSpecialGoals = 0;
+                //For each goal type, if the user has it, add it to the headers and then increment numSpecialGoals:
+                String adverseLit = "Adverse Conditions";
+                if (hasAdverseGoals) {
+                    headers.add(4, adverseLit);
+                    numSpecialGoals++;
+                }
+                String weatherLit = "Poor Weather";
+                if (hasWeatherGoals) {
+                    headers.add(4, weatherLit);
+                    numSpecialGoals++;
+                }
+                String nightLit = "Day/Night";
+                if (hasNightGoals) {
+                    headers.add(4, nightLit);
+                    numSpecialGoals++;
+                }
+
+                for (int i = 0; i < headers.size(); i++) {
+                    // Put this cell in the top row and ith column:
+                    Label headerCell = new Label(i, 0, headers.get(i));
+                    headerCell.setCellFormat(headerFormat);
+                    sheet.addCell(headerCell);
+                    // For Supervisor and License Number, make the columns wide enough to fit "DELETED SUPERVSIOR"
+                    if (headers.get(i).equals(supervisorLit) || headers.get(i).equals(licenseNumberLit)) {
+                        sheet.setColumnView(i, 19);
+                    }
+                    // However, for most columns, set the column width according to the header:
+                    else sheet.setColumnView(i, Math.max(10, headers.get(i).length()+3));
+                }
+
+                // Loop through the logs:
+                for (int i = 0; i < logSnapshots.size(); i++) {
+                    DataSnapshot logSnapshot = logSnapshots.get(i);
+                    // Get the driver database key:
+                    String driverId = logSnapshot.child("driver_id").getValue().toString();
+
+                    // Get the calendar object:
+                    Calendar startDate = Calendar.getInstance();
+                    startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
+                    // Add the month
+                    String month = new DateFormatSymbols().getShortMonths()[startDate.get(Calendar.MONTH)];
+                    Label monthCell = new Label(0, i+1, month);
+                    sheet.addCell(monthCell);
+                    // Add the day
+                    Label dayCell = new Label(1, i+1, Integer.toString(startDate.get(Calendar.DAY_OF_MONTH)));
+                    sheet.addCell(dayCell);
+                    // Add the year
+                    Label yearCell = new Label(2, i+1, Integer.toString(startDate.get(Calendar.YEAR)));
+                    sheet.addCell(yearCell);
+                    // Add the duration
+                    long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
+                    Label durationCell = new Label(3, i+1, ElapsedTime.formatSeconds(timeElapsed/1000));
+                    sheet.addCell(durationCell);
+
+                    // Add the day/night if the user has day/night goals:
                     if (hasNightGoals) {
-                        headers.add(4, nightLit);
-                        numSpecialGoals++;
+                        Label nightCell = new Label(headers.indexOf(nightLit), i + 1,
+                                ((boolean) logSnapshot.child("night").getValue()) ? "Night" : "Day");
+                        sheet.addCell(nightCell);
                     }
 
-                    for (int i = 0; i < headers.size(); i++) {
-                        // Put this cell in the top row and ith column:
-                        Label headerCell = new Label(i, 0, headers.get(i));
-                        headerCell.setCellFormat(headerFormat);
-                        sheet.addCell(headerCell);
-                        // For Supervisor and License Number, make the columns wide enough to fit "DELETED SUPERVSIOR"
-                        if (headers.get(i).equals(supervisorLit) || headers.get(i).equals(licenseNumberLit)) {
-                            sheet.setColumnView(i, 19);
-                        }
-                        // However, for most columns, set the column width according to the header:
-                        else sheet.setColumnView(i, Math.max(10, headers.get(i).length()+3));
+                    // Add the weather if the user has weather goals:
+                    if (hasWeatherGoals) {
+                        //Assume that the "weather" property is false if not present
+                        //since older logs will not have "weather" or "adverse" property:
+                        Label weatherCell = new Label(headers.indexOf(weatherLit), i + 1,
+                                logSnapshot.hasChild("weather") ? logSnapshot.child("weather").getValue().toString() : "false");
+                        sheet.addCell(weatherCell);
                     }
 
-                    // Loop through the logs:
-                    for (int i = 0; i < logSnapshots.size(); i++) {
-                        DataSnapshot logSnapshot = logSnapshots.get(i);
-                        // Get the driver database key:
-                        String driverId = logSnapshot.child("driver_id").getValue().toString();
-
-                        // Get the calendar object:
-                        Calendar startDate = Calendar.getInstance();
-                        startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
-                        // Add the month
-                        String month = new DateFormatSymbols().getShortMonths()[startDate.get(Calendar.MONTH)];
-                        Label monthCell = new Label(0, i+1, month);
-                        sheet.addCell(monthCell);
-                        // Add the day
-                        Label dayCell = new Label(1, i+1, Integer.toString(startDate.get(Calendar.DAY_OF_MONTH)));
-                        sheet.addCell(dayCell);
-                        // Add the year
-                        Label yearCell = new Label(2, i+1, Integer.toString(startDate.get(Calendar.YEAR)));
-                        sheet.addCell(yearCell);
-                        // Add the duration
-                        long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
-                        Label durationCell = new Label(3, i+1, ElapsedTime.formatSeconds(timeElapsed/1000));
-                        sheet.addCell(durationCell);
-
-                        // Add the day/night if the user has day/night goals:
-                        if (hasNightGoals) {
-                            Label nightCell = new Label(headers.indexOf(nightLit), i + 1,
-                                    ((boolean) logSnapshot.child("night").getValue()) ? "Night" : "Day");
-                            sheet.addCell(nightCell);
-                        }
-
-                        // Add the weather if the user has weather goals:
-                        if (hasWeatherGoals) {
-                            //Assume that the "weather" property is false if not present
-                            //since older logs will not have "weather" or "adverse" property:
-                            Label weatherCell = new Label(headers.indexOf(weatherLit), i + 1,
-                                    logSnapshot.hasChild("weather") ? logSnapshot.child("weather").getValue().toString() : "false");
-                            sheet.addCell(weatherCell);
-                        }
-
-                        // Add the adverse if the user has adverse goals:
-                        if (hasAdverseGoals) {
-                            //Assume the "adverse" property is false if not present:
-                            Label adverseCell = new Label(headers.indexOf(adverseLit), i + 1,
-                                    logSnapshot.hasChild("adverse") ? logSnapshot.child("adverse").getValue().toString() : "false");
-                            sheet.addCell(adverseCell);
-                        }
-
-                        // Get the driver info if possible:
-                        String driverName = "DELETED SUPERVISOR", driverAge = "DELETED", driverLicense = "DELETED SUPERVISOR";
-                        if (driversInfo.driverIds.contains(driverId)) {
-                            int driverIndex = driversInfo.driverIds.indexOf(driverId);
-                            DataSnapshot driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
-                            if (DriverAdapter.hasCompleteName.accept(driverSnapshot)) driverName = driversInfo.driverNames.get(driverIndex);
-                            if (driverSnapshot.hasChild("age")) driverAge = driverSnapshot.child("age").getValue().toString();
-                            if (driverSnapshot.hasChild("license_number")) driverLicense = driverSnapshot.child("license_number").getValue().toString();
-                        }
-
-                        // Add it to the sheet, using numSpecialGoals to make sure it comes after all of the goal types:
-                        Label nameCell = new Label(4+numSpecialGoals, i+1, driverName);
-                        sheet.addCell(nameCell);
-                        Label ageCell = new Label(5+numSpecialGoals, i+1, driverAge);
-                        sheet.addCell(ageCell);
-                        Label licenseCell = new Label(6+numSpecialGoals, i+1, driverLicense);
-                        sheet.addCell(licenseCell);
+                    // Add the adverse if the user has adverse goals:
+                    if (hasAdverseGoals) {
+                        //Assume the "adverse" property is false if not present:
+                        Label adverseCell = new Label(headers.indexOf(adverseLit), i + 1,
+                                logSnapshot.hasChild("adverse") ? logSnapshot.child("adverse").getValue().toString() : "false");
+                        sheet.addCell(adverseCell);
                     }
 
-                    // Save and close the Workbook:
-                    wb.write();
-                    wb.close();
-                } catch (IOException | WriteException e) {
-                    Log.e(TAG, "While trying to make spreadsheet: " + e);
-                    return;
+                    // Get the driver info if possible:
+                    String driverName = "DELETED SUPERVISOR", driverAge = "DELETED", driverLicense = "DELETED SUPERVISOR";
+                    if (driversInfo.driverIds.contains(driverId)) {
+                        int driverIndex = driversInfo.driverIds.indexOf(driverId);
+                        DataSnapshot driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
+                        if (DriverAdapter.hasCompleteName.accept(driverSnapshot)) driverName = driversInfo.driverNames.get(driverIndex);
+                        if (driverSnapshot.hasChild("age")) driverAge = driverSnapshot.child("age").getValue().toString();
+                        if (driverSnapshot.hasChild("license_number")) driverLicense = driverSnapshot.child("license_number").getValue().toString();
+                    }
+
+                    // Add it to the sheet, using numSpecialGoals to make sure it comes after all of the goal types:
+                    Label nameCell = new Label(4+numSpecialGoals, i+1, driverName);
+                    sheet.addCell(nameCell);
+                    Label ageCell = new Label(5+numSpecialGoals, i+1, driverAge);
+                    sheet.addCell(ageCell);
+                    Label licenseCell = new Label(6+numSpecialGoals, i+1, driverLicense);
+                    sheet.addCell(licenseCell);
                 }
 
-                // Create an intent in order to send the spreadsheet to another app:
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.setType("application/vnd.ms-excel");
-                Uri fileUri = FileProvider.getUriForFile(getActivity(), getString(R.string.file_provider_authority), sheetFile);
-                intent.putExtra(Intent.EXTRA_STREAM, fileUri);
+                // Save and close the Workbook:
+                wb.write();
+                wb.close();
+            } catch (IOException | WriteException e) {
+                Log.e(TAG, "While trying to make spreadsheet: " + e);
+                return;
+            }
 
-                // Log the different kind of intents that can handle Excel spreadsheets:
-                Log.d(TAG, "Listing intents for spreadsheet:");
-                for(ResolveInfo info : getContext().getPackageManager().queryIntentActivities(intent,PackageManager.MATCH_ALL)){
-                    Log.d(TAG, "Intent: " + info.toString());
-                }
-                
-                try {
-                    startActivity(Intent.createChooser(intent, "Send Driving Log"));
-                } catch (android.content.ActivityNotFoundException exception) {
-                    // There is no app installed that can send this, so show an error:
-                    Toast.makeText(getContext(), R.string.export_xls_error, Toast.LENGTH_LONG).show();
-                }
+            // Create an intent in order to send the spreadsheet to another app:
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("application/vnd.ms-excel");
+            Uri fileUri = FileProvider.getUriForFile(getActivity(), getString(R.string.file_provider_authority), sheetFile);
+            intent.putExtra(Intent.EXTRA_STREAM, fileUri);
+
+            // Log the different kind of intents that can handle Excel spreadsheets:
+            Log.d(TAG, "Listing intents for spreadsheet:");
+            for(ResolveInfo info : getContext().getPackageManager().queryIntentActivities(intent,PackageManager.MATCH_ALL)){
+                Log.d(TAG, "Intent: " + info.toString());
+            }
+
+            try {
+                startActivity(Intent.createChooser(intent, "Send Driving Log"));
+            } catch (android.content.ActivityNotFoundException exception) {
+                // There is no app installed that can send this, so show an error:
+                Toast.makeText(getContext(), R.string.export_xls_error, Toast.LENGTH_LONG).show();
             }
         }
-    };
+    } };
 
     @Override
     public void onDestroyView() {
