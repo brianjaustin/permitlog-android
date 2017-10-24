@@ -157,7 +157,7 @@
         android:scaleType="fitXY"
         android:translationX="-5dp"
         android:translationY="-7.5dp"
-        app:srcCompat="@color/tw__transparent" />
+        app:srcCompat="@android:color/transparent" />
     <GridLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

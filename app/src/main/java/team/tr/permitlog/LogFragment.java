@@ -31,7 +31,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
-import com.tom_roush.pdfbox.pdmodel.interactive.form.PDFieldTreeNode;
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDTextField;
 import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
 import java.io.File;
@@ -516,11 +516,11 @@ public class LogFragment extends ListFragment {
                 try {
                     // Add the values to the PDF
                     int rowNum = (i % 50)+1;
-                    PDFieldTreeNode dateTimeField = acroForm.getField("Date and TimeRow" + Integer.toString(rowNum));
-                    PDFieldTreeNode hoursField = acroForm.getField("Number of Driving HoursRow" + Integer.toString(rowNum));
-                    PDFieldTreeNode nightField = acroForm.getField("Number of After Dark Driving HoursRow" + Integer.toString(rowNum));
-                    PDFieldTreeNode driverField = acroForm.getField("Supervising Drivers Name and AgeRow" + Integer.toString(rowNum));
-                    PDFieldTreeNode licenseField = acroForm.getField("License Number of Supervising DriverRow" + Integer.toString(rowNum));
+                    PDTextField dateTimeField = (PDTextField)acroForm.getField("Date and TimeRow" + Integer.toString(rowNum));
+                    PDTextField hoursField = (PDTextField)acroForm.getField("Number of Driving HoursRow" + Integer.toString(rowNum));
+                    PDTextField nightField = (PDTextField)acroForm.getField("Number of After Dark Driving HoursRow" + Integer.toString(rowNum));
+                    PDTextField driverField = (PDTextField)acroForm.getField("Supervising Drivers Name and AgeRow" + Integer.toString(rowNum));
+                    PDTextField licenseField = (PDTextField)acroForm.getField("License Number of Supervising DriverRow" + Integer.toString(rowNum));
                     if (dateTimeField != null) dateTimeField.setValue(dateTimeString);
                     if (hoursField != null) hoursField.setValue(elapsedTimeString);
                     if (nightField != null && (boolean) logSnapshot.child("night").getValue()) {
@@ -539,8 +539,8 @@ public class LogFragment extends ListFragment {
 
             // Add the totals
             try {
-                PDFieldTreeNode totalHoursField = acroForm.getField("TOTAL HOURS OF PRACTICE DRIVING");
-                PDFieldTreeNode totalNightField = acroForm.getField("TOTAL HOURS OF NIGHT DRIVING");
+                PDTextField totalHoursField = (PDTextField)acroForm.getField("TOTAL HOURS OF PRACTICE DRIVING");
+                PDTextField totalNightField = (PDTextField)acroForm.getField("TOTAL HOURS OF NIGHT DRIVING");
                 if (totalHoursField != null) totalHoursField.setValue(getGoalTotal("total"));
                 if (totalNightField != null) totalNightField.setValue(getGoalTotal("night"));
             } catch (IOException e) {
@@ -609,13 +609,13 @@ public class LogFragment extends ListFragment {
                 //Put all of this info into the form:
                 try {
                     int curRow = (i % 20)+1;
-                    PDFieldTreeNode dateField = acroForm.getField("DATERow"+curRow);
-                    PDFieldTreeNode timeOfDayField = acroForm.getField("TIME OF DAYRow"+curRow);
-                    PDFieldTreeNode timeOfNightField = acroForm.getField("TIME OF NIGHTRow"+curRow);
+                    PDTextField dateField = (PDTextField)acroForm.getField("DATERow"+curRow);
+                    PDTextField timeOfDayField = (PDTextField)acroForm.getField("TIME OF DAYRow"+curRow);
+                    PDTextField timeOfNightField = (PDTextField)acroForm.getField("TIME OF NIGHTRow"+curRow);
                     //Yes, this is quite an odd name for a field, but that's what the actual field name is:
-                    PDFieldTreeNode elapsedTimeField = acroForm.getField("fill_"+(6*curRow+2));
-                    PDFieldTreeNode driverNameField = acroForm.getField("SUPERVISING DRIVERS PRINTED NAMERow"+curRow);
-                    PDFieldTreeNode driverLicenseField = acroForm.getField("SUPERVISING DRIVERS DL Number and StateRow"+curRow);
+                    PDTextField elapsedTimeField = (PDTextField)acroForm.getField("fill_"+(6*curRow+2));
+                    PDTextField driverNameField = (PDTextField)acroForm.getField("SUPERVISING DRIVERS PRINTED NAMERow"+curRow);
+                    PDTextField driverLicenseField = (PDTextField)acroForm.getField("SUPERVISING DRIVERS DL Number and StateRow"+curRow);
                     if (dateField != null) dateField.setValue(dateString);
                     //For time of day/time of night, mark the box depending on if this log was at day or night:
                     if ((boolean) logSnapshot.child("night").getValue()) {
@@ -636,9 +636,9 @@ public class LogFragment extends ListFragment {
 
             // Add the totals
             try {
-                PDFieldTreeNode totalHoursField = acroForm.getField("Gr a n d To t a l");
-                PDFieldTreeNode totalDayField = acroForm.getField("To t a l Da y Ho u r s Driv en");
-                PDFieldTreeNode totalNightField = acroForm.getField("To t a l Ni g h t Ho u r s Dr iv e n");
+                PDTextField totalHoursField = (PDTextField)acroForm.getField("Gr a n d To t a l");
+                PDTextField totalDayField = (PDTextField)acroForm.getField("To t a l Da y Ho u r s Driv en");
+                PDTextField totalNightField = (PDTextField)acroForm.getField("To t a l Ni g h t Ho u r s Dr iv e n");
                 if (totalHoursField != null) totalHoursField.setValue(getGoalTotal("total"));
                 if (totalDayField != null) totalDayField.setValue(getGoalTotal("day"));
                 if (totalNightField != null) totalNightField.setValue(getGoalTotal("night"));
