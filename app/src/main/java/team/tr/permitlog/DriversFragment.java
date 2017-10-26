@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class DriversFragment extends ListFragment {
     // For logging
@@ -22,15 +23,20 @@ public class DriversFragment extends ListFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        View rootView = inflater.inflate(R.layout.fragment_drivers, container, false);
+
         // Get the uid
-        userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseUser curUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (curUser != null) userId = curUser.getUid();
+            //If the user is not signed in, then don't do anything:
+        else return rootView;
 
         // Create adapter and add it to the ListView
         listData = new DriverAdapter(getActivity(), userId, android.R.layout.simple_list_item_1);
         setListAdapter(listData.driversAdapter);
 
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_drivers, container, false);
+        return rootView;
     }
 
     @Override

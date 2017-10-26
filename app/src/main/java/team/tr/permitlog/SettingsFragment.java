@@ -17,6 +17,7 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -122,6 +123,12 @@ public class SettingsFragment extends Fragment {
         rootView =  lf.inflate(R.layout.fragment_settings, container, false);
 
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        //Get the uid:
+        FirebaseUser curUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (curUser != null) userId = curUser.getUid();
+        //If the user is not signed in, then don't do anything:
+        else return rootView;
+        //Initialize the database reference to the goals:
         goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
 
         try {

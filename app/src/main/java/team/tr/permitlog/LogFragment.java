@@ -22,6 +22,7 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -176,7 +177,10 @@ public class LogFragment extends ListFragment {
         rootView = inflater.inflate(R.layout.fragment_log, container, false);
 
         //Get the uid
-        userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseUser curUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (curUser != null) userId = curUser.getUid();
+        //If the user is not signed in, then don't do anything:
+        else return rootView;
 
         //Initialize timesRef and start listening:
         timesRef = FirebaseDatabase.getInstance().getReference().child(userId).child("times");

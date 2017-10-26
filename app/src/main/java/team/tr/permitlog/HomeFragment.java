@@ -36,6 +36,7 @@ import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.NativeExpressAdView;
 import com.google.android.gms.ads.VideoOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -195,7 +196,10 @@ public class HomeFragment extends Fragment {
         // Get the drivers spinner:
         driversSpinner = (Spinner) rootView.findViewById(R.id.drivers_spinner);
         // Get the UID:
-        userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseUser curUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (curUser != null) userId = curUser.getUid();
+        //If the user is not signed in, then don't do anything:
+        else return rootView;
         // Add the items to the spinner:
         spinnerData = new DriverAdapter(getActivity(), userId, android.R.layout.simple_spinner_item);
         driversSpinner.setAdapter(spinnerData.driversAdapter);
