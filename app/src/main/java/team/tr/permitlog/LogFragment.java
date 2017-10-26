@@ -32,6 +32,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDField;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDTextField;
 import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
@@ -39,9 +40,11 @@ import java.io.File;
 import java.io.IOException;
 import java.text.DateFormatSymbols;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import jxl.Workbook;
@@ -88,6 +91,8 @@ public class LogFragment extends ListFragment {
     private AsyncTask<Void, Void, Void> createPdfLogAsync;
     //Progress dialog for PDF log generation:
     private MaterialDialog proDialog;
+    //Formats date into month, day, year:
+    private SimpleDateFormat shortDate = new SimpleDateFormat("MM/dd/yy");
     //Used to format numbers in logs:
     private DecimalFormat twoDecimalPlaces = new DecimalFormat("0.00");
 
@@ -465,6 +470,14 @@ public class LogFragment extends ListFragment {
         return twoDecimalPlaces.format(totalUpdater.timeTracker.getTime(goalType) / (1000.0 * 3600.0));
     }
 
+    private void printAllFields(PDAcroForm acroForm) {
+        //Helper method that lists all of the field names in an acroForm:
+        List<PDField> allFields = acroForm.getFields();
+        for (PDField field : allFields) {
+            Log.d(TAG, field.getFullyQualifiedName());
+        }
+    }
+
     private View.OnClickListener onMaineExport = new View.OnClickListener() { @Override public void onClick(View view) {
         // Close the floating menu
         FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.export_menu);
@@ -563,7 +576,49 @@ public class LogFragment extends ListFragment {
         createPdfLogAsync.execute();
     } };
 
-
+    //These are the field indexes of the back page of the North Carolina form:
+    private int ncBackPage[] = {
+            27, 28, 29, 30, 31, 32,
+            33, 34, 35, 36, 48, 49,
+            44, 47, 50, 51, 52, 53,
+            45, 54, 55, 56, 57, 58,
+            46, 59, 60, 61, 62, 63,
+            64, 65, 66, 67, 68, 69,
+            70, 71, 74, 75, 76, 77,
+            72, 73, 78, 79, 80, 81,
+            82, 83, 84, 85, 86, 87,
+            88, 89, 90, 91, 92, 93,
+            94, 95, 96, 97, 98, 99,
+            100, 101, 102, 103, 104, 105,
+            106, 107, 108, 109, 110, 111,
+            112, 113, 114, 115, 116, 117,
+            118, 119, 120, 121, 122, 123,
+            124, 125, 126, 127, 128, 129,
+            130, 131, 132, 133, 134, 135,
+            136, 137, 138, 139, 140, 141,
+            142, 143, 144, 145, 146, 147,
+            148, 149, 150, 151, 152, 153,
+            154, 155, 156, 157, 158, 159,
+            160, 161, 162, 163, 164, 165,
+            166, 167, 168, 169, 170, 171,
+            172, 173, 174, 175, 176, 177,
+            178, 179, 180, 181, 182, 183,
+            184, 185, 186, 187, 188, 189,
+            190, 191, 192, 193, 194, 195,
+            196, 197, 198, 199, 200, 201,
+            202, 203, 204, 205, 206, 207,
+            208, 209, 210, 211, 212, 213,
+            214, 215, 216, 217, 218, 219,
+            220, 221, 222, 223, 224, 225,
+            226, 227, 228, 229, 230, 231,
+            232, 233, 234, 235, 236, 237,
+            238, 239, 240, 241, 242, 243,
+            244, 245, 246, 247, 248, 249,
+            250, 251, 252, 253, 254, 255,
+            256, 257, 258, 259, 260, 261,
+            262, 263, 264, 265, 266, 267,
+            38, 39, 40, 41, 42, 43
+    };
 
     private View.OnClickListener onNorthCarolinaExport = new View.OnClickListener() { @Override public void onClick(View view) {
         // Close the floating menu
@@ -583,7 +638,7 @@ public class LogFragment extends ListFragment {
 
             //Loop through all the logs:
             for (int i = 0; i < logSnapshots.size(); i++) {
-                if (i % 20 == 0) { // Begin a new page for every 20 logs:
+                if (i % 60 == 0) { // Begin a new page for every 20 logs:
                     acroForm = createNewPdf("north_carolina_log.pdf", logPages);
                     //Abort if acroForm is null:
                     if (acroForm == null) return null;
@@ -594,12 +649,10 @@ public class LogFragment extends ListFragment {
                 long startMillis = (long) logSnapshot.child("start").getValue();
                 //long endMillis = (long) logSnapshot.child("end").getValue();
 
-                // Set the flags for formatDateTime():
-                int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR;
                 //Since we are about to use getContext(), make sure the AsyncTask is still running:
                 if (isCancelled()) return null;
                 // Format the Date field
-                String dateString = DateUtils.formatDateTime(getContext(), startMillis, flags);
+                String dateString = shortDate.format(new Date(startMillis));
 
                 // Get the elapsed time
                 String elapsedTimeString = getElapsedTime(logSnapshot);
@@ -612,20 +665,35 @@ public class LogFragment extends ListFragment {
 
                 //Put all of this info into the form:
                 try {
-                    int curRow = (i % 20)+1;
-                    PDTextField dateField = (PDTextField)acroForm.getField("DATERow"+curRow);
-                    PDTextField timeOfDayField = (PDTextField)acroForm.getField("TIME OF DAYRow"+curRow);
-                    PDTextField timeOfNightField = (PDTextField)acroForm.getField("TIME OF NIGHTRow"+curRow);
-                    //Yes, this is quite an odd name for a field, but that's what the actual field name is:
-                    PDTextField elapsedTimeField = (PDTextField)acroForm.getField("fill_"+(6*curRow+2));
-                    PDTextField driverNameField = (PDTextField)acroForm.getField("SUPERVISING DRIVERS PRINTED NAMERow"+curRow);
-                    PDTextField driverLicenseField = (PDTextField)acroForm.getField("SUPERVISING DRIVERS DL Number and StateRow"+curRow);
+                    int curRow = (i % 60)+1;
+                    PDTextField dateField = null, timeOfDayField = null,
+                            timeOfNightField = null, elapsedTimeField = null,
+                            driverNameField = null, driverLicenseField = null;
+                    //For the front page, use the Row suffix to get the fields:
+                    if (curRow <= 20) {
+                        dateField = (PDTextField) acroForm.getField("DATERow" + curRow);
+                        timeOfDayField = (PDTextField) acroForm.getField("TIME OF DAYRow" + curRow);
+                        timeOfNightField = (PDTextField) acroForm.getField("TIME OF NIGHTRow" + curRow);
+                        //Yes, this is quite an odd name for a field, but that's what the actual field name is:
+                        elapsedTimeField = (PDTextField) acroForm.getField("fill_" + (6 * curRow + 2));
+                        driverNameField = (PDTextField) acroForm.getField("SUPERVISING DRIVERS PRINTED NAMERow" + curRow);
+                        driverLicenseField = (PDTextField) acroForm.getField("SUPERVISING DRIVERS DL Number and StateRow" + curRow);
+                    }
+                    //For the back page, use the Text suffix to get the fields:
+                    else {
+                        dateField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6]);
+                        timeOfDayField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+1]);
+                        timeOfNightField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+2]);
+                        elapsedTimeField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+3]);
+                        driverNameField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+4]);
+                        driverLicenseField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+5]);
+                    }
+                    //Finally fill all the fields in:
                     if (dateField != null) dateField.setValue(dateString);
                     //For time of day/time of night, mark the box depending on if this log was at day or night:
                     if ((boolean) logSnapshot.child("night").getValue()) {
                         if (timeOfNightField != null) timeOfNightField.setValue("X");
-                    }
-                    else {
+                    } else {
                         if (timeOfDayField != null) timeOfDayField.setValue("X");
                     }
                     if (elapsedTimeField != null) elapsedTimeField.setValue(elapsedTimeString);
