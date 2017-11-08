@@ -688,13 +688,20 @@ public class LogFragment extends ListFragment {
                         driverNameField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+4]);
                         driverLicenseField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+5]);
                     }
+                    
                     //Finally fill all the fields in:
                     if (dateField != null) dateField.setValue(dateString);
+                    //Since we are about to use getContext(), make sure the AsyncTask is still running:
+                    if (isCancelled()) return null;
+                    // Format the Date/time field
+                    String timeString = DateUtils.formatDateTime(getContext(), (long)logSnapshot.child("start").getValue(), 
+                                                                     DateUtils.FORMAT_SHOW_TIME);
+                    
                     //For time of day/time of night, mark the box depending on if this log was at day or night:
                     if ((boolean) logSnapshot.child("night").getValue()) {
-                        if (timeOfNightField != null) timeOfNightField.setValue("X");
+                        if (timeOfNightField != null) timeOfNightField.setValue(timeString);
                     } else {
-                        if (timeOfDayField != null) timeOfDayField.setValue("X");
+                        if (timeOfDayField != null) timeOfDayField.setValue(timeString);
                     }
                     if (elapsedTimeField != null) elapsedTimeField.setValue(elapsedTimeString);
                     if (driverNameField != null) driverNameField.setValue(driverName);
