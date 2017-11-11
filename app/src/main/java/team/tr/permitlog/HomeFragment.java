@@ -110,12 +110,10 @@ public class HomeFragment extends Fragment {
     @Override
     public void onPause() {
         //If we are not showing the tutorial and the stop button is enabled,
-        //then there is an ongoing drive that is being paused:
+        //then there is an ongoing drive:
         if (!showingTutorial && stopButton.isEnabled()) {
             //Stop the timer since we will restart it once the app resumes:
             timer.cancel();
-            //Just set the starting time:
-            ongoingRef.child("start").setValue(startingTime.getTimeInMillis());
         }
         super.onPause();
     }
@@ -510,6 +508,8 @@ public class HomeFragment extends Fragment {
         // Grab the start time
         startingTime.setTime(new Date());
         Log.d(TAG, "startingTime: " + startingTime);
+        //Save the starting time in Firebase:
+        ongoingRef.child("start").setValue(startingTime.getTimeInMillis());
 
         // Start updating the label
         timerUpdateLabel();
