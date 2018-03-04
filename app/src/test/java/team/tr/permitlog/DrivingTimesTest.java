@@ -4,55 +4,86 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * DrivingTimes tests.
+ */
 public class DrivingTimesTest {
-    private DrivingTimes tester = new DrivingTimes();
+    // Instances of DrivingTimes to be used for testing.
+    private DrivingTimes dt1 = new DrivingTimes();
+    private DrivingTimes dt2 = new DrivingTimes(10, 5, 3, 2, 8);
 
+    /**
+     * Test the DrivingTimes getTotalTime method with valid types.
+     *
+     * @see DrivingTimes#getTime(String)
+     * @see DrivingTimes#TIME_TYPES
+     */
     @Test
-    public void getTotalTime() throws Exception {
-        // setup the times
-        tester.total = 20;
-        tester.day = 12;
-        tester.night = 5;
-        tester.weather = 3;
-        tester.adverse = 0;
-
-        // test getting the valid types of times
-        assertEquals(20, tester.getTime("total"));
-        assertEquals(12, tester.getTime("day"));
-        assertEquals(5, tester.getTime("night"));
-        assertEquals(3, tester.getTime("weather"));
-        assertEquals(0, tester.getTime("adverse"));
+    public void getTime() {
+        assertEquals(0, this.dt1.getTime("total"));
+        assertEquals(0, this.dt1.getTime("day"));
+        assertEquals(0, this.dt1.getTime("night"));
+        assertEquals(0, this.dt1.getTime("weather"));
+        assertEquals(0, this.dt1.getTime("adverse"));
+        assertEquals(10, this.dt2.getTime("total"));
+        assertEquals(5, this.dt2.getTime("day"));
+        assertEquals(3, this.dt2.getTime("night"));
+        assertEquals(2, this.dt2.getTime("weather"));
+        assertEquals(8, this.dt2.getTime("adverse"));
     }
 
-    @Test(expected = RuntimeException.class)
-    public void getBadTotalTime() throws Exception {
-        // test an invalid type
-        tester.getTime("bad");
+    /**
+     * Test the DrivingTimes getTotalTime method with invalid types.
+     *
+     * @see DrivingTimes#getTime(String)
+     * @see DrivingTimes#TIME_TYPES
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void getBadTypeTime() {
+        this.dt1.getTime("bad");
+        this.dt2.getTime("weathers");
     }
 
+    /**
+     * Test the DrivingTimes setTime method with valid types and values.
+     *
+     * @see DrivingTimes#setTime(String, long)
+     * @see DrivingTimes#TIME_TYPES
+     */
     @Test
-    public void setTotalTime() throws Exception {
-        // test setting the valid types of times
-        tester.setTime("total", 15);
-        assertEquals(15, tester.total);
-
-        tester.setTime("day", 10);
-        assertEquals(10, tester.day);
-
-        tester.setTime("night", 3);
-        assertEquals(3, tester.night);
-
-        tester.setTime("weather", 1);
-        assertEquals(1, tester.weather);
-
-        tester.setTime("adverse", 1);
-        assertEquals(1, tester.adverse);
+    public void setTime() {
+        this.dt1.setTime("total", 15);
+        assertEquals(15, this.dt1.getTime("total"));
+        this.dt2.setTime("adverse", 3);
+        assertEquals(3, this.dt2.getTime("adverse"));
     }
 
-    @Test(expected = RuntimeException.class)
-    public void setBadTotalTime() throws Exception {
-        // test an invalid type
-        tester.setTime("bad", 3);
+    /**
+     * Test the DrivingTimes setTime method with invalid times (less than 0).
+     *
+     * @see DrivingTimes#setTime(String, long)
+     * @see DrivingTimes#TIME_TYPES
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void setBadTime() {
+        this.dt1.setTime("total", -3);
+        this.dt1.setTime("day", -2);
+        this.dt1.setTime("night", -3);
+        this.dt1.setTime("weather", -1);
+        this.dt1.setTime("adverse", -10);
+        this.dt1.setTime("bad", -3);
+    }
+
+    /**
+     * Test the DrivingTimes setTotalTime method with invalid types but valid times
+     * (greater than 0).
+     *
+     * @see DrivingTimes#setTime(String, long)
+     * @see DrivingTimes#TIME_TYPES
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void setBadTypeTime() {
+        this.dt1.setTime("bad", 3);
     }
 
 }
