@@ -11,7 +11,6 @@ import android.support.v4.app.Fragment;
 import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,18 +22,11 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
-
-import uk.co.deanwild.materialshowcaseview.IShowcaseListener;
-import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
-import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
-import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
-
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
+import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.NativeExpressAdView;
-import com.google.android.gms.ads.VideoOptions;
+import com.google.android.gms.ads.AdView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -52,14 +44,21 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import uk.co.deanwild.materialshowcaseview.IShowcaseListener;
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
+import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
+
 public class HomeFragment extends Fragment {
-    //The root view for this fragment, used to find elements by id:
+    // The root view for this fragment, used to find elements by id:
     private View rootView;
 
     private final String TAG = "HomeFragment";
     private String userId;
+
     // Have we shown the tutorial yet?
     private boolean shownTutorial = false;
+
     // Are we currently showing the tutorial?
     private boolean showingTutorial = false;
 
@@ -77,19 +76,27 @@ public class HomeFragment extends Fragment {
 
     // The driver spinner:
     private Spinner driversSpinner;
+
     // Position of spinner as set in Bundle:
     private int spinnerPosition;
+
     // Object that holds all data relevant to the driver spinner:
     private DriverAdapter spinnerData;
 
     // This holds the user's goals:
     private long totalGoal, dayGoal, nightGoal, weatherGoal, adverseGoal;
+
     // TextViews:
     private TextView totalTimeView, dayTimeView, nightTimeView, weatherTimeView, adverseTimeView;
+
     // Object that updates the time totals:
     private ElapsedTime timeUpdater;
+
     // Firebase reference for goals and ongoing drive:
     private DatabaseReference goalsRef, ongoingRef;
+
+    private AdView mAdView;
+
     // Callback for timesListener:
     private DrivingTimesConsumer timeCallback = new DrivingTimesConsumer() {
         @Override public void accept(DrivingTimes timeObj) {
@@ -98,7 +105,7 @@ public class HomeFragment extends Fragment {
         }
     };
 
-    //Called when the user rotates the screen:
+    // Called when the user rotates the screen:
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -107,30 +114,31 @@ public class HomeFragment extends Fragment {
         saveToBundle(outState);
     }
 
+    // If we are not showing the tutorial and the stop button is enabled,
+    // then there is an ongoing drive
     @Override
     public void onPause() {
-        //If we are not showing the tutorial and the stop button is enabled,
-        //then there is an ongoing drive:
         if (!showingTutorial && stopButton.isEnabled()) {
-            //Stop the timer since we will restart it once the app resumes:
+            // Stop the timer since we will restart it once the app resumes:
             timer.cancel();
         }
         super.onPause();
     }
 
+    // Takes Bundle and sets info about autodrive in Bundle.
     private void saveToBundle(Bundle outState) {
-        /* Takes Bundle and sets info about autodrive in Bundle. */
         outState.putInt("spinnerPosition", driversSpinner.getSelectedItemPosition());
         outState.putBoolean("showingTutorial", showingTutorial);
     }
 
+    // Takes Bundle and sets info about autodrive from Bundle.
     private void loadFromBundle(Bundle savedInstanceState) {
-        /* Takes Bundle and sets info about autodrive from Bundle. */
         showingTutorial = savedInstanceState.getBoolean("showingTutorial");
         spinnerPosition = savedInstanceState.getInt("spinnerPosition");
-        // Set spinnerPosition if possible:
+
+        // Set spinnerPosition if possible,
+        // otherwise, keep listening to the adapter and set it when possible
         if (spinnerData.driverIds.size() > spinnerPosition) driversSpinner.setSelection(spinnerPosition);
-            // Otherwise, keep listening to the adapter and set it when possible:
         else spinnerData.driversAdapter.registerDataSetObserver(setSpinnerPosition);
     }
 
@@ -176,23 +184,23 @@ public class HomeFragment extends Fragment {
         rootView = lf.inflate(R.layout.fragment_home, container, false);
 
         // Set start drive button click
-        startButton = (Button) rootView.findViewById(R.id.start_drive);
+        startButton = rootView.findViewById(R.id.start_drive);
         startButton.setOnClickListener(onStartDrive);
 
         // Set stop drive button click
-        stopButton = (Button) rootView.findViewById(R.id.stop_drive);
+        stopButton = rootView.findViewById(R.id.stop_drive);
         stopButton.setOnClickListener(onStopDrive);
 
         // Set add drive button click
-        FloatingActionButton addDrive = (FloatingActionButton) rootView.findViewById(R.id.add_drive);
+        FloatingActionButton addDrive = rootView.findViewById(R.id.add_drive);
         addDrive.setOnClickListener(onAddDrive);
 
         // Set add driver button click
-        FloatingActionButton addDriver = (FloatingActionButton) rootView.findViewById(R.id.add_driver);
+        FloatingActionButton addDriver = rootView.findViewById(R.id.add_driver);
         addDriver.setOnClickListener(onAddDriver);
 
         // Get the drivers spinner:
-        driversSpinner = (Spinner) rootView.findViewById(R.id.drivers_spinner);
+        driversSpinner = rootView.findViewById(R.id.drivers_spinner);
         // Get the UID:
         FirebaseUser curUser = FirebaseAuth.getInstance().getCurrentUser();
         if (curUser != null) userId = curUser.getUid();
@@ -203,52 +211,44 @@ public class HomeFragment extends Fragment {
         driversSpinner.setAdapter(spinnerData.driversAdapter);
 
         // Initialize the TextViews:
-        totalTimeView=(TextView)rootView.findViewById(R.id.time_elapsed);
-        dayTimeView=(TextView)rootView.findViewById(R.id.day_elapsed);
-        nightTimeView=(TextView)rootView.findViewById(R.id.night_elapsed);
-        weatherTimeView=(TextView)rootView.findViewById(R.id.weather_elapsed);
-        adverseTimeView=(TextView)rootView.findViewById(R.id.adverse_elapsed);
+        totalTimeView= rootView.findViewById(R.id.time_elapsed);
+        dayTimeView= rootView.findViewById(R.id.day_elapsed);
+        nightTimeView= rootView.findViewById(R.id.night_elapsed);
+        weatherTimeView= rootView.findViewById(R.id.weather_elapsed);
+        adverseTimeView= rootView.findViewById(R.id.adverse_elapsed);
 
         // Start listening to logs:
         timeUpdater = new ElapsedTime(userId, timeCallback);
+
         // Get data about the goals, if available:
         goalsRef = FirebaseDatabase.getInstance().getReference().child(userId).child("goals");
         goalsRef.addValueEventListener(goalsListener);
+
         // Get reference to ongoing drive:
         ongoingRef = FirebaseDatabase.getInstance().getReference().child(userId).child("ongoing");
 
-        //Initialize the ad:
-        final NativeExpressAdView adView = new NativeExpressAdView(getContext());
-        adView.setAdUnitId(getString(R.string.ad_unit_id));
-        adView.setVideoOptions(new VideoOptions.Builder()
-                .setStartMuted(true)
-                .build());
-        //Center the ad horizontally:
-        LinearLayout.LayoutParams adParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        adParams.gravity = Gravity.CENTER_HORIZONTAL;
-        adView.setLayoutParams(adParams);
-        //Initialize the ad request:
+        // Initialize the ad and ad request:
+        this.mAdView = this.rootView.findViewById(R.id.adView);
         final AdRequest request = new AdRequest.Builder()
+                .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
                 .addTestDevice("588673E3A47A5C68AD8CD4FE6FA5A4ED")
                 .build();
+        this.mAdView.loadAd(request);
 
-        //Get the LinearLayout container
-        final LinearLayout adContainer = (LinearLayout)rootView.findViewById(R.id.home_container);
-        //Get displayMetrics in order to convert pixels to dp:
-        final DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
-        //Wait for the LinearLayout to load in order to get its width:
-        adContainer.post(new Runnable() {
+        this.mAdView.setAdListener(new AdListener() {
             @Override
-            public void run() {
-                //Get the width of the LinearLayout in dp:
-                int adContainerWidthDp = (int)(adContainer.getWidth()/displayMetrics.density);
-                //Set the ad size to take up the whole LinearLayout, but also be within 280 and 1200 in order to meet the small template:
-                adView.setAdSize(new AdSize(Math.min(1200, Math.max(280, adContainerWidthDp)), 100));
-                //Add the ad to the screen and load the request:
-                adContainer.addView(adView);
-                adView.loadAd(request);
+            public void onAdLoaded() {
+                mAdView.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAdFailedToLoad(int errorCode) {
+                mAdView.setVisibility(View.GONE);
             }
         });
+
+        // Get displayMetrics in order to convert pixels to dp:
+        final DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
 
         // Get the values from rotate, if possible:
         if (savedInstanceState != null) loadFromBundle(savedInstanceState);
@@ -257,6 +257,7 @@ public class HomeFragment extends Fragment {
             Bundle args = getArguments();
             if (args != null) loadFromBundle(args);
         }
+
         return rootView;
     }
 
@@ -271,7 +272,7 @@ public class HomeFragment extends Fragment {
 
     private void timerUpdateLabel() {
         // Get the time label:
-        final TextView driveTime = (TextView) rootView.findViewById(R.id.drive_time);
+        final TextView driveTime = rootView.findViewById(R.id.drive_time);
 
         timer = new Timer();
         final String timerStr = timer.toString();
@@ -440,7 +441,7 @@ public class HomeFragment extends Fragment {
                                 editor.commit();
                                 // Transition to the goals:
                                 MainActivity curActivity = (MainActivity)getActivity();
-                                curActivity.transitionFragment(curActivity.GOALS_MENU_INDEX);
+                                curActivity.transitionFragment(MainActivity.GOALS_MENU_INDEX);
                             }
                         })
                         .build());
@@ -502,7 +503,7 @@ public class HomeFragment extends Fragment {
         startButton.setEnabled(false);
 
         // Enable the "Stop Drive" button
-        Button stopButton = (Button) rootView.findViewById(R.id.stop_drive);
+        Button stopButton = rootView.findViewById(R.id.stop_drive);
         stopButton.setEnabled(true);
 
         // Grab the start time
@@ -525,7 +526,7 @@ public class HomeFragment extends Fragment {
         stopButton.setEnabled(false);
 
         // Enable the "Start Drive" button
-        Button startButton = (Button) rootView.findViewById(R.id.start_drive);
+        Button startButton = rootView.findViewById(R.id.start_drive);
         startButton.setEnabled(true);
 
         // Check if the driver field is empty
@@ -608,7 +609,7 @@ public class HomeFragment extends Fragment {
         if (!isSignedIn) return;
 
         // Close the plus button menu
-        FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
+        FloatingActionMenu floatingMenu = rootView.findViewById(R.id.menu);
         floatingMenu.close(false);
 
         // Open the activity (which masquerades as a dialog)
@@ -624,7 +625,7 @@ public class HomeFragment extends Fragment {
         if (!isSignedIn) return;
 
         // Close the plus button menu
-        FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.menu);
+        FloatingActionMenu floatingMenu = rootView.findViewById(R.id.menu);
         floatingMenu.close(false);
 
         // Open the activity (which masquerades as a dialog)
@@ -636,8 +637,10 @@ public class HomeFragment extends Fragment {
     public void saveDrive(boolean night, boolean weather, boolean adverse, String driverId) {
         // Check if the user is signed in:
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity)getActivity());
+
         // Don't do anything if the user isn't signed in:
         if (!isSignedIn) return;
+
         // Delete the ongoing drive now that it's over:
         ongoingRef.removeValue();
 
@@ -656,7 +659,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void resetLabel() {
-        TextView driveTime = (TextView) rootView.findViewById(R.id.drive_time);
+        TextView driveTime = rootView.findViewById(R.id.drive_time);
         driveTime.setText("0:00:00");
     }
 
