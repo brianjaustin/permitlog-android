@@ -3,6 +3,7 @@ package team.tr.permitlog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.database.DataSetObserver;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -95,6 +96,7 @@ public class HomeFragment extends Fragment {
     // Firebase reference for goals and ongoing drive:
     private DatabaseReference goalsRef, ongoingRef;
 
+    // View that holds the banner ad:
     private AdView mAdView;
 
     // Callback for timesListener:
@@ -235,6 +237,7 @@ public class HomeFragment extends Fragment {
                 .build();
         this.mAdView.loadAd(request);
 
+        // Show the ad once it loads, but hide it if it fails to load:
         this.mAdView.setAdListener(new AdListener() {
             @Override
             public void onAdLoaded() {
@@ -246,9 +249,6 @@ public class HomeFragment extends Fragment {
                 mAdView.setVisibility(View.GONE);
             }
         });
-
-        // Get displayMetrics in order to convert pixels to dp:
-        final DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
 
         // Get the values from rotate, if possible:
         if (savedInstanceState != null) loadFromBundle(savedInstanceState);

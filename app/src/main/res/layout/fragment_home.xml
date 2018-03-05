@@ -5,146 +5,160 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="team.tr.permitlog.HomeFragment"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fillViewport="true">
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+        <!-- Outer linear layout holds everything -->
         <LinearLayout
-            android:id="@+id/home_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:descendantFocusability="blocksDescendants">"
-            <!--blocksDescendants makes sure the window doesn't jump down when ads load-->
-            <android.support.v7.widget.CardView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                card_view:contentPadding="0dp"
-                card_view:cardElevation="2dp"
-                card_view:cardCornerRadius="5dp"
-                app:cardUseCompatPadding="true">
-
-                <LinearLayout
-                    android:layout_width="fill_parent"
-                    android:layout_height="fill_parent"
-                    android:orientation="vertical">
-                    <TextView
-                        style="@style/Base.TextAppearance.AppCompat.Headline"
-                        android:id="@+id/drive_time"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="0:00:00"
-                        android:layout_gravity="center_horizontal" />
-                    <android.support.v7.widget.LinearLayoutCompat
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center">
-                    <Button
-                        style="@style/Widget.AppCompat.Button.Colored"
-                        android:text="@string/start_drive"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/start_drive"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored" />
-                    <Button
-                        style="@style/Widget.AppCompat.Button.Colored"
-                        android:text="@string/stop_drive"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/stop_drive"
-                        android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored"
-                        android:enabled="false" />
-                    </android.support.v7.widget.LinearLayoutCompat>
-
-                    <Spinner
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/drivers_spinner"
-                        android:layout_marginBottom="5dp"
-                        android:layout_marginTop="5dp"
-                        android:layout_marginEnd="5dp"
-                        android:layout_marginStart="5dp" />
-                </LinearLayout>
-            </android.support.v7.widget.CardView>
-
-            <android.support.v7.widget.CardView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                card_view:contentPadding="16dp"
-                card_view:cardElevation="2dp"
-                card_view:cardCornerRadius="5dp"
-                app:cardUseCompatPadding="true">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        style="@style/Base.TextAppearance.AppCompat.Headline"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/time_completed"
-                        android:layout_gravity="center_horizontal" />
-
-                    <ProgressBar
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/progressBar3"
-                        android:indeterminate="false"
-                        android:layout_marginTop="8dp"/>
-
-                    <TextView
-                        style="@style/Base.TextAppearance.AppCompat.Headline"
-                        android:id="@+id/time_elapsed"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:layout_gravity="center_horizontal" />
-
-                    <TextView
-                        style="@style/Base.TextAppearance.AppCompat.Headline"
-                        android:id="@+id/day_elapsed"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:layout_gravity="center_horizontal" />
-
-                    <TextView
-                        style="@style/Base.TextAppearance.AppCompat.Headline"
-                        android:id="@+id/night_elapsed"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:layout_gravity="center_horizontal" />
-
-                    <TextView
-                        style="@style/Base.TextAppearance.AppCompat.Headline"
-                        android:id="@+id/weather_elapsed"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:layout_gravity="center_horizontal" />
-
-                    <TextView
-                        style="@style/Base.TextAppearance.AppCompat.Headline"
-                        android:id="@+id/adverse_elapsed"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:layout_gravity="center_horizontal" />
-                </LinearLayout>
-            </android.support.v7.widget.CardView>
-
-            <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
-                android:id="@+id/adView"
+            android:descendantFocusability="blocksDescendants">
+            <!-- Inner linear layout holds everything but ads and puts 16dp around content -->
+            <LinearLayout
+                android:id="@+id/home_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingLeft="@dimen/activity_horizontal_margin"
+                android:paddingRight="@dimen/activity_horizontal_margin"
+                android:orientation="vertical"
+                android:descendantFocusability="blocksDescendants">
+                <!--blocksDescendants makes sure the window doesn't jump down when ads load-->
+                <android.support.v7.widget.CardView
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    card_view:contentPadding="0dp"
+                    card_view:cardElevation="2dp"
+                    card_view:cardCornerRadius="5dp"
+                    app:cardUseCompatPadding="true">
+
+                    <LinearLayout
+                        android:layout_width="fill_parent"
+                        android:layout_height="fill_parent"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/Base.TextAppearance.AppCompat.Headline"
+                            android:id="@+id/drive_time"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="0:00:00"
+                            android:layout_gravity="center_horizontal" />
+                        <android.support.v7.widget.LinearLayoutCompat
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center">
+                            <Button
+                                style="@style/Widget.AppCompat.Button.Colored"
+                                android:text="@string/start_drive"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:id="@+id/start_drive"
+                                android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored" />
+                            <Button
+                                style="@style/Widget.AppCompat.Button.Colored"
+                                android:text="@string/stop_drive"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:id="@+id/stop_drive"
+                                android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button.Colored"
+                                android:enabled="false" />
+                        </android.support.v7.widget.LinearLayoutCompat>
+
+                        <Spinner
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/drivers_spinner"
+                            android:layout_marginBottom="5dp"
+                            android:layout_marginTop="5dp"
+                            android:layout_marginEnd="5dp"
+                            android:layout_marginStart="5dp" />
+                    </LinearLayout>
+                </android.support.v7.widget.CardView>
+
+                <android.support.v7.widget.CardView
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="@dimen/activity_horizontal_margin"
+                    android:paddingRight="@dimen/activity_horizontal_margin"
+                    card_view:contentPadding="16dp"
+                    card_view:cardElevation="2dp"
+                    card_view:cardCornerRadius="5dp"
+                    app:cardUseCompatPadding="true">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/Base.TextAppearance.AppCompat.Headline"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/time_completed"
+                            android:layout_gravity="center_horizontal" />
+
+                        <ProgressBar
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/progressBar3"
+                            android:indeterminate="false"
+                            android:layout_marginTop="8dp"/>
+
+                        <TextView
+                            style="@style/Base.TextAppearance.AppCompat.Headline"
+                            android:id="@+id/time_elapsed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_gravity="center_horizontal" />
+
+                        <TextView
+                            style="@style/Base.TextAppearance.AppCompat.Headline"
+                            android:id="@+id/day_elapsed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_gravity="center_horizontal" />
+
+                        <TextView
+                            style="@style/Base.TextAppearance.AppCompat.Headline"
+                            android:id="@+id/night_elapsed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_gravity="center_horizontal" />
+
+                        <TextView
+                            style="@style/Base.TextAppearance.AppCompat.Headline"
+                            android:id="@+id/weather_elapsed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_gravity="center_horizontal" />
+
+                        <TextView
+                            style="@style/Base.TextAppearance.AppCompat.Headline"
+                            android:id="@+id/adverse_elapsed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_gravity="center_horizontal" />
+                    </LinearLayout>
+                </android.support.v7.widget.CardView>
+            </LinearLayout>
+
+            <!-- Ad is outside inner linear layout so it takes up full screen width -->
+            <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/adView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical|center_horizontal"
-                ads:adSize="SMART_BANNER"
+                ads:adSize="BANNER"
                 ads:adUnitId="ca-app-pub-1631603318674332/1948376617">
             </com.google.android.gms.ads.AdView>
         </LinearLayout>
