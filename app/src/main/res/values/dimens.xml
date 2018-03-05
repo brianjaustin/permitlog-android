@@ -2,4 +2,6 @@
     <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
+    <!-- MainActivity has 0dp horizontal margins because of the ad in HomeFragment -->
+    <dimen name="activity_main_horizontal_margin">0dp</dimen>
 </resources>
