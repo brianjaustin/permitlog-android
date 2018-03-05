@@ -155,10 +155,10 @@
             <!-- Ad is outside inner linear layout so it takes up full screen width -->
             <com.google.android.gms.ads.AdView xmlns:ads="http://schemas.android.com/apk/res-auto"
                 android:id="@+id/adView"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical|center_horizontal"
-                ads:adSize="BANNER"
+                ads:adSize="SMART_BANNER"
                 ads:adUnitId="ca-app-pub-1631603318674332/1948376617">
             </com.google.android.gms.ads.AdView>
         </LinearLayout>
