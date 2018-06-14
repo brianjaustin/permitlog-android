@@ -7,8 +7,8 @@ android {
         applicationId "team.tr.permitlog"
         minSdkVersion 19
         targetSdkVersion 26
-        versionCode 10
-        versionName "1.15" //ALWAYS CHANGE VERSION NUMBER IN ABOUT PAGE WHEN CHANGING VERSION NAME
+        versionCode 11
+        versionName "1.16" //ALWAYS CHANGE VERSION NUMBER IN ABOUT PAGE WHEN CHANGING VERSION NAME
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
