@@ -22,10 +22,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.DateFormat;
 import java.text.DateFormatSymbols;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Locale;
 
 public class CustomDriveDialog extends AppCompatActivity {
     //TAG for logging:
@@ -274,11 +273,11 @@ public class CustomDriveDialog extends AppCompatActivity {
         //Set startingTime and endingTime:
         startingTime.set(year, month, day);
         endingTime.set(year, month, day);
-        //Get the text of the month:
-        String monthText = new DateFormatSymbols().getMonths()[month];
+        //Get the date formatter:
+        DateFormat dateFormat = android.text.format.DateFormat.getDateFormat(this);
         //Display the date to the user:
         TextView driveDateView = (TextView)findViewById(R.id.drive_date);
-        driveDateView.setText(monthText+" "+day+", "+year);
+        driveDateView.setText(dateFormat.format(startingTime.getTime()));
         //Remember to log startingTime and endingTime for debugging:
         Log.d(TAG, "Started driving on: "+startingTime.getTime().toString());
         Log.d(TAG, "Stopped driving on: "+endingTime.getTime().toString());
@@ -334,8 +333,7 @@ public class CustomDriveDialog extends AppCompatActivity {
         driveTime.set(Calendar.HOUR_OF_DAY, hour);
         driveTime.set(Calendar.MINUTE, minute);
         //Display the time to the user:
-        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.US);
-        timeFormat.setTimeZone(driveTime.getTimeZone());
+        DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(this);
         driveTimeView.setText(timeFormat.format(driveTime.getTime()));
         //If endingTime is before startingTime, add the time notice if needed.
         if (endingTime.before(startingTime)) {

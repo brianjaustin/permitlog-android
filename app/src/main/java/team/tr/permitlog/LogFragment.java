@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ListFragment;
@@ -18,7 +17,6 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.afollestad.materialdialogs.MaterialDialog;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.firebase.auth.FirebaseAuth;
@@ -29,24 +27,15 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.tom_roush.pdfbox.multipdf.PDFMergerUtility;
-import com.tom_roush.pdfbox.pdmodel.PDDocument;
-import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
-import com.tom_roush.pdfbox.pdmodel.interactive.form.PDField;
-import com.tom_roush.pdfbox.pdmodel.interactive.form.PDTextField;
 import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.DateFormatSymbols;
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
 
 import jxl.Workbook;
 import jxl.WorkbookSettings;
@@ -88,14 +77,6 @@ public class LogFragment extends ListFragment {
     private ElapsedTime totalUpdater;
     // Buttons for adding
     private FloatingActionButton maineBtn, northCarolinaBtn, manualBtn;
-    //AsyncTask for generating PDF log in separate thread:
-    private AsyncTask<Void, Void, Void> createPdfLogAsync;
-    //Progress dialog for PDF log generation:
-    private MaterialDialog proDialog;
-    //Formats date into month, day, year:
-    private SimpleDateFormat shortDate = new SimpleDateFormat("MM/dd/yy");
-    //Used to format numbers in logs:
-    private DecimalFormat twoDecimalPlaces = new DecimalFormat("0.00");
 
     //Firebase listener:
     private ChildEventListener timesListener = new ChildEventListener() {
@@ -106,16 +87,13 @@ public class LogFragment extends ListFragment {
             //Set the data, start listening to get data for this driver, and update the adapter:
             logSnapshots.add(dataSnapshot);
             logSummaries.add(genLogSummary(dataSnapshot));
-
-            /*
-            //Sort the logs by starting value
+            /* //Sort the logs by starting value
             Collections.sort(logSnapshots, new Comparator<DataSnapshot>() {
                 @Override
                 public int compare(DataSnapshot o1, DataSnapshot o2){
                     return Long.compare((long) o1.child("start").getValue(), (long) o2.child("start").getValue());
                 }
-            });
-            */
+            }); // */
 
             listAdapter.notifyDataSetChanged();
         }
@@ -309,176 +287,6 @@ public class LogFragment extends ListFragment {
         startActivity(intent);
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        //When the screen is rotated, cancel the progress bar and the AsyncTask, if they have been started,
-        //because otherwise, the AsyncTask will crash when trying to use getContext() or getActivity():
-        if (createPdfLogAsync != null) createPdfLogAsync.cancel(true);
-        if (proDialog != null) proDialog.cancel();
-    }
-
-    private void startProgressDialog() {
-        // Show the progress dialog
-        proDialog = new MaterialDialog.Builder(getContext())
-                .title("Generating PDF Log")
-                .content("Please wait, do not rotate the screen or leave the app.")
-                //The progress is incremented for every log plus 1 more for saving the PDF at the end:
-                .progress(false, logSnapshots.size() + 1)
-                .canceledOnTouchOutside(false)
-                .show();
-    }
-
-    private PDAcroForm createNewPdf(String pdfName, List<PDDocument> pdfList) {
-        //Since the following will use getActivity(),
-        //check isCancelled() before continuing:
-        if (createPdfLogAsync.isCancelled()) return null;
-
-        // Create a new PDF:
-        PDDocument pdfDocument;
-        try {
-            pdfDocument = PDDocument.load(getActivity().getAssets().open(pdfName));
-        } catch (IOException e) {
-            Log.e(TAG, e.getMessage());
-            return null;
-        }
-        //Add this PDF to the list:
-        pdfList.add(pdfDocument);
-
-        // Get the form:
-        PDAcroForm acroForm = pdfDocument.getDocumentCatalog().getAcroForm();
-        // Check if the form was found
-        if (acroForm == null) {
-            Log.e(TAG, "FORM NOT FOUND");
-            return null;
-        }
-        // Otherwise, return acroForm:
-        return acroForm;
-    }
-
-    private void savePDFs(List<PDDocument> pdfList) {
-        // Merge the files into one
-        PDDocument totalDocument = new PDDocument();
-        PDFMergerUtility mt = new PDFMergerUtility();
-        for (PDDocument document : pdfList) {
-            try {
-                mt.appendDocument(totalDocument, document);
-                //Close the old documents since they are merged in totalDocument
-                document.close();
-            } catch (IOException e) {
-                Log.e(TAG, e.getMessage());
-                return;
-            }
-        }
-
-        //Since the following will use getContext(),
-        //check isCancelled() before continuing:
-        if (createPdfLogAsync.isCancelled()) return;
-
-        // If we can write to external storage, save the PDF:
-        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
-            File file = new File(getContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "log.pdf");
-            try {
-                //Save and close the PDF file:
-                totalDocument.save(file);
-                totalDocument.close();
-            } catch (IOException e) {
-                // When there is an error, log it and notify the user:
-                Log.e(TAG, e.getMessage());
-                //Since the following is going to use getContext(),
-                //check isCancelled() before continuing:
-                if (createPdfLogAsync.isCancelled()) return;
-                Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
-            }
-            //Increment the progress bar to 100%:
-            proDialog.incrementProgress(1);
-
-            //Since the following is going to use getActivity(),
-            //check isCancelled() before continuing:
-            if (createPdfLogAsync.isCancelled()) return;
-
-            // Send the PDF file to the user
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.setType("application/pdf");
-            Uri fileUri = FileProvider.getUriForFile(getActivity(), getString(R.string.file_provider_authority), file);
-            intent.putExtra(Intent.EXTRA_STREAM, fileUri);
-
-                /*// This is for debugging the different kind of intents that can handle PDFs:
-                Log.d(TAG, "Listing intents for PDF:");
-                for(ResolveInfo info : getContext().getPackageManager().queryIntentActivities(intent,PackageManager.MATCH_ALL)){
-                    Log.d(TAG, "Intent: " + info.toString());
-                }*/
-            //Get rid of the progress bar now that we're finished:
-            proDialog.dismiss();
-
-            //Since the following is going to use startActivity() or getContext(),
-            //check isCancelled() before continuing:
-            if (createPdfLogAsync.isCancelled()) return;
-            try {
-                //Show the user the dialog of apps that can handle PDFs:
-                startActivity(Intent.createChooser(intent, "Send Driving Log"));
-            } catch (android.content.ActivityNotFoundException exception) {
-                // There is no app installed that can send this, so show an error:
-                Toast.makeText(getContext(), R.string.export_pdf_error, Toast.LENGTH_LONG).show();
-            }
-        }
-        // Otherwise, show the user an error message:
-        else {
-            Toast.makeText(getContext(), R.string.save_pdf_error, Toast.LENGTH_SHORT).show();
-            try {
-                //Don't forget to close the PDF file:
-                totalDocument.close();
-            } catch (IOException e) {}
-        }
-    }
-
-    private String getElapsedTime(DataSnapshot logSnapshot) {
-        long timeElapsed = (long) (logSnapshot.child("end").getValue()) - (long) (logSnapshot.child("start").getValue());
-        double hoursElapsed = (double) timeElapsed / (1000.0 * 3600.0);
-        String elapsedTimeStr = twoDecimalPlaces.format(hoursElapsed);
-        return elapsedTimeStr;
-    }
-
-    private List<String> getDriverInfo(DataSnapshot logSnapshot) {
-        // The following variables hold info about the drivers. These are their default values:
-        String driverId = logSnapshot.child("driver_id").getValue().toString();
-        int driverIndex = -1;
-        DataSnapshot driverSnapshot = null;
-        String driverName = "DELETED DRIVER";
-        String driverAge = "";
-        String driverLicense = "DELETED DRIVER";
-        // If possible, get driver index and info:
-        if (driversInfo.driverIds.contains(driverId)) {
-            driverIndex = driversInfo.driverIds.indexOf(driverId);
-            driverSnapshot = driversInfo.driverSnapshots.get(driverIndex);
-            // Get the driver's name
-            if (DriverAdapter.hasCompleteName.accept(driverSnapshot)) {
-                driverName = driversInfo.driverNames.get(driverIndex);
-            }
-            // Get the driver's age
-            if (driverSnapshot.hasChild("age"))
-                driverAge += ", " + driverSnapshot.child("age").getValue().toString();
-            // Get the driver's license number
-            if (driverSnapshot.hasChild("license_number"))
-                driverLicense = driverSnapshot.child("license_number").getValue().toString();
-        }
-        //Return the info:
-        return Arrays.asList(driverName, driverAge, driverLicense);
-    }
-
-    private String getGoalTotal(String goalType) {
-        //Convert goal to hours and format with two decimal places:
-        return twoDecimalPlaces.format(totalUpdater.timeTracker.getTime(goalType) / (1000.0 * 3600.0));
-    }
-
-    private void printAllFields(PDAcroForm acroForm) {
-        //Helper method that lists all of the field names in an acroForm:
-        List<PDField> allFields = acroForm.getFields();
-        for (PDField field : allFields) {
-            Log.d(TAG, field.getFullyQualifiedName());
-        }
-    }
-
     private View.OnClickListener onMaineExport = new View.OnClickListener() { @Override public void onClick(View view) {
         // Close the floating menu
         FloatingActionMenu floatingMenu = (FloatingActionMenu) rootView.findViewById(R.id.export_menu);
@@ -488,138 +296,10 @@ public class LogFragment extends ListFragment {
         boolean isSignedIn = FirebaseHelper.signInIfNeeded((MainActivity) getActivity());
         if (!isSignedIn) return;
 
-        // Create the PDF log in an AsyncTask:
-        // Note that this can not just be a constant instance member
-        // because it needs to be created every time the method runs
-        // since one AsyncTask can only be executed once.
-        createPdfLogAsync = new AsyncTask<Void, Void, Void>() { @Override public Void doInBackground(Void... args) {
-            //Stores all of the PDFs:
-            ArrayList<PDDocument> logPages = new ArrayList<>();
-            // Stores the current PDF form:
-            PDAcroForm acroForm = null;
-
-            //Loop through all the logs:
-            for (int i = 0; i < logSnapshots.size(); i++) {
-                if (i % 50 == 0) { // Begin a new page for every 50 logs:
-                    acroForm = createNewPdf("maine_log.pdf", logPages);
-                    //Abort if acroForm is null:
-                    if (acroForm == null) return null;
-                }
-
-                // Get the log info:
-                DataSnapshot logSnapshot = logSnapshots.get(i);
-                long startMillis = (long) logSnapshot.child("start").getValue();
-                //long endMillis = (long) logSnapshot.child("end").getValue();
-
-                // Set the flags for formatDateTime():
-                int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NUMERIC_DATE |
-                        DateUtils.FORMAT_SHOW_TIME | DateUtils.FORMAT_SHOW_YEAR;
-
-                //Since we are about to use getContext(), make sure the AsyncTask is still running:
-                if (isCancelled()) return null;
-                // Format the Date/time field
-                String dateTimeString = DateUtils.formatDateTime(getContext(), startMillis, flags);
-
-                // Get the elapsed time
-                String elapsedTimeString = getElapsedTime(logSnapshot);
-
-                // Get info about the drivers:
-                List<String> driverInfo = getDriverInfo(logSnapshot);
-                // Extract the necessary info:
-                String driverNameAndAge = driverInfo.get(0);
-                String driverLicense = driverInfo.get(2);
-                // Add the age if this is not a deleted driver:
-                if (!driverNameAndAge.equals("DELETED DRIVER")) driverNameAndAge += ", "+driverInfo.get(1);
-
-                try {
-                    // Add the values to the PDF
-                    int rowNum = (i % 50)+1;
-                    PDTextField dateTimeField = (PDTextField)acroForm.getField("Date and TimeRow" + Integer.toString(rowNum));
-                    PDTextField hoursField = (PDTextField)acroForm.getField("Number of Driving HoursRow" + Integer.toString(rowNum));
-                    PDTextField nightField = (PDTextField)acroForm.getField("Number of After Dark Driving HoursRow" + Integer.toString(rowNum));
-                    PDTextField driverField = (PDTextField)acroForm.getField("Supervising Drivers Name and AgeRow" + Integer.toString(rowNum));
-                    PDTextField licenseField = (PDTextField)acroForm.getField("License Number of Supervising DriverRow" + Integer.toString(rowNum));
-                    if (dateTimeField != null) dateTimeField.setValue(dateTimeString);
-                    if (hoursField != null) hoursField.setValue(elapsedTimeString);
-                    if (nightField != null && (boolean) logSnapshot.child("night").getValue()) {
-                        nightField.setValue(elapsedTimeString);
-                    } else if (nightField != null) {
-                        nightField.setValue("0");
-                    }
-                    if (driverField != null) driverField.setValue(driverNameAndAge);
-                    if (licenseField != null) licenseField.setValue(driverLicense);
-                } catch (IOException e) {
-                    Log.e(TAG, e.getMessage());
-                }
-                //After each log is finished, increment the progress bar:
-                proDialog.incrementProgress(1);
-            }
-
-            // Add the totals
-            try {
-                PDTextField totalHoursField = (PDTextField)acroForm.getField("TOTAL HOURS OF PRACTICE DRIVING");
-                PDTextField totalNightField = (PDTextField)acroForm.getField("TOTAL HOURS OF NIGHT DRIVING");
-                if (totalHoursField != null) totalHoursField.setValue(getGoalTotal("total"));
-                if (totalNightField != null) totalNightField.setValue(getGoalTotal("night"));
-            } catch (IOException e) {
-                Log.e(TAG, e.getMessage());
-            }
-
-            //Finally, save the documents and present it to the user:
-            savePDFs(logPages);
-
-            return null;
-        } };
-
-        // Show the progress dialog
-        startProgressDialog();
-        // Create the PDF log asynchronously:
+        // Create the PDF log in an AsyncTask.
+        MaineLogTask createPdfLogAsync = new MaineLogTask(getActivity(), logSnapshots, driversInfo, totalUpdater);
         createPdfLogAsync.execute();
     } };
-
-    //These are the field indexes of the back page of the North Carolina form:
-    private int ncBackPage[] = {
-            27, 28, 29, 30, 31, 32,
-            33, 34, 35, 36, 48, 49,
-            44, 47, 50, 51, 52, 53,
-            45, 54, 55, 56, 57, 58,
-            46, 59, 60, 61, 62, 63,
-            64, 65, 66, 67, 68, 69,
-            70, 71, 74, 75, 76, 77,
-            72, 73, 78, 79, 80, 81,
-            82, 83, 84, 85, 86, 87,
-            88, 89, 90, 91, 92, 93,
-            94, 95, 96, 97, 98, 99,
-            100, 101, 102, 103, 104, 105,
-            106, 107, 108, 109, 110, 111,
-            112, 113, 114, 115, 116, 117,
-            118, 119, 120, 121, 122, 123,
-            124, 125, 126, 127, 128, 129,
-            130, 131, 132, 133, 134, 135,
-            136, 137, 138, 139, 140, 141,
-            142, 143, 144, 145, 146, 147,
-            148, 149, 150, 151, 152, 153,
-            154, 155, 156, 157, 158, 159,
-            160, 161, 162, 163, 164, 165,
-            166, 167, 168, 169, 170, 171,
-            172, 173, 174, 175, 176, 177,
-            178, 179, 180, 181, 182, 183,
-            184, 185, 186, 187, 188, 189,
-            190, 191, 192, 193, 194, 195,
-            196, 197, 198, 199, 200, 201,
-            202, 203, 204, 205, 206, 207,
-            208, 209, 210, 211, 212, 213,
-            214, 215, 216, 217, 218, 219,
-            220, 221, 222, 223, 224, 225,
-            226, 227, 228, 229, 230, 231,
-            232, 233, 234, 235, 236, 237,
-            238, 239, 240, 241, 242, 243,
-            244, 245, 246, 247, 248, 249,
-            250, 251, 252, 253, 254, 255,
-            256, 257, 258, 259, 260, 261,
-            262, 263, 264, 265, 266, 267,
-            38, 39, 40, 41, 42, 43
-    };
 
     private View.OnClickListener onNorthCarolinaExport = new View.OnClickListener() { @Override public void onClick(View view) {
         // Close the floating menu
@@ -631,106 +311,7 @@ public class LogFragment extends ListFragment {
         if (!isSignedIn) return;
 
         // Create the PDF log in an AsyncTask:
-        createPdfLogAsync = new AsyncTask<Void, Void, Void>() { @Override public Void doInBackground(Void... args) {
-            //Stores all of the PDFs:
-            ArrayList<PDDocument> logPages = new ArrayList<>();
-            // Stores the current PDF form:
-            PDAcroForm acroForm = null;
-
-            //Loop through all the logs:
-            for (int i = 0; i < logSnapshots.size(); i++) {
-                if (i % 60 == 0) { // Begin a new page for every 20 logs:
-                    acroForm = createNewPdf("north_carolina_log.pdf", logPages);
-                    //Abort if acroForm is null:
-                    if (acroForm == null) return null;
-                }
-
-                // Get the log info:
-                DataSnapshot logSnapshot = logSnapshots.get(i);
-                long startMillis = (long) logSnapshot.child("start").getValue();
-                //long endMillis = (long) logSnapshot.child("end").getValue();
-
-                //Since we are about to use getContext(), make sure the AsyncTask is still running:
-                if (isCancelled()) return null;
-                // Format the Date field
-                String dateString = shortDate.format(new Date(startMillis));
-                // Format the time field
-                String timeString = DateUtils.formatDateTime(getContext(), startMillis, DateUtils.FORMAT_SHOW_TIME);
-
-                // Get the elapsed time
-                String elapsedTimeString = getElapsedTime(logSnapshot);
-
-                // Get info about the drivers:
-                List<String> driverInfo = getDriverInfo(logSnapshot);
-                // Extract the necessary info:
-                String driverName = driverInfo.get(0);
-                String driverLicense = driverInfo.get(2);
-
-                //Put all of this info into the form:
-                try {
-                    int curRow = (i % 60)+1;
-                    PDTextField dateField = null, timeOfDayField = null,
-                            timeOfNightField = null, elapsedTimeField = null,
-                            driverNameField = null, driverLicenseField = null;
-                    //For the front page, use the Row suffix to get the fields:
-                    if (curRow <= 20) {
-                        dateField = (PDTextField) acroForm.getField("DATERow" + curRow);
-                        timeOfDayField = (PDTextField) acroForm.getField("TIME OF DAYRow" + curRow);
-                        timeOfNightField = (PDTextField) acroForm.getField("TIME OF NIGHTRow" + curRow);
-                        //Yes, this is quite an odd name for a field, but that's what the actual field name is:
-                        elapsedTimeField = (PDTextField) acroForm.getField("fill_" + (6 * curRow + 2));
-                        driverNameField = (PDTextField) acroForm.getField("SUPERVISING DRIVERS PRINTED NAMERow" + curRow);
-                        driverLicenseField = (PDTextField) acroForm.getField("SUPERVISING DRIVERS DL Number and StateRow" + curRow);
-                    }
-                    //For the back page, use the Text suffix to get the fields:
-                    else {
-                        dateField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6]);
-                        timeOfDayField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+1]);
-                        timeOfNightField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+2]);
-                        elapsedTimeField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+3]);
-                        driverNameField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+4]);
-                        driverLicenseField = (PDTextField) acroForm.getField("Text"+ncBackPage[(curRow-21)*6+5]);
-                    }
-
-                    //For the time, put the time in the day/night box depending on if the log was at day/night
-                    if ((boolean) logSnapshot.child("night").getValue()) {
-                        if (timeOfNightField != null) timeOfNightField.setValue(timeString);
-                    } else {
-                        if (timeOfDayField != null) timeOfDayField.setValue(timeString);
-                    }
-                    //Finally fill the rest of the fields in:
-                    if (dateField != null) dateField.setValue(dateString);
-                    if (elapsedTimeField != null) elapsedTimeField.setValue(elapsedTimeString);
-                    if (driverNameField != null) driverNameField.setValue(driverName);
-                    if (driverLicenseField != null) driverLicenseField.setValue(driverLicense);
-                } catch (IOException e) {
-                    Log.e(TAG, e.getMessage());
-                }
-                //After each log is finished, increment the progress bar:
-                proDialog.incrementProgress(1);
-            }
-
-            // Add the totals
-            try {
-                PDTextField totalHoursField = (PDTextField)acroForm.getField("Gr a n d To t a l");
-                PDTextField totalDayField = (PDTextField)acroForm.getField("To t a l Da y Ho u r s Driv en");
-                PDTextField totalNightField = (PDTextField)acroForm.getField("To t a l Ni g h t Ho u r s Dr iv e n");
-                if (totalHoursField != null) totalHoursField.setValue(getGoalTotal("total"));
-                if (totalDayField != null) totalDayField.setValue(getGoalTotal("day"));
-                if (totalNightField != null) totalNightField.setValue(getGoalTotal("night"));
-            } catch (IOException e) {
-                Log.e(TAG, e.getMessage());
-            }
-
-            //Save all the documents and present it to the user:
-            savePDFs(logPages);
-            
-            return null;
-        } };
-
-        // Show the progress dialog
-        startProgressDialog();
-        // Create the PDF log asynchronously:
+        NorthCarolinaLogTask createPdfLogAsync = new NorthCarolinaLogTask(getActivity(), logSnapshots, driversInfo, totalUpdater);
         createPdfLogAsync.execute();
     } };
 
@@ -799,14 +380,16 @@ public class LogFragment extends ListFragment {
                 // Loop through the logs:
                 for (int i = 0; i < logSnapshots.size(); i++) {
                     DataSnapshot logSnapshot = logSnapshots.get(i);
+                    // This object is used to format date objects:
+                    DateFormat timeFormatter = android.text.format.DateFormat.getTimeFormat(getContext());
                     // Get the driver database key:
                     String driverId = logSnapshot.child("driver_id").getValue().toString();
 
-                    // Get the calendar object:
+                    // Get the calendar object for both the start and end times:
                     Calendar startDate = Calendar.getInstance();
                     startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
                     Calendar endDate = Calendar.getInstance();
-                    startDate.setTimeInMillis((long) logSnapshot.child("end").getValue());
+                    endDate.setTimeInMillis((long) logSnapshot.child("end").getValue());
                     // Add the month
                     String month = new DateFormatSymbols().getShortMonths()[startDate.get(Calendar.MONTH)];
                     Label monthCell = new Label(0, i+1, month);
@@ -817,15 +400,15 @@ public class LogFragment extends ListFragment {
                     // Add the year
                     Label yearCell = new Label(2, i+1, Integer.toString(startDate.get(Calendar.YEAR)));
                     sheet.addCell(yearCell);
-                    DateFormat timeFormatter = DateFormat.getTimeInstance(DateFormat.SHORT, getResources().getConfiguration().locale);
-                    Label startCell = new Label(3, i+1, timeFormatter.format(startDate.getTime()));
-                    sheet.addCell(startCell);
-                    Label endCell = new Label(4, i+1, timeFormatter.format(endDate.getTime()));
-                    sheet.addCell(endCell);
                     // Add the duration
                     long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
                     Label durationCell = new Label(3, i+1, ElapsedTime.formatSeconds(timeElapsed/1000));
                     sheet.addCell(durationCell);
+                    // Add the start and end cells to the sheet
+                    Label startCell = new Label(4, i+1, timeFormatter.format(startDate.getTime()));
+                    sheet.addCell(startCell);
+                    Label endCell = new Label(5, i+1, timeFormatter.format(endDate.getTime()));
+                    sheet.addCell(endCell);
 
                     // Add the day/night if the user has day/night goals:
                     if (hasNightGoals) {
