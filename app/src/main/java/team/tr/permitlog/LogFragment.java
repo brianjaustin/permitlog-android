@@ -38,6 +38,7 @@ import com.tom_roush.pdfbox.util.PDFBoxResourceLoader;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DateFormat;
 import java.text.DateFormatSymbols;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -760,7 +761,7 @@ public class LogFragment extends ListFragment {
                 String supervisorLit = "Supervisor";
                 String licenseNumberLit = "License Number";
                 ArrayList<String> headers = new ArrayList<>(
-                        Arrays.asList("Month", "Date", "Year", "Duration", supervisorLit, "Age", licenseNumberLit)
+                        Arrays.asList("Month", "Date", "Year", "Duration", "Start Time", "End Time", supervisorLit, "Age", licenseNumberLit)
                 );
 
                 //This represents the number of special goal types the user has:
@@ -768,17 +769,17 @@ public class LogFragment extends ListFragment {
                 //For each goal type, if the user has it, add it to the headers and then increment numSpecialGoals:
                 String adverseLit = "Adverse Conditions";
                 if (hasAdverseGoals) {
-                    headers.add(4, adverseLit);
+                    headers.add(6, adverseLit);
                     numSpecialGoals++;
                 }
                 String weatherLit = "Poor Weather";
                 if (hasWeatherGoals) {
-                    headers.add(4, weatherLit);
+                    headers.add(6, weatherLit);
                     numSpecialGoals++;
                 }
                 String nightLit = "Day/Night";
                 if (hasNightGoals) {
-                    headers.add(4, nightLit);
+                    headers.add(6, nightLit);
                     numSpecialGoals++;
                 }
 
@@ -804,6 +805,8 @@ public class LogFragment extends ListFragment {
                     // Get the calendar object:
                     Calendar startDate = Calendar.getInstance();
                     startDate.setTimeInMillis((long) logSnapshot.child("start").getValue());
+                    Calendar endDate = Calendar.getInstance();
+                    startDate.setTimeInMillis((long) logSnapshot.child("end").getValue());
                     // Add the month
                     String month = new DateFormatSymbols().getShortMonths()[startDate.get(Calendar.MONTH)];
                     Label monthCell = new Label(0, i+1, month);
@@ -814,6 +817,11 @@ public class LogFragment extends ListFragment {
                     // Add the year
                     Label yearCell = new Label(2, i+1, Integer.toString(startDate.get(Calendar.YEAR)));
                     sheet.addCell(yearCell);
+                    DateFormat timeFormatter = DateFormat.getTimeInstance(DateFormat.SHORT, getResources().getConfiguration().locale);
+                    Label startCell = new Label(3, i+1, timeFormatter.format(startDate.getTime()));
+                    sheet.addCell(startCell);
+                    Label endCell = new Label(4, i+1, timeFormatter.format(endDate.getTime()));
+                    sheet.addCell(endCell);
                     // Add the duration
                     long timeElapsed = (long)(logSnapshot.child("end").getValue())-(long)(logSnapshot.child("start").getValue());
                     Label durationCell = new Label(3, i+1, ElapsedTime.formatSeconds(timeElapsed/1000));
@@ -854,11 +862,11 @@ public class LogFragment extends ListFragment {
                     }
 
                     // Add it to the sheet, using numSpecialGoals to make sure it comes after all of the goal types:
-                    Label nameCell = new Label(4+numSpecialGoals, i+1, driverName);
+                    Label nameCell = new Label(6+numSpecialGoals, i+1, driverName);
                     sheet.addCell(nameCell);
-                    Label ageCell = new Label(5+numSpecialGoals, i+1, driverAge);
+                    Label ageCell = new Label(7+numSpecialGoals, i+1, driverAge);
                     sheet.addCell(ageCell);
-                    Label licenseCell = new Label(6+numSpecialGoals, i+1, driverLicense);
+                    Label licenseCell = new Label(8+numSpecialGoals, i+1, driverLicense);
                     sheet.addCell(licenseCell);
                 }
 
